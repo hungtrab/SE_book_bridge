@@ -1,0 +1,489 @@
+// Prisma schema for BookBridge.
+//
+// 13 entities, mapped 1:1 to the SRS section 4 modules:
+//   • User, Session                          — Auth                (Person 1)
+//   • Listing, ListingPhoto                  — Book Catalog        (Person 2)
+//   • Follow, FeedItem                       — Discovery           (Person 3)
+//   • Transaction, TransactionEvent, Rating  — Transactions        (Person 4)
+//   • Conversation, Message                  — Messaging           (Person 4)
+//   • ReputationEvent                        — Trust & Safety      (Person 5)
+//   • Report, ModerationAction               — Moderation          (Person 5)
+//   • Community, CommunityMembership         — Communities         (Person 6)
+//   • Notification                           — Notifications       (Person 6)
+//
+// Each owner is documented in a comment above their cluster of models. If
+// you change a field in a model, ping the owner.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+
+// =============================================================================
+// Person 1 — Identity & Profile
+// =============================================================================
+
+enum UserRole {
+  GUEST
+  USER
+  MODERATOR
+  ADMIN
+}
+
+enum AccountStatus {
+  PENDING_VERIFICATION
+  ACTIVE
+  SUSPENDED
+  DELETED
+}
+
+model User {
+  id                  String        @id @default(cuid())
+  email               String        @unique
+  passwordHash        String
+  displayName         String
+  avatarUrl           String?
+  bio                 String?
+  preferredGenres     String[]      @default([])
+  locationDistrict    String?       // SRS: district-level granularity only
+  role                UserRole      @default(USER)
+  status              AccountStatus @default(PENDING_VERIFICATION)
+  emailVerifiedAt     DateTime?
+
+  reputationScore     Int           @default(0)   // denormalised — see ReputationEvent
+  reputationTier      String        @default("new")
+
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+
+  // Relations
+  sessions            Session[]
+  listings            Listing[]
+  followers           Follow[]            @relation("UserFollowers")
+  following           Follow[]            @relation("UserFollowing")
+
+  requestedTxns       Transaction[]       @relation("RequesterTransactions")
+  ownedTxns           Transaction[]       @relation("OwnerTransactions")
+  ratingsGiven        Rating[]            @relation("RatingsGiven")
+  ratingsReceived     Rating[]            @relation("RatingsReceived")
+
+  conversationsA      Conversation[]      @relation("ConversationUserA")
+  conversationsB      Conversation[]      @relation("ConversationUserB")
+  messages            Message[]
+
+  reputationEvents    ReputationEvent[]
+  reportsFiled        Report[]            @relation("ReportsFiled")
+  reportsAgainst      Report[]            @relation("ReportsAgainst")
+  moderationsBy       ModerationAction[]  @relation("ModerationsBy")
+  moderationsOn       ModerationAction[]  @relation("ModerationsOn")
+
+  communitiesOwned    Community[]
+  memberships         CommunityMembership[]
+  notifications       Notification[]
+
+  @@index([reputationTier])
+}
+
+model Session {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt   DateTime
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+}
+
+
+// =============================================================================
+// Person 2 — Book Catalog
+// =============================================================================
+
+enum BookCondition {
+  NEW
+  LIKE_NEW
+  GOOD
+  FAIR
+  POOR
+}
+
+enum TransactionType {
+  GIFT
+  EXCHANGE
+  SELL
+}
+
+enum ListingStatus {
+  ACTIVE
+  RESERVED        // an accepted transaction is in progress
+  UNAVAILABLE     // hidden by owner
+  COMPLETED       // transferred
+  REMOVED         // deleted by owner or moderator
+}
+
+model Listing {
+  id              String          @id @default(cuid())
+  ownerId         String
+  owner           User            @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  title           String
+  author          String
+  isbn            String?
+  publisher       String?
+  publicationYear Int?
+  language        String?         @default("vi")
+  genre           String          // single primary genre (taxonomy enforced server-side)
+  condition       BookCondition
+  description     String          // 20–2000 chars (validated)
+  transactionType TransactionType
+  askingPriceVnd  Int?            // required if transactionType = SELL; cap enforced server-side
+
+  // Sub-community scoping. NULL = visible globally.
+  communityId     String?
+  community       Community?      @relation(fields: [communityId], references: [id], onDelete: SetNull)
+
+  status          ListingStatus   @default(ACTIVE)
+
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  photos          ListingPhoto[]
+  transactions    Transaction[]
+  feedItems       FeedItem[]
+  reports         Report[]
+
+  @@index([ownerId])
+  @@index([status])
+  @@index([genre])
+  @@index([transactionType])
+  @@index([communityId])
+}
+
+model ListingPhoto {
+  id          String   @id @default(cuid())
+  listingId   String
+  listing     Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  url         String
+  position    Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  @@index([listingId])
+}
+
+
+// =============================================================================
+// Person 3 — Discovery (search index helpers + social graph)
+// =============================================================================
+
+model Follow {
+  followerId   String
+  follower     User     @relation("UserFollowing", fields: [followerId], references: [id], onDelete: Cascade)
+  followeeId   String
+  followee     User     @relation("UserFollowers",  fields: [followeeId], references: [id], onDelete: Cascade)
+  createdAt    DateTime @default(now())
+
+  @@id([followerId, followeeId])
+  @@index([followeeId])
+}
+
+// Materialised feed item — written by the "social fan-out" job whenever a
+// followed user publishes a listing or a community announcement happens.
+model FeedItem {
+  id          String   @id @default(cuid())
+  userId      String                                  // recipient
+  listingId   String?
+  listing     Listing? @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  kind        String                                  // "new_listing" | "community_announcement" | ...
+  payload     Json                                    // arbitrary; depends on kind
+  seen        Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
+
+
+// =============================================================================
+// Person 4 — Transactions & Messaging
+// =============================================================================
+
+enum TransactionStatus {
+  PENDING       // requested, awaiting owner action
+  ACCEPTED
+  DECLINED
+  WAITLISTED
+  IN_DELIVERY
+  COMPLETED
+  CANCELLED
+  DISPUTED
+}
+
+enum DeliveryMethod {
+  IN_PERSON
+  POSTAL
+}
+
+model Transaction {
+  id              String              @id @default(cuid())
+  listingId       String
+  listing         Listing             @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  // The user requesting the book.
+  requesterId     String
+  requester       User                @relation("RequesterTransactions",
+                                                fields: [requesterId], references: [id], onDelete: Cascade)
+  // The listing owner. Denormalised for query convenience.
+  ownerId         String
+  owner           User                @relation("OwnerTransactions",
+                                                fields: [ownerId], references: [id], onDelete: Cascade)
+
+  status          TransactionStatus   @default(PENDING)
+  type            TransactionType                                   // mirror of listing.transactionType at request time
+  agreedPriceVnd  Int?                                              // for SELL only
+  deliveryMethod  DeliveryMethod?
+  trackingNumber  String?
+
+  acceptedAt      DateTime?
+  shippedAt       DateTime?
+  completedAt     DateTime?
+
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  events          TransactionEvent[]
+  ratings         Rating[]
+  conversation    Conversation?
+  reports         Report[]
+
+  @@index([listingId])
+  @@index([requesterId])
+  @@index([ownerId])
+  @@index([status])
+}
+
+// Audit log of every status transition. The state machine in
+// ``src/server/transactions/state-machine.ts`` writes one row per move.
+model TransactionEvent {
+  id            String            @id @default(cuid())
+  transactionId String
+  transaction   Transaction       @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  fromStatus    TransactionStatus?
+  toStatus      TransactionStatus
+  byUserId      String                                          // who triggered it
+  reason        String?
+  createdAt     DateTime           @default(now())
+
+  @@index([transactionId])
+}
+
+model Rating {
+  id            String        @id @default(cuid())
+  transactionId String
+  transaction   Transaction   @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  // From/To users — both directions are recorded after a Completed transaction.
+  fromUserId    String
+  fromUser      User          @relation("RatingsGiven",   fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUserId      String
+  toUser        User          @relation("RatingsReceived", fields: [toUserId], references: [id], onDelete: Cascade)
+  stars         Int                                          // 1-5, validated server-side
+  comment       String?
+  createdAt     DateTime      @default(now())
+
+  @@unique([transactionId, fromUserId])    // one rating per direction per txn
+  @@index([toUserId])
+}
+
+// In-app messaging. A conversation is uniquely defined by the (userA,userB)
+// unordered pair, optionally tied to a transaction (for a transaction-scoped
+// thread). Sorting userA < userB at write time keeps the unique constraint
+// cheap.
+model Conversation {
+  id             String        @id @default(cuid())
+  userAId        String
+  userA          User          @relation("ConversationUserA", fields: [userAId], references: [id], onDelete: Cascade)
+  userBId        String
+  userB          User          @relation("ConversationUserB", fields: [userBId], references: [id], onDelete: Cascade)
+  transactionId  String?       @unique
+  transaction    Transaction?  @relation(fields: [transactionId], references: [id], onDelete: SetNull)
+  lastMessageAt  DateTime?
+  createdAt      DateTime      @default(now())
+
+  messages       Message[]
+
+  @@unique([userAId, userBId, transactionId])
+  @@index([userAId])
+  @@index([userBId])
+}
+
+model Message {
+  id              String       @id @default(cuid())
+  conversationId  String
+  conversation    Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId        String
+  sender          User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  body            String
+  readAt          DateTime?
+  createdAt       DateTime     @default(now())
+
+  @@index([conversationId, createdAt])
+}
+
+
+// =============================================================================
+// Person 5 — Trust & Safety
+// =============================================================================
+
+enum ReputationKind {
+  TRANSACTION_COMPLETED
+  RATING_RECEIVED
+  REPORT_UPHELD             // negative
+  CANCELLATION              // negative
+  COMMUNITY_CONTRIBUTION    // moderator-awarded
+  TIME_DECAY                // periodic job
+}
+
+// One row per atomic event that contributed to (or subtracted from) a user's
+// reputation score. The current `User.reputationScore` is the sum.
+model ReputationEvent {
+  id           String          @id @default(cuid())
+  userId       String
+  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind         ReputationKind
+  delta        Int                                            // signed
+  context      Json?                                          // e.g. { transactionId }
+  createdAt    DateTime        @default(now())
+
+  @@index([userId])
+  @@index([userId, createdAt])
+}
+
+enum ReportTargetType {
+  USER
+  LISTING
+  TRANSACTION
+  MESSAGE
+}
+
+enum ReportStatus {
+  PENDING
+  RESOLVED
+  REJECTED
+}
+
+model Report {
+  id             String           @id @default(cuid())
+  filerId        String
+  filer          User             @relation("ReportsFiled", fields: [filerId], references: [id], onDelete: Cascade)
+  targetType     ReportTargetType
+  // For convenience we keep optional FK columns to the most likely targets.
+  targetUserId   String?
+  targetUser     User?            @relation("ReportsAgainst", fields: [targetUserId], references: [id], onDelete: Cascade)
+  targetListingId String?
+  targetListing   Listing?        @relation(fields: [targetListingId], references: [id], onDelete: Cascade)
+  targetTransactionId String?
+  targetTransaction   Transaction? @relation(fields: [targetTransactionId], references: [id], onDelete: Cascade)
+
+  reason         String           // free-text or category
+  details        String?
+  status         ReportStatus     @default(PENDING)
+  createdAt      DateTime         @default(now())
+  resolvedAt     DateTime?
+
+  actions        ModerationAction[]
+
+  @@index([status])
+}
+
+enum ModerationActionKind {
+  WARN
+  REMOVE_LISTING
+  SUSPEND_USER
+  RESTORE
+  REJECT_REPORT
+}
+
+model ModerationAction {
+  id            String                @id @default(cuid())
+  reportId      String?
+  report        Report?               @relation(fields: [reportId], references: [id], onDelete: SetNull)
+  byUserId      String                                            // moderator
+  byUser        User                  @relation("ModerationsBy", fields: [byUserId], references: [id], onDelete: Cascade)
+  onUserId      String?
+  onUser        User?                 @relation("ModerationsOn", fields: [onUserId], references: [id], onDelete: Cascade)
+  kind          ModerationActionKind
+  notes         String?
+  createdAt     DateTime              @default(now())
+
+  @@index([byUserId])
+  @@index([onUserId])
+}
+
+
+// =============================================================================
+// Person 6 — Communities, Notifications, Admin
+// =============================================================================
+
+enum CommunityScope {
+  UNIVERSITY
+  LOCATION
+  GENRE
+}
+
+model Community {
+  id           String                  @id @default(cuid())
+  ownerId      String
+  owner        User                    @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  name         String                  @unique
+  scope        CommunityScope
+  description  String?
+  memberCount  Int                     @default(0)              // denormalised
+  createdAt    DateTime                @default(now())
+
+  memberships  CommunityMembership[]
+  listings     Listing[]
+
+  @@index([scope])
+}
+
+enum CommunityRole {
+  MEMBER
+  MODERATOR
+}
+
+model CommunityMembership {
+  userId       String
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  communityId  String
+  community    Community      @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  role         CommunityRole  @default(MEMBER)
+  joinedAt     DateTime       @default(now())
+
+  @@id([userId, communityId])
+  @@index([communityId])
+}
+
+enum NotificationKind {
+  NEW_LISTING_FROM_FOLLOWED
+  TRANSACTION_STATUS_CHANGED
+  NEW_MESSAGE
+  COMMUNITY_ANNOUNCEMENT
+  REPUTATION_TIER_CHANGED
+}
+
+model Notification {
+  id          String           @id @default(cuid())
+  userId      String
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind        NotificationKind
+  payload     Json
+  readAt      DateTime?
+  createdAt   DateTime         @default(now())
+
+  @@index([userId, createdAt])
+}

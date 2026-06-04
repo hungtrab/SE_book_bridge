@@ -15,8 +15,11 @@ export default async function CommunitiesPage({
   return (
     <div className="grid gap-6 md:grid-cols-[1fr_320px]">
       <section className="space-y-4">
-        <h1 className="text-2xl font-bold">Communities</h1>
-        <form className="flex gap-2">
+        <div>
+          <p className="text-sm font-semibold text-blue-600">Groups</p>
+          <h1 className="text-3xl font-black tracking-tight">Communities</h1>
+        </div>
+        <form className="card-surface flex gap-2 rounded-2xl p-3">
           <input name="q" defaultValue={params?.q ?? ""} placeholder="Search communities" className="flex-1 rounded border px-2 py-1" />
           <select name="scope" defaultValue={params?.scope ?? ""} className="rounded border px-2 py-1">
             <option value="">Any scope</option>
@@ -24,12 +27,12 @@ export default async function CommunitiesPage({
             <option value="LOCATION">Location</option>
             <option value="GENRE">Genre</option>
           </select>
-          <button className="rounded border px-3 py-1">Search</button>
+          <button className="btn-primary px-3 py-1">Search</button>
         </form>
         <div className="space-y-3">
           {communities.map((community) => (
-            <Link key={community.id} href={`/communities/${community.id}`} className="block rounded border p-3">
-              <h2 className="font-semibold">{community.name}</h2>
+            <Link key={community.id} href={`/communities/${community.id}`} className="card-surface interactive-card block rounded-2xl p-4">
+              <h2 className="text-lg font-bold">{community.name}</h2>
               <p className="text-sm">{community.scope} · {community.memberCount} members</p>
               <p className="text-sm text-gray-500">{community.description ?? "No description"}</p>
             </Link>

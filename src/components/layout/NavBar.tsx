@@ -10,29 +10,32 @@ export async function NavBar() {
     ? await Promise.all([unreadNotificationCount(user.id), hasModerationAccess(user)])
     : [0, false];
   return (
-    <header className="border-b border-gray-200 dark:border-gray-800">
-      <nav className="mx-auto max-w-5xl px-4 py-3 flex items-center gap-4 text-sm">
-        <Link href="/" className="font-semibold">📚 BookBridge</Link>
-        <Link href="/listings">Listings</Link>
-        <Link href="/search">Search</Link>
-        <Link href="/explore">Explore</Link>
-        <Link href="/communities">Communities</Link>
-        <span className="ml-auto flex items-center gap-3">
+    <header className="nav-glass sticky top-0 z-40 border-b border-[color:var(--card-border)]">
+      <nav className="mx-auto flex max-w-6xl items-center gap-4 overflow-x-auto px-4 py-3 text-sm sm:px-6">
+        <Link href="/" className="group flex items-center gap-2 font-bold tracking-tight">
+          <span className="grid size-8 place-items-center rounded-xl bg-blue-600 text-white shadow-lg shadow-blue-600/25 transition-transform group-hover:-rotate-6 group-hover:scale-105">📚</span>
+          <span>BookBridge</span>
+        </Link>
+        <Link href="/listings" className="link-soft">Listings</Link>
+        <Link href="/search" className="link-soft">Search</Link>
+        <Link href="/explore" className="link-soft">Explore</Link>
+        <Link href="/communities" className="link-soft">Communities</Link>
+        <span className="ml-auto flex shrink-0 items-center gap-3">
           {user ? (
             <>
-              <Link href="/transactions">My Txns</Link>
-              <Link href="/messages">Messages</Link>
-              <Link href="/notifications">Notifications{unread > 0 ? ` (${unread})` : ""}</Link>
-              <Link href="/reports">My Reports</Link>
-              {canModerate && <Link href="/moderation">Moderation</Link>}
-              {user.role === "ADMIN" && <Link href="/admin">Admin</Link>}
-              <Link href="/profile/sessions">Sessions</Link>
-              <Link href={`/profile/${user.id}`}>{user.displayName}</Link>
+              <Link href="/transactions" className="link-soft">My Txns</Link>
+              <Link href="/messages" className="link-soft">Messages</Link>
+              <Link href="/notifications" className="link-soft">Notifications{unread > 0 ? ` (${unread})` : ""}</Link>
+              <Link href="/reports" className="link-soft">My Reports</Link>
+              {canModerate && <Link href="/moderation" className="link-soft">Moderation</Link>}
+              {user.role === "ADMIN" && <Link href="/admin" className="link-soft">Admin</Link>}
+              <Link href="/profile/sessions" className="link-soft">Sessions</Link>
+              <Link href={`/profile/${user.id}`} className="rounded-full border border-[color:var(--card-border)] px-3 py-1 font-semibold transition hover:border-blue-400 hover:text-blue-600">{user.displayName}</Link>
             </>
           ) : (
             <>
-              <Link href="/login">Login</Link>
-              <Link href="/register" className="px-2 py-1 rounded bg-blue-600 text-white">Register</Link>
+              <Link href="/login" className="link-soft">Login</Link>
+              <Link href="/register" className="btn-primary px-3 py-2">Register</Link>
             </>
           )}
         </span>

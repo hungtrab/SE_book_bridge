@@ -31,22 +31,32 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="max-w-sm mx-auto space-y-4">
-      <h1 className="text-2xl font-bold">Sign in</h1>
-      <form onSubmit={onSubmit} className="space-y-3">
+    <div className="mx-auto grid max-w-4xl gap-6 md:grid-cols-[1fr_420px]">
+      <section className="card-surface hidden rounded-3xl p-8 md:block">
+        <p className="text-sm font-semibold text-blue-600">Welcome back</p>
+        <h1 className="hero-title mt-2 text-4xl font-black tracking-tight">Continue your book exchange journey.</h1>
+        <p className="mt-4 text-[color:var(--muted)]">
+          Track transactions, chat with readers, and discover fresh books from communities you trust.
+        </p>
+      </section>
+      <form onSubmit={onSubmit} className="card-surface space-y-4 rounded-3xl p-6 shadow-xl">
+        <div>
+          <h1 className="text-2xl font-black">Sign in</h1>
+          <p className="text-sm text-[color:var(--muted)]">Use your BookBridge account to continue.</p>
+        </div>
         <label className="block">
-          <span className="text-sm">Email</span>
+          <span className="text-sm font-semibold">Email</span>
           <input
-            className="mt-1 block w-full border rounded px-2 py-1"
+            className="mt-1 block w-full rounded-xl border px-3 py-2"
             type="email" required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
         </label>
         <label className="block">
-          <span className="text-sm">Password</span>
+          <span className="text-sm font-semibold">Password</span>
           <input
-            className="mt-1 block w-full border rounded px-2 py-1"
+            className="mt-1 block w-full rounded-xl border px-3 py-2"
             type="password" required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -56,7 +66,7 @@ export default function LoginPage() {
         <button
           type="submit"
           disabled={pending}
-          className="w-full px-3 py-2 rounded bg-blue-600 text-white disabled:opacity-50"
+          className="btn-primary w-full px-3 py-3 disabled:opacity-50"
         >
           {pending ? "Signing in…" : "Sign in"}
         </button>

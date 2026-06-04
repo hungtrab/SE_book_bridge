@@ -42,6 +42,12 @@ npm test                         # unit tests
 npm run lint                     # eslint + tsc
 ```
 
+For the Role #3 search-latency demo, seed 1000 synthetic listings separately:
+
+```bash
+npm run db:seed:search-benchmark
+```
+
 Demo accounts from `npm run db:seed` all use password `Password1`:
 
 | Role | Email |

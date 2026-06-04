@@ -22,6 +22,7 @@ export { ListingCreateSchema, ListingPatchSchema, ListingQuerySchema } from "./v
 
 const ACTIVE_TRANSACTION_STATUSES = ["ACCEPTED", "IN_DELIVERY"] as const;
 const DELETE_BLOCKING_TRANSACTION_STATUSES = ["ACCEPTED", "IN_DELIVERY"] as const;
+const PENDING_EDIT_NOTIFICATION_STATUSES = ["PENDING"] as const;
 
 export async function createListing(user: User, input: ListingCreateInput) {
   const data = cleanListingData(ListingCreateSchema.parse(input));
@@ -79,7 +80,12 @@ export async function getListing(id: string) {
 export async function patchListing(user: User, id: string, input: ListingPatchInput) {
   const listing = await prisma.listing.findUnique({
     where: { id },
-    include: { transactions: { where: { status: { in: [...ACTIVE_TRANSACTION_STATUSES] } } } },
+    include: {
+      transactions: {
+        where: { status: { in: [...ACTIVE_TRANSACTION_STATUSES, ...PENDING_EDIT_NOTIFICATION_STATUSES] } },
+        select: { id: true, requesterId: true, status: true },
+      },
+    },
   });
   if (!listing || listing.status === "REMOVED") throw new NotFoundError("Listing not found");
   if (listing.ownerId !== user.id) throw new ForbiddenError();
@@ -107,11 +113,28 @@ export async function patchListing(user: User, id: string, input: ListingPatchIn
         data: photoUrls.map((url, position) => ({ listingId: id, url, position })),
       });
     }
-    return tx.listing.update({
+    const updated = await tx.listing.update({
       where: { id },
       data: updateData,
       include: listingInclude(),
     });
+    const pendingRequests = listing.transactions.filter((transaction) => transaction.status === "PENDING");
+    if (pendingRequests.length > 0 && listingPatchChangesPendingRequestFields(listing, data)) {
+      await tx.notification.createMany({
+        data: pendingRequests.map((transaction) => ({
+          userId: transaction.requesterId,
+          kind: "TRANSACTION_STATUS_CHANGED",
+          payload: {
+            kind: "listing.updated",
+            actorId: user.id,
+            listingId: listing.id,
+            transactionId: transaction.id,
+            changedFields: changedPendingRequestFields(listing, data),
+          },
+        })),
+      });
+    }
+    return updated;
   });
 }
 
@@ -196,6 +219,23 @@ export function hasActiveListingTransaction(statuses: string[]): boolean {
   return statuses.some((status) => ACTIVE_TRANSACTION_STATUSES.includes(
     status as (typeof ACTIVE_TRANSACTION_STATUSES)[number],
   ));
+}
+
+export function listingPatchChangesPendingRequestFields(
+  listing: { condition: string; askingPriceVnd: number | null },
+  patch: { condition?: string; askingPriceVnd?: number },
+) {
+  return changedPendingRequestFields(listing, patch).length > 0;
+}
+
+function changedPendingRequestFields(
+  listing: { condition: string; askingPriceVnd: number | null },
+  patch: { condition?: string; askingPriceVnd?: number },
+) {
+  const fields: Array<"condition" | "askingPriceVnd"> = [];
+  if (patch.condition !== undefined && patch.condition !== listing.condition) fields.push("condition");
+  if (patch.askingPriceVnd !== undefined && patch.askingPriceVnd !== listing.askingPriceVnd) fields.push("askingPriceVnd");
+  return fields;
 }
 
 async function markListingStatus(listingId: string, status: ListingStatus) {

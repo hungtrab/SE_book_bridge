@@ -6,6 +6,7 @@ import { BadRequestError, ConflictError, ForbiddenError, NotFoundError } from ".
 import { dispatchNotifications } from "../notifications/dispatcher";
 import { addReputationEvent } from "../reputation/service";
 import { ReputationWeights } from "../reputation/scoring";
+import { applyTransactionActionInTx } from "../transactions/service";
 import { canModerateReport } from "./queue";
 
 export const ReportSchema = z.object({
@@ -16,7 +17,7 @@ export const ReportSchema = z.object({
 });
 
 export const ModerationActionSchema = z.object({
-  action: z.enum(["WARN", "REMOVE_LISTING", "SUSPEND_USER", "RESTORE", "REJECT_REPORT"]),
+  action: z.enum(["WARN", "REMOVE_LISTING", "SUSPEND_USER", "RESTORE", "RESOLVE_DISPUTE", "REJECT_DISPUTE", "REJECT_REPORT"]),
   notes: z.string().trim().min(3).max(2000),
 });
 
@@ -80,6 +81,14 @@ export async function applyModerationAction(
       } else if (targetUserId) {
         await tx.user.update({ where: { id: targetUserId }, data: { status: "ACTIVE" } });
       }
+    } else if (data.action === "RESOLVE_DISPUTE" || data.action === "REJECT_DISPUTE") {
+      await applyTransactionActionInTx(
+        tx,
+        moderator,
+        report.targetTransactionId!,
+        { kind: data.action === "RESOLVE_DISPUTE" ? "moderate-resolve" : "moderate-reject", actor: "moderator" },
+        { reason: data.notes },
+      );
     }
     const rejected = data.action === "REJECT_REPORT";
     const upheld = data.action === "WARN" || data.action === "REMOVE_LISTING" || data.action === "SUSPEND_USER";
@@ -180,6 +189,7 @@ async function moderationTargetUser(tx: Prisma.TransactionClient, report: {
 function assertActionCompatible(action: ModerationActionKind, report: {
   targetListingId: string | null;
   targetUserId: string | null;
+  targetTransactionId?: string | null;
   targetMessageId: string | null;
 }) {
   if (action === "REMOVE_LISTING" && !report.targetListingId) throw new BadRequestError("This report does not target a listing");
@@ -187,4 +197,7 @@ function assertActionCompatible(action: ModerationActionKind, report: {
     throw new BadRequestError("This report does not identify a user");
   }
   if (action === "RESTORE" && !report.targetListingId && !report.targetUserId) throw new BadRequestError("Nothing can be restored for this report");
+  if ((action === "RESOLVE_DISPUTE" || action === "REJECT_DISPUTE") && !report.targetTransactionId) {
+    throw new BadRequestError("This report does not target a transaction dispute");
+  }
 }

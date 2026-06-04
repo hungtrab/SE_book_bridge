@@ -1,0 +1,2 @@
+ALTER TYPE "ModerationActionKind" ADD VALUE 'RESOLVE_DISPUTE';
+ALTER TYPE "ModerationActionKind" ADD VALUE 'REJECT_DISPUTE';

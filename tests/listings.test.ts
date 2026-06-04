@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { lookupIsbn } from "@/server/listings/isbn";
 import { buildListingCreatedFanout } from "@/server/listings/fanout";
-import { hasActiveListingTransaction } from "@/server/listings/service";
+import { hasActiveListingTransaction, listingPatchChangesPendingRequestFields } from "@/server/listings/service";
 import { IsbnSchema, ListingCreateSchema } from "@/server/listings/validation";
 
 const validListing = {
@@ -49,6 +49,14 @@ describe("listing edit guard", () => {
     expect(hasActiveListingTransaction(["PENDING"])).toBe(false);
     expect(hasActiveListingTransaction(["ACCEPTED"])).toBe(true);
     expect(hasActiveListingTransaction(["IN_DELIVERY"])).toBe(true);
+  });
+
+  it("notifies pending requesters only when condition or price changes", () => {
+    const listing = { condition: "GOOD", askingPriceVnd: 20_000 };
+    expect(listingPatchChangesPendingRequestFields(listing, { condition: "LIKE_NEW" })).toBe(true);
+    expect(listingPatchChangesPendingRequestFields(listing, { askingPriceVnd: 25_000 })).toBe(true);
+    expect(listingPatchChangesPendingRequestFields(listing, { condition: "GOOD" })).toBe(false);
+    expect(listingPatchChangesPendingRequestFields(listing, {})).toBe(false);
   });
 });
 

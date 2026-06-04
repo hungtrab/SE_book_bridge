@@ -90,7 +90,7 @@ Conventions:
 | GET | `/api/communities/[id]` | detail |
 | POST | `/api/communities/[id]/join` | join |
 | POST | `/api/communities/[id]/leave` | leave |
-| GET | `/api/notifications` | mine, paginated |
+| GET | `/api/notifications` | mine, paginated; `wait=1&after=ISO_DATE` enables long-poll fallback |
 | GET | `/api/notifications/stream` | SSE |
 | POST | `/api/notifications/[id]/read` | mark read |
 | POST | `/api/cron/notification-digest` | send unread daily notification digest |

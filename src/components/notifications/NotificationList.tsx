@@ -15,16 +15,51 @@ export function NotificationList({ initial }: { initial: NotificationRow[] }) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const source = new EventSource("/api/notifications/stream");
-    source.addEventListener("notification", (event) => {
-      const notification = JSON.parse((event as MessageEvent).data) as NotificationRow;
+    let cancelled = false;
+    let polling = false;
+    let after = latestCreatedAt(initial);
+
+    function addNotification(notification: NotificationRow) {
+      after = maxDate(after, notification.createdAt);
       setItems((current) => current.some((row) => row.id === notification.id)
         ? current
         : [notification, ...current]);
+    }
+
+    async function longPoll() {
+      if (polling) return;
+      polling = true;
+      setError("Realtime connection interrupted; using long-polling fallback.");
+      while (!cancelled) {
+        const res = await fetch(`/api/notifications?wait=1&after=${encodeURIComponent(after.toISOString())}`).catch(() => null);
+        if (!res?.ok) {
+          await new Promise((resolve) => setTimeout(resolve, 3000));
+          continue;
+        }
+        const body = await res.json().catch(() => ({ items: [] }));
+        for (const notification of (body.items ?? []) as NotificationRow[]) addNotification(notification);
+      }
+    }
+
+    if (typeof EventSource === "undefined") {
+      void longPoll();
+      return () => { cancelled = true; };
+    }
+
+    const source = new EventSource("/api/notifications/stream");
+    source.addEventListener("notification", (event) => {
+      const notification = JSON.parse((event as MessageEvent).data) as NotificationRow;
+      addNotification(notification);
     });
-    source.onerror = () => setError("Realtime connection interrupted; browser will retry.");
+    source.onerror = () => {
+      source.close();
+      void longPoll();
+    };
     source.onopen = () => setError(null);
-    return () => source.close();
+    return () => {
+      cancelled = true;
+      source.close();
+    };
   }, []);
 
   async function markRead(id: string) {
@@ -61,4 +96,13 @@ export function NotificationList({ initial }: { initial: NotificationRow[] }) {
 
 function labelForKind(kind: string) {
   return kind.split("_").map((word) => word[0] + word.slice(1).toLowerCase()).join(" ");
+}
+
+function latestCreatedAt(items: NotificationRow[]) {
+  return items.reduce((latest, item) => maxDate(latest, item.createdAt), new Date());
+}
+
+function maxDate(left: Date, right: string | Date) {
+  const rightDate = new Date(right);
+  return rightDate > left ? rightDate : left;
 }

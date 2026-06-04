@@ -90,6 +90,9 @@ describe("transaction state machine — moderator actions", () => {
     expect(r.ok).toBe(true);
     if (!r.ok) return;
     expect(r.next).toBe("COMPLETED");
+    expect(r.sideEffects).toContainEqual({ kind: "listing-status", status: "COMPLETED" });
+    expect(r.sideEffects).toContainEqual({ kind: "notify", userKey: "owner", event: "dispute_resolved" });
+    expect(r.sideEffects).toContainEqual({ kind: "notify", userKey: "requester", event: "dispute_resolved" });
   });
 
   it("moderator can reject a DISPUTED txn back to CANCELLED", () => {
@@ -97,6 +100,9 @@ describe("transaction state machine — moderator actions", () => {
     expect(r.ok).toBe(true);
     if (!r.ok) return;
     expect(r.next).toBe("CANCELLED");
+    expect(r.sideEffects).toContainEqual({ kind: "listing-status", status: "ACTIVE" });
+    expect(r.sideEffects).toContainEqual({ kind: "notify", userKey: "owner", event: "dispute_rejected" });
+    expect(r.sideEffects).toContainEqual({ kind: "notify", userKey: "requester", event: "dispute_rejected" });
   });
 
   it("moderator cannot moderate a non-disputed transaction", () => {

@@ -42,6 +42,16 @@ export async function notificationsAfter(userId: string, after: Date) {
   });
 }
 
+export async function longPollNotifications(userId: string, after: Date, timeoutMs = 25_000, intervalMs = 2_000) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const items = await notificationsAfter(userId, after);
+    if (items.length > 0) return items;
+    await new Promise((resolve) => setTimeout(resolve, intervalMs));
+  }
+  return [];
+}
+
 export async function getNotificationPreference(userId: string) {
   return prisma.user.findUniqueOrThrow({
     where: { id: userId },

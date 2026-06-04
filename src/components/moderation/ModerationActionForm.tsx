@@ -5,7 +5,11 @@ import { useRouter } from "next/navigation";
 
 export function ModerationActionForm({ reportId, targetType }: { reportId: string; targetType: string }) {
   const router = useRouter();
-  const defaultAction = targetType === "LISTING" ? "REMOVE_LISTING" : "WARN";
+  const defaultAction = targetType === "LISTING"
+    ? "REMOVE_LISTING"
+    : targetType === "TRANSACTION"
+      ? "RESOLVE_DISPUTE"
+      : "WARN";
   const [action, setAction] = useState(defaultAction);
   const [notes, setNotes] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -36,6 +40,12 @@ export function ModerationActionForm({ reportId, targetType }: { reportId: strin
         <option value="REMOVE_LISTING">Remove listing</option>
         <option value="SUSPEND_USER">Suspend user</option>
         <option value="RESTORE">Restore target</option>
+        {targetType === "TRANSACTION" && (
+          <>
+            <option value="RESOLVE_DISPUTE">Resolve dispute</option>
+            <option value="REJECT_DISPUTE">Reject dispute</option>
+          </>
+        )}
         <option value="REJECT_REPORT">Reject report</option>
       </select>
       <input required minLength={3} maxLength={2000} value={notes} onChange={(event) => setNotes(event.target.value)} placeholder="Audit notes" className="min-w-64 flex-1 rounded border px-2 py-1" />

@@ -27,3 +27,17 @@ export async function runReputationDecay(now = new Date()) {
   }
   return { decayedUsers: users.length };
 }
+
+export function shouldDecayUser(
+  user: {
+    status: string;
+    reputationScore: number;
+    createdAt: Date;
+    lastReputationEventAt: Date | null;
+  },
+  now = new Date(),
+) {
+  if (user.status !== "ACTIVE" || user.reputationScore <= 0) return false;
+  const lastActivity = user.lastReputationEventAt ?? user.createdAt;
+  return now.getTime() - lastActivity.getTime() >= THIRTY_DAYS_MS;
+}

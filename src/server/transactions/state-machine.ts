@@ -124,6 +124,8 @@ export function transition(
         return deny("Can only resolve a dispute from DISPUTED");
       return ok(T.COMPLETED, [
         { kind: "listing-status", status: "COMPLETED" },
+        { kind: "notify", userKey: "owner",     event: "dispute_resolved" },
+        { kind: "notify", userKey: "requester", event: "dispute_resolved" },
       ]);
 
     case "moderate-reject":
@@ -131,6 +133,8 @@ export function transition(
         return deny("Can only reject a dispute from DISPUTED");
       return ok(T.CANCELLED, [
         { kind: "listing-status", status: "ACTIVE" },
+        { kind: "notify", userKey: "owner",     event: "dispute_rejected" },
+        { kind: "notify", userKey: "requester", event: "dispute_rejected" },
       ]);
   }
 }

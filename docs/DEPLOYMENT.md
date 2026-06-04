@@ -55,7 +55,8 @@ Run `npx prisma migrate deploy` as a release step before starting a new image.
 `vercel.json` schedules transaction maintenance, reputation decay/anti-gaming,
 daily notification digests, and five-minute immediate-email delivery.
 Vercel SSE functions reconnect after the configured 60-second function duration;
-the clients use native `EventSource` retry as fallback.
+the notification client falls back to `GET /api/notifications?wait=1&after=...`
+long-polling if `EventSource` is blocked or interrupted.
 
 ## Scaling notes
 

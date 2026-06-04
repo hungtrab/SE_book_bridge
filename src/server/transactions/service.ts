@@ -92,6 +92,41 @@ export async function applyAction(user: User, txnId: string, action: TxnAction, 
   }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
 }
 
+export async function applyTransactionActionInTx(
+  tx: Prisma.TransactionClient,
+  user: User,
+  txnId: string,
+  action: TxnAction,
+  meta: ActionMeta = {},
+) {
+  const txn = await tx.transaction.findUnique({ where: { id: txnId } });
+  if (!txn) throw new NotFoundError("Transaction not found");
+  assertActor(user, txn, action);
+  const result = transition(txn.status, action);
+  if (!result.ok) throw new BadRequestError(result.reason);
+  const updated = await tx.transaction.updateMany({
+    where: { id: txn.id, status: txn.status },
+    data: {
+      status: result.next,
+      ...(result.next === "ACCEPTED" ? { acceptedAt: new Date() } : {}),
+      ...(result.next === "IN_DELIVERY" ? { shippedAt: new Date(), deliveryMethod: meta.deliveryMethod, trackingNumber: meta.trackingNumber } : {}),
+      ...(result.next === "COMPLETED" ? { completedAt: new Date() } : {}),
+    },
+  });
+  if (updated.count !== 1) throw new ConflictError("Transaction changed while processing; retry the action");
+  await tx.transactionEvent.create({
+    data: {
+      transactionId: txn.id,
+      fromStatus: txn.status,
+      toStatus: result.next,
+      byUserId: user.id,
+      reason: meta.reason,
+    },
+  });
+  for (const effect of result.sideEffects) await applySideEffect(tx, txn, effect, user.id);
+  return { status: result.next };
+}
+
 export async function autoCompleteTransaction(txnId: string) {
   return prisma.$transaction(async (tx) => {
     const txn = await tx.transaction.findUnique({ where: { id: txnId } });

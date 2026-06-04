@@ -256,7 +256,7 @@ tests/listings.test.ts
 ### Câu hỏi nghiên cứu
 
 1. **Tại sao cap 50,000 VND, không phải 0 (gift only)?** → SRS § 1.4: "symbolic prices to keep books in circulation" — mức nhỏ giúp shipping/giấy tờ, không thương-mại-hoá. Configurable qua env.
-2. **Edit listing khi đang có 1 PENDING request thì sao?** → Allowed (transaction chưa accepted). Nhưng phải notify requester nếu thay đổi price/condition (TODO: phối hợp #6 notification).
+2. **Edit listing khi đang có 1 PENDING request thì sao?** → Allowed (transaction chưa accepted). Nếu owner thay đổi `price/condition`, service ghi notification cho requester đang pending trong cùng Prisma transaction.
 3. **ISBN không tìm thấy thì sao?** → Form fallback cho user nhập tay. Không reject — không phải sách nào cũng có ISBN (sách cũ, sách Việt).
 4. **Tại sao soft-delete (status=REMOVED) thay vì hard delete?** → Giữ audit log; transactions liên quan vẫn cần reference listing để hiển thị history.
 5. **Multi-photo upload — sequential vs parallel?** → Parallel với `Promise.all`; mỗi ảnh resize bằng Sharp về max 1024px trước khi lưu S3 để tiết kiệm bandwidth.
@@ -350,7 +350,7 @@ tests/search.test.ts, tests/feed.test.ts
 | Tuần | Việc |
 |---|---|
 | 1 | Đọc Common ground + PostgreSQL FTS. Thử `tsvector` trong psql trên seed data. |
-| 2 | Implement `GET /api/search` với basic ILIKE filter. Test latency với 1000 listings seed. |
+| 2 | Implement `GET /api/search` với basic ILIKE filter. Test latency với 1000 listings seed bằng `npm run db:seed:search-benchmark`. |
 | 3 | Upgrade lên `tsvector` + GIN index. Migration thêm cột `Listing.search_vector`. |
 | 4 | Implement filters combinable (Zod schema cho query params, intersection với AND). Trang `/search` UI có filter sidebar. |
 | 5 | Implement `Follow` API + button trong `/profile/[id]`. Phối hợp #1: hiển thị "Followed by 12 people" trong profile header. |
@@ -368,7 +368,7 @@ tests/search.test.ts, tests/feed.test.ts
 
 ### Demo prep
 
-1. Show 1000 listings seed → search "harari" → relevance ranking thấy Sapiens trước Homo Deus.
+1. Chạy `npm run db:seed:search-benchmark` tạo 1000 listings seed → search "harari" → relevance ranking thấy Sapiens trước Homo Deus.
 2. Combine filters: genre=non-fiction + condition=GOOD + type=GIFT.
 3. Show `EXPLAIN ANALYZE` của query trước/sau khi thêm GIN index — latency 200ms → 5ms.
 4. Live: User A follow User B → User B publish listing → User A refresh feed → thấy ngay.
@@ -482,7 +482,7 @@ tests/messaging.test.ts                    # bạn viết
 3. **Multiple requesters — Pending hay Waitlisted?** → SRS § 4.4 specific: TẤT CẢ pending khi gửi request. Khi owner accept 1 → 1 lên Accepted, các cái khác auto move to Waitlisted (background). Nếu accepted bị cancel → top of waitlist auto promote → Pending.
 4. **21-day auto-complete có cần lock optimistic không?** → Có. Cron job đọc list `IN_DELIVERY > 21 days` rồi update status — nếu user vừa complete cùng lúc → conflict. Dùng `prisma.transaction.update({ where: { id, status: 'IN_DELIVERY' } })` — Prisma trả 0 rows nếu user đã complete trước, cron skip.
 5. **SSE vs WebSocket cho messaging?** → SSE đơn giản hơn (HTTP-based, auto-reconnect), 1 chiều đủ cho push messages. Client gửi message qua POST bình thường, server push qua SSE. WebSocket overkill cho use case này.
-6. **Dispute flow** → User raise dispute → status `DISPUTED` → moderator của #5 reviews → quyết định resolve (→ Completed) hoặc reject (→ Cancelled). Audit trail trong `TransactionEvent`.
+6. **Dispute flow** → User raise dispute → status `DISPUTED` → moderator của #5 reviews trên `/moderation` → chọn `RESOLVE_DISPUTE` (→ Completed) hoặc `REJECT_DISPUTE` (→ Cancelled). Audit trail nằm trong cả `TransactionEvent` và `ModerationAction`.
 
 ### Demo prep
 
@@ -592,7 +592,7 @@ tests/moderation.test.ts            # bạn viết
 | 3 | Implement `anti-gaming.ts` integration — chạy weekly cron flag suspicious users (KHÔNG auto-suspend, chỉ flag để mod review). |
 | 4 | Implement Report CRUD: user file report → row Pending → mod queue. UI trang `/profile/[id]` có nút "Report". |
 | 5 | Moderator queue + ModerationAction implementation. UI `/moderation` (chỉ role MODERATOR). |
-| 6 | Time decay cron (-1 / 30 ngày). Test với fake date. |
+| 6 | Time decay cron (-1 / 30 ngày). Test với fake date trong `tests/moderation.test.ts`. |
 | 7 | UI: ReputationBadge component dùng trong profile + NavBar + ListingCard (phối hợp #2). Tier progress bar. |
 | 8 | Báo cáo + slide phần Trust (4 slide — phần lớn vì là điểm nhấn). |
 
@@ -663,7 +663,7 @@ tests/moderation.test.ts            # bạn viết
 - `REQ-COM-002` Join / leave; max 20 communities / user
 - `REQ-COM-003` Listing có thể tied to 1 community (filter trong search của #3)
 - `REQ-NOT-001` 5 loại notification (new listing from followed, txn status, message, community announcement, tier change)
-- `REQ-NOT-002` Real-time push qua SSE; fallback long-polling
+- `REQ-NOT-002` Real-time push qua SSE; fallback long-polling qua `GET /api/notifications?wait=1&after=...`
 - `REQ-NOT-003` Email digest (immediate / daily / off — user configurable)
 - `REQ-ADM-001` Admin dashboard: active users, transactions completed, books circulated
 - `REQ-ADM-002` Grant report CSV export
@@ -848,9 +848,9 @@ Quy tắc: ai bị hỏi câu của người khác, **chuyển micro lịch sự
 
 ## Checklist tuần 8 trước demo
 
-- [ ] `npm test` xanh — tất cả 6 module
+- [x] `npm test` xanh — tất cả 6 module
 - [ ] CI xanh trên branch `main`
-- [ ] Seed data đầy đủ (3 user demo, 10 listings, 5 communities, 1 transaction in-flight)
+- [x] Seed data đầy đủ (3 user demo, 10 listings, 5 communities, 1 transaction in-flight)
 - [ ] README.md update đầy đủ tên 6 thành viên + role
 - [ ] TASKS.md + ROLES.md không còn "TBD"
 - [ ] Slide 30 trang đã review chéo

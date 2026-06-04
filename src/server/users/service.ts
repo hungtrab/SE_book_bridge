@@ -1,5 +1,5 @@
 import { z } from "zod";
-import argon2 from "argon2";
+import bcrypt from "bcryptjs";
 import crypto from "node:crypto";
 
 import { NotFoundError } from "../lib/errors";
@@ -77,9 +77,7 @@ export async function listPublicUserListings(userId: string, cursor?: string) {
 
 export async function deleteMyAccount(userId: string) {
   const deletedEmail = `deleted-${userId}@deleted.bookbridge.local`;
-  const passwordHash = await argon2.hash(crypto.randomBytes(32).toString("hex"), {
-    type: argon2.argon2id,
-  });
+  const passwordHash = await bcrypt.hash(crypto.randomBytes(32).toString("hex"), 12);
 
   return prisma.$transaction(async (tx) => {
     const user = await tx.user.update({

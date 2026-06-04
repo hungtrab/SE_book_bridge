@@ -4,7 +4,7 @@
 //
 // Demo logins all use: Password1
 
-import argon2 from "argon2";
+import bcrypt from "bcryptjs";
 
 import { PrismaClient, type Prisma } from "@prisma/client";
 
@@ -137,7 +137,7 @@ const LISTINGS = [
 async function main() {
   console.log("seeding...");
 
-  const passwordHash = await argon2.hash(DEMO_PASSWORD, { type: argon2.argon2id });
+  const passwordHash = await bcrypt.hash(DEMO_PASSWORD, 12);
   const users = await seedUsers(passwordHash);
   const communities = await seedCommunities(users.mod.id);
   await seedMemberships(users, communities);

@@ -1,6 +1,6 @@
 // auth/service.ts — register, login, verify email, reset password.
 
-import argon2 from "argon2";
+import bcrypt from "bcryptjs";
 import crypto from "node:crypto";
 import { z } from "zod";
 
@@ -17,8 +17,9 @@ import { clearLoginAttempts } from "./rate-limit";
 
 const EMAIL_VERIFY_TTL_HOURS = 72;
 const PASSWORD_RESET_TTL_HOURS = 1;
-const DUMMY_ARGON2_HASH =
-  "$argon2id$v=19$m=65536,t=3,p=4$AAAAAAAAAAAAAAAAAAAAAA$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
+const BCRYPT_COST = 12;
+const DUMMY_BCRYPT_HASH =
+  "$2b$12$OevsB6ATgtZEdSr5oLUt3uouOqrqpMWnOyVnnY.p9HZQBVdR/iUOq";
 const PasswordSchema = z.string()
   .min(8)
   .regex(/[A-Z]/, "must include an uppercase letter")
@@ -70,7 +71,7 @@ export async function register(input: z.infer<typeof RegisterSchema>) {
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) throw new ConflictError("An account with this email already exists");
 
-  const passwordHash = await argon2.hash(data.password, { type: argon2.argon2id });
+  const passwordHash = await bcrypt.hash(data.password, BCRYPT_COST);
   const token = makeToken();
   const tokenHash = hashToken(token);
   const user = await prisma.$transaction(async (tx) => {
@@ -104,9 +105,9 @@ export async function login(input: z.infer<typeof LoginSchema>, meta?: { ipAddre
   const data = LoginSchema.parse(input);
   const email = data.email.toLowerCase();
   const user = await prisma.user.findUnique({ where: { email } });
-  // Constant-time-ish: always run argon2 verify with a fixed dummy hash to
+  // Constant-time-ish: always run bcrypt compare with a fixed dummy hash to
   // make timing of "user not found" indistinguishable from "wrong password".
-  const ok = await argon2.verify(user?.passwordHash ?? DUMMY_ARGON2_HASH, data.password)
+  const ok = await bcrypt.compare(data.password, user?.passwordHash ?? DUMMY_BCRYPT_HASH)
                  .catch(() => false);
   if (!user || !ok) throw new UnauthorizedError("Invalid email or password");
 
@@ -211,7 +212,7 @@ export async function completePasswordReset(input: z.infer<typeof PasswordResetC
     throw new UnauthorizedError("Account is not active");
   }
 
-  const passwordHash = await argon2.hash(data.password, { type: argon2.argon2id });
+  const passwordHash = await bcrypt.hash(data.password, BCRYPT_COST);
   await prisma.$transaction(async (tx) => {
     await tx.passwordResetToken.update({
       where: { id: row.id },
@@ -230,12 +231,12 @@ export async function changePassword(userId: string, input: z.infer<typeof Chang
   const data = ChangePasswordSchema.parse(input);
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) throw new UnauthorizedError();
-  const ok = await argon2.verify(user.passwordHash, data.currentPassword);
+  const ok = await bcrypt.compare(data.currentPassword, user.passwordHash);
   if (!ok) throw new UnauthorizedError("Current password is wrong");
   if (data.currentPassword === data.newPassword) {
     throw new BadRequestError("New password must be different");
   }
-  const newHash = await argon2.hash(data.newPassword, { type: argon2.argon2id });
+  const newHash = await bcrypt.hash(data.newPassword, BCRYPT_COST);
   await prisma.user.update({ where: { id: userId }, data: { passwordHash: newHash } });
   return { message: "Password changed." };
 }

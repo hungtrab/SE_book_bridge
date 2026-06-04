@@ -220,6 +220,7 @@ async function upsertUser(data: Prisma.UserUncheckedCreateInput) {
     where: { email: data.email },
     update: {
       displayName: data.displayName,
+      passwordHash: data.passwordHash,
       role: data.role,
       status: "ACTIVE",
       emailVerifiedAt: new Date(),

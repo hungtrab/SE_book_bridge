@@ -68,6 +68,7 @@ long-polling if `EventSource` is blocked or interrupted.
   the 1 000-concurrent-users target.
 * **Notifications fan-out**: when `Follow` count grows large, swap the
   inline write of `FeedItem` rows for a Redis Streams + worker pattern.
-* **Search**: listing discovery uses a generated PostgreSQL `tsvector`
-  column with a GIN index. Keep the `searchListings()` abstraction if the
-  team later moves to trigram fuzzy search or an external search service.
+* **Search**: listing discovery uses the `searchListings()` abstraction with
+  parameterized PostgreSQL `ILIKE` filters and lightweight relevance scoring.
+  Keep the abstraction if the team later moves to `tsvector`, trigram fuzzy
+  search, or an external search service.

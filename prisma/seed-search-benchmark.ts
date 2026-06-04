@@ -51,7 +51,7 @@ async function main() {
         author: AUTHORS[i % AUTHORS.length],
         genre: GENRES[i % GENRES.length],
         condition: CONDITIONS[i % CONDITIONS.length],
-        description: `Synthetic benchmark listing ${i}. ${harariBoost} Useful for PostgreSQL full-text search latency checks.`,
+        description: `Synthetic benchmark listing ${i}. ${harariBoost} Useful for ranked search latency checks.`,
         transactionType: type,
         askingPriceVnd: type === "SELL" ? 30_000 : null,
         status: "ACTIVE",
@@ -66,7 +66,12 @@ async function main() {
     SELECT COUNT(*)::bigint AS count
     FROM "Listing" l
     WHERE l."status" = 'ACTIVE'::"ListingStatus"
-      AND l.search_vector @@ websearch_to_tsquery('simple', 'harari')
+      AND (
+        l."title" ILIKE '%harari%'
+        OR l."author" ILIKE '%harari%'
+        OR l."description" ILIKE '%harari%'
+        OR l."isbn" ILIKE '%harari%'
+      )
   `;
   const elapsedMs = performance.now() - started;
 

@@ -43,7 +43,7 @@ Conventions:
 
 | Method | Path | Description |
 |---|---|---|
-| GET | `/api/search` | full-text search across listings |
+| GET | `/api/search` | ranked search across listings by title, author, ISBN, description, and filters |
 | GET | `/api/feed` | personalised feed (auth) |
 | POST | `/api/follow` | `{ userId }` — follow a user |
 | DELETE | `/api/follow/[userId]` | unfollow |

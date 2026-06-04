@@ -24,6 +24,7 @@ export const SearchSchema = z.object({
 export type SearchInput = z.infer<typeof SearchSchema>;
 
 type RankedId = { id: string; rank: number };
+const LIKE_ESCAPE = "\\";
 
 export async function searchListings(input: SearchInput) {
   const data = SearchSchema.parse(input);
@@ -38,20 +39,34 @@ export async function searchListings(input: SearchInput) {
   const district = data.district ?? parsed.filters.district;
   const districts = district ? districtsWithinRadius(district, data.distanceKm ?? 0) : [];
   const offset = decodeCursor(data.cursor);
+  const textPattern = text ? likePattern(text) : null;
+  const isbnPattern = text ? likePattern(text.replace(/[-\s]/g, "").toUpperCase()) : null;
 
   const filters: Prisma.Sql[] = [Prisma.sql`l."status" = 'ACTIVE'::"ListingStatus"`];
-  if (text) filters.push(Prisma.sql`l.search_vector @@ websearch_to_tsquery('simple', ${text})`);
+  if (textPattern) {
+    filters.push(Prisma.sql`(
+      l."title" ILIKE ${textPattern} ESCAPE ${LIKE_ESCAPE}
+      OR l."author" ILIKE ${textPattern} ESCAPE ${LIKE_ESCAPE}
+      OR l."description" ILIKE ${textPattern} ESCAPE ${LIKE_ESCAPE}
+      OR l."isbn" ILIKE ${isbnPattern} ESCAPE ${LIKE_ESCAPE}
+    )`);
+  }
   if (genre) filters.push(Prisma.sql`LOWER(l."genre") = LOWER(${genre})`);
-  if (author) filters.push(Prisma.sql`l."author" ILIKE ${`%${author}%`}`);
+  if (author) filters.push(Prisma.sql`l."author" ILIKE ${likePattern(author)} ESCAPE ${LIKE_ESCAPE}`);
   if (isbn) filters.push(Prisma.sql`l."isbn" = ${isbn}`);
   if (condition) filters.push(Prisma.sql`l."condition" = ${condition}::"BookCondition"`);
   if (transactionType) filters.push(Prisma.sql`l."transactionType" = ${transactionType}::"TransactionType"`);
   if (data.maxPrice !== undefined) filters.push(Prisma.sql`COALESCE(l."askingPriceVnd", 0) <= ${data.maxPrice}`);
-  if (communityId) filters.push(Prisma.sql`(l."communityId" = ${communityId} OR c."name" ILIKE ${communityId})`);
+  if (communityId) filters.push(Prisma.sql`(l."communityId" = ${communityId} OR c."name" ILIKE ${likePattern(communityId)} ESCAPE ${LIKE_ESCAPE})`);
   if (districts.length > 0) filters.push(Prisma.sql`u."locationDistrict" IN (${Prisma.join(districts)})`);
 
-  const rank = text
-    ? Prisma.sql`ts_rank(l.search_vector, websearch_to_tsquery('simple', ${text}))`
+  const rank = textPattern
+    ? Prisma.sql`(
+        CASE WHEN l."title" ILIKE ${textPattern} ESCAPE ${LIKE_ESCAPE} THEN 8 ELSE 0 END
+        + CASE WHEN l."author" ILIKE ${textPattern} ESCAPE ${LIKE_ESCAPE} THEN 5 ELSE 0 END
+        + CASE WHEN l."isbn" ILIKE ${isbnPattern} ESCAPE ${LIKE_ESCAPE} THEN 5 ELSE 0 END
+        + CASE WHEN l."description" ILIKE ${textPattern} ESCAPE ${LIKE_ESCAPE} THEN 2 ELSE 0 END
+      )::real`
     : Prisma.sql`0::real`;
   const ranked = await prisma.$queryRaw<RankedId[]>(Prisma.sql`
     SELECT l.id, ${rank} AS rank
@@ -119,6 +134,10 @@ function validCondition(value?: string) {
 
 function validType(value?: string) {
   return TRANSACTION_TYPES.find((item) => item === value?.toUpperCase());
+}
+
+export function likePattern(value: string) {
+  return `%${value.replace(/[\\%_]/g, (char) => `\\${char}`)}%`;
 }
 
 function encodeCursor(offset: number) {

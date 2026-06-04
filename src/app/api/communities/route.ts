@@ -1,61 +1,32 @@
-import { z } from "zod";
+import { NextRequest } from "next/server";
 
-import { prisma } from "@/server/lib/prisma";
-import { requireUser } from "@/server/lib/auth-context";
+import { getCurrentUser, requireUser } from "@/server/lib/auth-context";
+import { withErrorHandling } from "@/server/lib/errors";
 import {
-  ConflictError,
-  withErrorHandling,
-} from "@/server/lib/errors";
+  CommunityCreateSchema,
+  CommunityQuerySchema,
+  createCommunity,
+  listCommunities,
+} from "@/server/communities/service";
 
-const CreateSchema = z.object({
-  name: z.string().min(2).max(64),
-  scope: z.enum(["UNIVERSITY", "LOCATION", "GENRE"]),
-  description: z.string().max(500).optional(),
-});
-
-export const GET = withErrorHandling(async (req: Request) => {
-  const url = new URL(req.url);
-  const q = url.searchParams.get("q") ?? undefined;
-  const scope = url.searchParams.get("scope") as
-    | "UNIVERSITY" | "LOCATION" | "GENRE" | null;
-  const items = await prisma.community.findMany({
-    where: {
-      AND: [
-        scope ? { scope } : {},
-        q ? { name: { contains: q, mode: "insensitive" } } : {},
-      ],
-    },
-    orderBy: { memberCount: "desc" },
-    take: 50,
+export const GET = withErrorHandling(async (req: NextRequest) => {
+  const user = await getCurrentUser();
+  const params = new URL(req.url).searchParams;
+  const parsed = CommunityQuerySchema.safeParse({
+    q: params.get("q") ?? undefined,
+    scope: params.get("scope") ?? undefined,
   });
-  return Response.json({ items });
+  if (!parsed.success) {
+    return Response.json({ error: "Validation failed", details: parsed.error.format() }, { status: 400 });
+  }
+  return Response.json({ items: await listCommunities(parsed.data, user?.id) });
 });
 
-export const POST = withErrorHandling(async (req: Request) => {
+export const POST = withErrorHandling(async (req: NextRequest) => {
   const user = await requireUser();
-  const body = await req.json().catch(() => ({}));
-  const data = CreateSchema.parse(body);
-
-  const existing = await prisma.communityMembership.count({
-    where: { userId: user.id },
-  });
-  if (existing >= 20) throw new ConflictError("You can join at most 20 communities");
-
-  const created = await prisma.$transaction(async (tx) => {
-    const c = await tx.community.create({
-      data: {
-        ownerId: user.id,
-        name: data.name,
-        scope: data.scope,
-        description: data.description,
-        memberCount: 1,
-      },
-    });
-    await tx.communityMembership.create({
-      data: { userId: user.id, communityId: c.id, role: "MODERATOR" },
-    });
-    return c;
-  });
-
-  return Response.json(created, { status: 201 });
+  const parsed = CommunityCreateSchema.safeParse(await req.json().catch(() => ({})));
+  if (!parsed.success) {
+    return Response.json({ error: "Validation failed", details: parsed.error.format() }, { status: 400 });
+  }
+  return Response.json(await createCommunity(user, parsed.data), { status: 201 });
 });

@@ -6,7 +6,7 @@ on:
   pull_request:
 
 jobs:
-  lint-and-test:
+  verify:
     runs-on: ubuntu-latest
 
     services:
@@ -36,5 +36,7 @@ jobs:
 
       - run: npm ci
       - run: npm run db:generate
+      - run: npx prisma migrate deploy
       - run: npm run lint
       - run: npm test
+      - run: npm run build

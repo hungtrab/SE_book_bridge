@@ -12,6 +12,7 @@ import {
   findReciprocalOnlyPairs,
   type CompletedTxn,
 } from "@/server/reputation/anti-gaming";
+import { canCommunityModeratorApplyAction } from "@/server/moderation/service";
 
 
 describe("reputation scoring", () => {
@@ -84,5 +85,13 @@ describe("anti-gaming heuristics", () => {
     ]);
     // X, Y, Z, P should be flagged (one counterparty each); W has 2.
     expect(new Set(flagged)).toEqual(new Set(["X", "Y", "Z", "P"]));
+  });
+});
+
+describe("community moderator scope", () => {
+  it("does not allow community moderators to suspend accounts globally", () => {
+    expect(canCommunityModeratorApplyAction("USER", "REMOVE_LISTING")).toBe(true);
+    expect(canCommunityModeratorApplyAction("USER", "SUSPEND_USER")).toBe(false);
+    expect(canCommunityModeratorApplyAction("MODERATOR", "SUSPEND_USER")).toBe(true);
   });
 });

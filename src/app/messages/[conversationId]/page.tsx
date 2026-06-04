@@ -1,0 +1,2 @@
+import { requireUser } from "@/server/lib/auth-context"; import { ChatThread } from "@/components/messaging/ChatThread";
+export default async function MessageThreadPage({ params }: { params: Promise<{ conversationId: string }> }) { const user = await requireUser(); const { conversationId } = await params; return <div className="space-y-4"><h1 className="text-2xl font-bold">Conversation</h1><ChatThread conversationId={conversationId} currentUserId={user.id}/></div>; }

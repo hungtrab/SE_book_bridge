@@ -4,7 +4,7 @@
 // session cookie directly — go through these helpers.
 
 import { cookies } from "next/headers";
-import { getIronSession } from "iron-session";
+import { getIronSession, type IronSession } from "iron-session";
 
 import type { User, UserRole } from "@prisma/client";
 import { ForbiddenError, UnauthorizedError } from "./errors";
@@ -12,9 +12,12 @@ import { prisma } from "./prisma";
 
 interface SessionData {
   userId?: string;
+  sessionId?: string;
+  lastSeenAt?: number;
 }
 
 const COOKIE_NAME = "bookbridge_session";
+const INACTIVE_TIMEOUT_MS = 30 * 60 * 1000;
 
 function sessionOptions() {
   const password = process.env.SESSION_SECRET;
@@ -28,21 +31,23 @@ function sessionOptions() {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax" as const,
-      maxAge: 60 * 60 * 24 * 30,    // 30 days
+      maxAge: 60 * 60 * 24 * 30,    // absolute cookie cap; app enforces 30-minute inactivity
     },
   };
 }
 
-export async function readSession(): Promise<SessionData> {
+export async function readSession(): Promise<IronSession<SessionData>> {
   const cookieStore = await cookies();
   const session = await getIronSession<SessionData>(cookieStore, sessionOptions());
   return session;
 }
 
-export async function setSessionUser(userId: string): Promise<void> {
+export async function setSessionUser(userId: string, sessionId?: string): Promise<void> {
   const cookieStore = await cookies();
   const session = await getIronSession<SessionData>(cookieStore, sessionOptions());
   session.userId = userId;
+  session.sessionId = sessionId;
+  session.lastSeenAt = Date.now();
   await session.save();
 }
 
@@ -53,9 +58,37 @@ export async function clearSession(): Promise<void> {
 }
 
 export async function getCurrentUser(): Promise<User | null> {
-  const { userId } = await readSession();
+  const session = await readSession();
+  const { userId, lastSeenAt } = session;
   if (!userId) return null;
-  return prisma.user.findUnique({ where: { id: userId } });
+  if (!lastSeenAt || Date.now() - lastSeenAt > INACTIVE_TIMEOUT_MS) {
+    await clearSession();
+    return null;
+  }
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) {
+    await clearSession();
+    return null;
+  }
+  if (session.sessionId) {
+    const dbSession = await prisma.session.findUnique({
+      where: { id: session.sessionId },
+      select: { revokedAt: true, expiresAt: true },
+    });
+    if (!dbSession || dbSession.revokedAt || dbSession.expiresAt < new Date()) {
+      await clearSession();
+      return null;
+    }
+  }
+  session.lastSeenAt = Date.now();
+  await session.save();
+  if (session.sessionId) {
+    await prisma.session.updateMany({
+      where: { id: session.sessionId, revokedAt: null },
+      data: { lastSeenAt: new Date() },
+    });
+  }
+  return user;
 }
 
 export async function requireUser(): Promise<User> {

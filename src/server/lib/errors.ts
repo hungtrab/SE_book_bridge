@@ -30,6 +30,9 @@ export function withErrorHandling<Args extends unknown[], R>(
     try {
       return await handler(...args);
     } catch (err) {
+      if (isNextDynamicServerError(err)) {
+        throw err;
+      }
       if (err instanceof HttpError) {
         return Response.json(
           { error: err.message, details: err.details ?? null },
@@ -40,4 +43,13 @@ export function withErrorHandling<Args extends unknown[], R>(
       return Response.json({ error: "Internal server error" }, { status: 500 });
     }
   };
+}
+
+function isNextDynamicServerError(err: unknown): boolean {
+  return (
+    typeof err === "object"
+    && err !== null
+    && "digest" in err
+    && String((err as { digest?: unknown }).digest).includes("DYNAMIC_SERVER_USAGE")
+  );
 }

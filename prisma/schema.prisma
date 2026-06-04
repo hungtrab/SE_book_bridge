@@ -23,7 +23,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-
 // =============================================================================
 // Person 1 — Identity & Profile
 // =============================================================================
@@ -43,64 +42,95 @@ enum AccountStatus {
 }
 
 model User {
-  id                  String        @id @default(cuid())
-  email               String        @unique
-  passwordHash        String
-  displayName         String
-  avatarUrl           String?
-  bio                 String?
-  preferredGenres     String[]      @default([])
-  locationDistrict    String?       // SRS: district-level granularity only
-  role                UserRole      @default(USER)
-  status              AccountStatus @default(PENDING_VERIFICATION)
-  emailVerifiedAt     DateTime?
+  id               String        @id @default(cuid())
+  email            String        @unique
+  passwordHash     String
+  displayName      String
+  avatarUrl        String?
+  bio              String?
+  preferredGenres  String[]      @default([])
+  locationDistrict String? // SRS: district-level granularity only
+  role             UserRole      @default(USER)
+  status           AccountStatus @default(PENDING_VERIFICATION)
+  emailVerifiedAt  DateTime?
 
-  reputationScore     Int           @default(0)   // denormalised — see ReputationEvent
-  reputationTier      String        @default("new")
+  reputationScore             Int                         @default(0) // denormalised — see ReputationEvent
+  reputationTier              String                      @default("new")
+  notificationEmailPreference NotificationEmailPreference @default(DAILY)
 
-  createdAt           DateTime      @default(now())
-  updatedAt           DateTime      @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
-  sessions            Session[]
-  listings            Listing[]
-  followers           Follow[]            @relation("UserFollowers")
-  following           Follow[]            @relation("UserFollowing")
+  sessions                Session[]
+  emailVerificationTokens EmailVerificationToken[]
+  passwordResetTokens     PasswordResetToken[]
+  listings                Listing[]
+  followers               Follow[]                 @relation("UserFollowers")
+  following               Follow[]                 @relation("UserFollowing")
 
-  requestedTxns       Transaction[]       @relation("RequesterTransactions")
-  ownedTxns           Transaction[]       @relation("OwnerTransactions")
-  ratingsGiven        Rating[]            @relation("RatingsGiven")
-  ratingsReceived     Rating[]            @relation("RatingsReceived")
+  requestedTxns   Transaction[] @relation("RequesterTransactions")
+  ownedTxns       Transaction[] @relation("OwnerTransactions")
+  ratingsGiven    Rating[]      @relation("RatingsGiven")
+  ratingsReceived Rating[]      @relation("RatingsReceived")
 
-  conversationsA      Conversation[]      @relation("ConversationUserA")
-  conversationsB      Conversation[]      @relation("ConversationUserB")
-  messages            Message[]
+  conversationsA Conversation[] @relation("ConversationUserA")
+  conversationsB Conversation[] @relation("ConversationUserB")
+  messages       Message[]
 
-  reputationEvents    ReputationEvent[]
-  reportsFiled        Report[]            @relation("ReportsFiled")
-  reportsAgainst      Report[]            @relation("ReportsAgainst")
-  moderationsBy       ModerationAction[]  @relation("ModerationsBy")
-  moderationsOn       ModerationAction[]  @relation("ModerationsOn")
+  reputationEvents ReputationEvent[]
+  reportsFiled     Report[]           @relation("ReportsFiled")
+  reportsAgainst   Report[]           @relation("ReportsAgainst")
+  moderationsBy    ModerationAction[] @relation("ModerationsBy")
+  moderationsOn    ModerationAction[] @relation("ModerationsOn")
 
-  communitiesOwned    Community[]
-  memberships         CommunityMembership[]
-  notifications       Notification[]
+  communitiesOwned Community[]
+  memberships      CommunityMembership[]
+  notifications    Notification[]
 
   @@index([reputationTier])
 }
 
 model Session {
-  id          String   @id @default(cuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  expiresAt   DateTime
-  ipAddress   String?
-  userAgent   String?
-  createdAt   DateTime @default(now())
+  id         String    @id @default(cuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt  DateTime
+  lastSeenAt DateTime  @default(now())
+  revokedAt  DateTime?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime  @default(now())
 
   @@index([userId])
+  @@index([expiresAt])
 }
 
+model EmailVerificationToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+}
 
 // =============================================================================
 // Person 2 — Book Catalog
@@ -122,16 +152,16 @@ enum TransactionType {
 
 enum ListingStatus {
   ACTIVE
-  RESERVED        // an accepted transaction is in progress
-  UNAVAILABLE     // hidden by owner
-  COMPLETED       // transferred
-  REMOVED         // deleted by owner or moderator
+  RESERVED // an accepted transaction is in progress
+  UNAVAILABLE // hidden by owner
+  COMPLETED // transferred
+  REMOVED // deleted by owner or moderator
 }
 
 model Listing {
-  id              String          @id @default(cuid())
-  ownerId         String
-  owner           User            @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  id      String @id @default(cuid())
+  ownerId String
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
 
   title           String
   author          String
@@ -139,25 +169,25 @@ model Listing {
   publisher       String?
   publicationYear Int?
   language        String?         @default("vi")
-  genre           String          // single primary genre (taxonomy enforced server-side)
+  genre           String // single primary genre (taxonomy enforced server-side)
   condition       BookCondition
-  description     String          // 20–2000 chars (validated)
+  description     String // 20–2000 chars (validated)
   transactionType TransactionType
-  askingPriceVnd  Int?            // required if transactionType = SELL; cap enforced server-side
+  askingPriceVnd  Int? // required if transactionType = SELL; cap enforced server-side
 
   // Sub-community scoping. NULL = visible globally.
-  communityId     String?
-  community       Community?      @relation(fields: [communityId], references: [id], onDelete: SetNull)
+  communityId String?
+  community   Community? @relation(fields: [communityId], references: [id], onDelete: SetNull)
 
-  status          ListingStatus   @default(ACTIVE)
+  status ListingStatus @default(ACTIVE)
 
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  photos          ListingPhoto[]
-  transactions    Transaction[]
-  feedItems       FeedItem[]
-  reports         Report[]
+  photos       ListingPhoto[]
+  transactions Transaction[]
+  feedItems    FeedItem[]
+  reports      Report[]
 
   @@index([ownerId])
   @@index([status])
@@ -167,27 +197,26 @@ model Listing {
 }
 
 model ListingPhoto {
-  id          String   @id @default(cuid())
-  listingId   String
-  listing     Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
-  url         String
-  position    Int      @default(0)
-  createdAt   DateTime @default(now())
+  id        String   @id @default(cuid())
+  listingId String
+  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  url       String
+  position  Int      @default(0)
+  createdAt DateTime @default(now())
 
   @@index([listingId])
 }
-
 
 // =============================================================================
 // Person 3 — Discovery (search index helpers + social graph)
 // =============================================================================
 
 model Follow {
-  followerId   String
-  follower     User     @relation("UserFollowing", fields: [followerId], references: [id], onDelete: Cascade)
-  followeeId   String
-  followee     User     @relation("UserFollowers",  fields: [followeeId], references: [id], onDelete: Cascade)
-  createdAt    DateTime @default(now())
+  followerId String
+  follower   User     @relation("UserFollowing", fields: [followerId], references: [id], onDelete: Cascade)
+  followeeId String
+  followee   User     @relation("UserFollowers", fields: [followeeId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
 
   @@id([followerId, followeeId])
   @@index([followeeId])
@@ -196,25 +225,24 @@ model Follow {
 // Materialised feed item — written by the "social fan-out" job whenever a
 // followed user publishes a listing or a community announcement happens.
 model FeedItem {
-  id          String   @id @default(cuid())
-  userId      String                                  // recipient
-  listingId   String?
-  listing     Listing? @relation(fields: [listingId], references: [id], onDelete: Cascade)
-  kind        String                                  // "new_listing" | "community_announcement" | ...
-  payload     Json                                    // arbitrary; depends on kind
-  seen        Boolean  @default(false)
-  createdAt   DateTime @default(now())
+  id        String   @id @default(cuid())
+  userId    String // recipient
+  listingId String?
+  listing   Listing? @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  kind      String // "new_listing" | "community_announcement" | ...
+  payload   Json // arbitrary; depends on kind
+  seen      Boolean  @default(false)
+  createdAt DateTime @default(now())
 
   @@index([userId, createdAt])
 }
-
 
 // =============================================================================
 // Person 4 — Transactions & Messaging
 // =============================================================================
 
 enum TransactionStatus {
-  PENDING       // requested, awaiting owner action
+  PENDING // requested, awaiting owner action
   ACCEPTED
   DECLINED
   WAITLISTED
@@ -230,36 +258,34 @@ enum DeliveryMethod {
 }
 
 model Transaction {
-  id              String              @id @default(cuid())
-  listingId       String
-  listing         Listing             @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  id        String  @id @default(cuid())
+  listingId String
+  listing   Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
 
   // The user requesting the book.
-  requesterId     String
-  requester       User                @relation("RequesterTransactions",
-                                                fields: [requesterId], references: [id], onDelete: Cascade)
+  requesterId String
+  requester   User   @relation("RequesterTransactions", fields: [requesterId], references: [id], onDelete: Cascade)
   // The listing owner. Denormalised for query convenience.
-  ownerId         String
-  owner           User                @relation("OwnerTransactions",
-                                                fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId     String
+  owner       User   @relation("OwnerTransactions", fields: [ownerId], references: [id], onDelete: Cascade)
 
-  status          TransactionStatus   @default(PENDING)
-  type            TransactionType                                   // mirror of listing.transactionType at request time
-  agreedPriceVnd  Int?                                              // for SELL only
-  deliveryMethod  DeliveryMethod?
-  trackingNumber  String?
+  status         TransactionStatus @default(PENDING)
+  type           TransactionType // mirror of listing.transactionType at request time
+  agreedPriceVnd Int? // for SELL only
+  deliveryMethod DeliveryMethod?
+  trackingNumber String?
 
-  acceptedAt      DateTime?
-  shippedAt       DateTime?
-  completedAt     DateTime?
+  acceptedAt  DateTime?
+  shippedAt   DateTime?
+  completedAt DateTime?
 
-  createdAt       DateTime            @default(now())
-  updatedAt       DateTime            @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  events          TransactionEvent[]
-  ratings         Rating[]
-  conversation    Conversation?
-  reports         Report[]
+  events       TransactionEvent[]
+  ratings      Rating[]
+  conversation Conversation?
+  reports      Report[]
 
   @@index([listingId])
   @@index([requesterId])
@@ -270,12 +296,12 @@ model Transaction {
 // Audit log of every status transition. The state machine in
 // ``src/server/transactions/state-machine.ts`` writes one row per move.
 model TransactionEvent {
-  id            String            @id @default(cuid())
+  id            String             @id @default(cuid())
   transactionId String
-  transaction   Transaction       @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  transaction   Transaction        @relation(fields: [transactionId], references: [id], onDelete: Cascade)
   fromStatus    TransactionStatus?
   toStatus      TransactionStatus
-  byUserId      String                                          // who triggered it
+  byUserId      String // who triggered it
   reason        String?
   createdAt     DateTime           @default(now())
 
@@ -283,19 +309,19 @@ model TransactionEvent {
 }
 
 model Rating {
-  id            String        @id @default(cuid())
+  id            String      @id @default(cuid())
   transactionId String
-  transaction   Transaction   @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  transaction   Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
   // From/To users — both directions are recorded after a Completed transaction.
   fromUserId    String
-  fromUser      User          @relation("RatingsGiven",   fields: [fromUserId], references: [id], onDelete: Cascade)
+  fromUser      User        @relation("RatingsGiven", fields: [fromUserId], references: [id], onDelete: Cascade)
   toUserId      String
-  toUser        User          @relation("RatingsReceived", fields: [toUserId], references: [id], onDelete: Cascade)
-  stars         Int                                          // 1-5, validated server-side
+  toUser        User        @relation("RatingsReceived", fields: [toUserId], references: [id], onDelete: Cascade)
+  stars         Int // 1-5, validated server-side
   comment       String?
-  createdAt     DateTime      @default(now())
+  createdAt     DateTime    @default(now())
 
-  @@unique([transactionId, fromUserId])    // one rating per direction per txn
+  @@unique([transactionId, fromUserId]) // one rating per direction per txn
   @@index([toUserId])
 }
 
@@ -304,17 +330,17 @@ model Rating {
 // thread). Sorting userA < userB at write time keeps the unique constraint
 // cheap.
 model Conversation {
-  id             String        @id @default(cuid())
-  userAId        String
-  userA          User          @relation("ConversationUserA", fields: [userAId], references: [id], onDelete: Cascade)
-  userBId        String
-  userB          User          @relation("ConversationUserB", fields: [userBId], references: [id], onDelete: Cascade)
-  transactionId  String?       @unique
-  transaction    Transaction?  @relation(fields: [transactionId], references: [id], onDelete: SetNull)
-  lastMessageAt  DateTime?
-  createdAt      DateTime      @default(now())
+  id            String       @id @default(cuid())
+  userAId       String
+  userA         User         @relation("ConversationUserA", fields: [userAId], references: [id], onDelete: Cascade)
+  userBId       String
+  userB         User         @relation("ConversationUserB", fields: [userBId], references: [id], onDelete: Cascade)
+  transactionId String?      @unique
+  transaction   Transaction? @relation(fields: [transactionId], references: [id], onDelete: SetNull)
+  lastMessageAt DateTime?
+  createdAt     DateTime     @default(now())
 
-  messages       Message[]
+  messages Message[]
 
   @@unique([userAId, userBId, transactionId])
   @@index([userAId])
@@ -322,18 +348,18 @@ model Conversation {
 }
 
 model Message {
-  id              String       @id @default(cuid())
-  conversationId  String
-  conversation    Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  senderId        String
-  sender          User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
-  body            String
-  readAt          DateTime?
-  createdAt       DateTime     @default(now())
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId       String
+  sender         User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  body           String
+  readAt         DateTime?
+  createdAt      DateTime     @default(now())
+  reports        Report[]
 
   @@index([conversationId, createdAt])
 }
-
 
 // =============================================================================
 // Person 5 — Trust & Safety
@@ -342,22 +368,22 @@ model Message {
 enum ReputationKind {
   TRANSACTION_COMPLETED
   RATING_RECEIVED
-  REPORT_UPHELD             // negative
-  CANCELLATION              // negative
-  COMMUNITY_CONTRIBUTION    // moderator-awarded
-  TIME_DECAY                // periodic job
+  REPORT_UPHELD // negative
+  CANCELLATION // negative
+  COMMUNITY_CONTRIBUTION // moderator-awarded
+  TIME_DECAY // periodic job
 }
 
 // One row per atomic event that contributed to (or subtracted from) a user's
 // reputation score. The current `User.reputationScore` is the sum.
 model ReputationEvent {
-  id           String          @id @default(cuid())
-  userId       String
-  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  kind         ReputationKind
-  delta        Int                                            // signed
-  context      Json?                                          // e.g. { transactionId }
-  createdAt    DateTime        @default(now())
+  id        String         @id @default(cuid())
+  userId    String
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind      ReputationKind
+  delta     Int // signed
+  context   Json? // e.g. { transactionId }
+  createdAt DateTime       @default(now())
 
   @@index([userId])
   @@index([userId, createdAt])
@@ -377,27 +403,31 @@ enum ReportStatus {
 }
 
 model Report {
-  id             String           @id @default(cuid())
-  filerId        String
-  filer          User             @relation("ReportsFiled", fields: [filerId], references: [id], onDelete: Cascade)
-  targetType     ReportTargetType
+  id                  String           @id @default(cuid())
+  filerId             String?
+  filer               User?            @relation("ReportsFiled", fields: [filerId], references: [id], onDelete: Cascade)
+  isSystemGenerated   Boolean          @default(false)
+  targetType          ReportTargetType
   // For convenience we keep optional FK columns to the most likely targets.
-  targetUserId   String?
-  targetUser     User?            @relation("ReportsAgainst", fields: [targetUserId], references: [id], onDelete: Cascade)
-  targetListingId String?
-  targetListing   Listing?        @relation(fields: [targetListingId], references: [id], onDelete: Cascade)
+  targetUserId        String?
+  targetUser          User?            @relation("ReportsAgainst", fields: [targetUserId], references: [id], onDelete: Cascade)
+  targetListingId     String?
+  targetListing       Listing?         @relation(fields: [targetListingId], references: [id], onDelete: Cascade)
   targetTransactionId String?
-  targetTransaction   Transaction? @relation(fields: [targetTransactionId], references: [id], onDelete: Cascade)
+  targetTransaction   Transaction?     @relation(fields: [targetTransactionId], references: [id], onDelete: Cascade)
+  targetMessageId     String?
+  targetMessage       Message?         @relation(fields: [targetMessageId], references: [id], onDelete: Cascade)
 
-  reason         String           // free-text or category
-  details        String?
-  status         ReportStatus     @default(PENDING)
-  createdAt      DateTime         @default(now())
-  resolvedAt     DateTime?
+  reason     String // free-text or category
+  details    String?
+  status     ReportStatus @default(PENDING)
+  createdAt  DateTime     @default(now())
+  resolvedAt DateTime?
 
-  actions        ModerationAction[]
+  actions ModerationAction[]
 
   @@index([status])
+  @@index([targetUserId])
 }
 
 enum ModerationActionKind {
@@ -409,21 +439,20 @@ enum ModerationActionKind {
 }
 
 model ModerationAction {
-  id            String                @id @default(cuid())
-  reportId      String?
-  report        Report?               @relation(fields: [reportId], references: [id], onDelete: SetNull)
-  byUserId      String                                            // moderator
-  byUser        User                  @relation("ModerationsBy", fields: [byUserId], references: [id], onDelete: Cascade)
-  onUserId      String?
-  onUser        User?                 @relation("ModerationsOn", fields: [onUserId], references: [id], onDelete: Cascade)
-  kind          ModerationActionKind
-  notes         String?
-  createdAt     DateTime              @default(now())
+  id        String               @id @default(cuid())
+  reportId  String?
+  report    Report?              @relation(fields: [reportId], references: [id], onDelete: SetNull)
+  byUserId  String // moderator
+  byUser    User                 @relation("ModerationsBy", fields: [byUserId], references: [id], onDelete: Cascade)
+  onUserId  String?
+  onUser    User?                @relation("ModerationsOn", fields: [onUserId], references: [id], onDelete: Cascade)
+  kind      ModerationActionKind
+  notes     String?
+  createdAt DateTime             @default(now())
 
   @@index([byUserId])
   @@index([onUserId])
 }
-
 
 // =============================================================================
 // Person 6 — Communities, Notifications, Admin
@@ -436,17 +465,17 @@ enum CommunityScope {
 }
 
 model Community {
-  id           String                  @id @default(cuid())
-  ownerId      String
-  owner        User                    @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  name         String                  @unique
-  scope        CommunityScope
-  description  String?
-  memberCount  Int                     @default(0)              // denormalised
-  createdAt    DateTime                @default(now())
+  id          String         @id @default(cuid())
+  ownerId     String
+  owner       User           @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  name        String         @unique
+  scope       CommunityScope
+  description String?
+  memberCount Int            @default(0) // denormalised
+  createdAt   DateTime       @default(now())
 
-  memberships  CommunityMembership[]
-  listings     Listing[]
+  memberships CommunityMembership[]
+  listings    Listing[]
 
   @@index([scope])
 }
@@ -457,12 +486,12 @@ enum CommunityRole {
 }
 
 model CommunityMembership {
-  userId       String
-  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  communityId  String
-  community    Community      @relation(fields: [communityId], references: [id], onDelete: Cascade)
-  role         CommunityRole  @default(MEMBER)
-  joinedAt     DateTime       @default(now())
+  userId      String
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  communityId String
+  community   Community     @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  role        CommunityRole @default(MEMBER)
+  joinedAt    DateTime      @default(now())
 
   @@id([userId, communityId])
   @@index([communityId])
@@ -474,6 +503,13 @@ enum NotificationKind {
   NEW_MESSAGE
   COMMUNITY_ANNOUNCEMENT
   REPUTATION_TIER_CHANGED
+  MODERATION_ACTION
+}
+
+enum NotificationEmailPreference {
+  IMMEDIATE
+  DAILY
+  OFF
 }
 
 model Notification {
@@ -483,7 +519,9 @@ model Notification {
   kind        NotificationKind
   payload     Json
   readAt      DateTime?
+  emailSentAt DateTime?
   createdAt   DateTime         @default(now())
 
   @@index([userId, createdAt])
+  @@index([emailSentAt, createdAt])
 }

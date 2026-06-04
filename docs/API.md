@@ -36,6 +36,7 @@ Conventions:
 | GET | `/api/listings/[id]` | listing detail |
 | PATCH | `/api/listings/[id]` | edit (owner only, blocked when accepted txn exists) |
 | DELETE | `/api/listings/[id]` | soft-delete |
+| POST | `/api/listings/photos` | upload 1+ photos, resize to WebP max 1024px, store local or S3, returns photo URLs |
 | GET | `/api/isbn/lookup?isbn=...` | proxy Open Library |
 
 ## Discovery [#3]
@@ -65,6 +66,7 @@ Conventions:
 | GET | `/api/conversations/[id]/messages` | message history |
 | POST | `/api/conversations/[id]/messages` | send a message |
 | GET | `/api/conversations/[id]/stream` | SSE for live updates |
+| POST | `/api/cron/transactions` | run 14-day reminder and 21-day auto-complete scheduler |
 
 ## Trust & Safety [#5]
 
@@ -75,6 +77,7 @@ Conventions:
 | GET | `/api/reports/mine` | my reports |
 | GET | `/api/moderation/queue` | mod-only |
 | POST | `/api/moderation/[reportId]/act` | apply action (warn/remove/suspend) |
+| POST | `/api/cron/reputation` | run time decay and anti-gaming scan |
 
 ## Community / Notifications / Admin [#6]
 
@@ -88,6 +91,9 @@ Conventions:
 | GET | `/api/notifications` | mine, paginated |
 | GET | `/api/notifications/stream` | SSE |
 | POST | `/api/notifications/[id]/read` | mark read |
+| POST | `/api/cron/notification-digest` | send unread daily notification digest |
+| POST | `/api/cron/notification-immediate` | deliver pending immediate notification emails |
+| GET/PATCH | `/api/notifications/preferences` | get/update email delivery preference |
 | GET | `/api/admin/stats` | admin-only platform stats |
 | GET | `/api/admin/grant-report.csv` | grant-sponsor CSV export |
 

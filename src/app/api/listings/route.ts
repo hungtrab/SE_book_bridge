@@ -5,6 +5,7 @@ import { withErrorHandling } from "@/server/lib/errors";
 import {
   createListing,
   ListingCreateSchema,
+  ListingQuerySchema,
   searchListings,
 } from "@/server/listings/service";
 
@@ -12,7 +13,7 @@ import {
 export const GET = withErrorHandling(async (req: NextRequest) => {
   const url = new URL(req.url);
   const params = url.searchParams;
-  const items = await searchListings({
+  const parsed = ListingQuerySchema.safeParse({
     q:               params.get("q") ?? undefined,
     genre:           params.get("genre") ?? undefined,
     condition:       params.get("condition") ?? undefined,
@@ -22,7 +23,14 @@ export const GET = withErrorHandling(async (req: NextRequest) => {
     cursor:          params.get("cursor") ?? undefined,
     pageSize:        params.get("pageSize") ? Number(params.get("pageSize")) : undefined,
   });
-  return Response.json({ items });
+  if (!parsed.success) {
+    return Response.json(
+      { error: "Validation failed", details: parsed.error.format() },
+      { status: 400 },
+    );
+  }
+  const out = await searchListings(parsed.data);
+  return Response.json(out);
 });
 
 export const POST = withErrorHandling(async (req: NextRequest) => {

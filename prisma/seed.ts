@@ -57,10 +57,38 @@ async function main() {
     },
   });
 
+  const admin = await prisma.user.upsert({
+    where: { email: "admin@bookbridge.local" },
+    update: {},
+    create: {
+      email: "admin@bookbridge.local",
+      displayName: "BookBridge Admin",
+      passwordHash: password,
+      status: "ACTIVE",
+      emailVerifiedAt: new Date(),
+      role: "ADMIN",
+    },
+  });
+
   const hust = await prisma.community.upsert({
     where: { name: "HUST" },
+    update: { memberCount: 3 },
+    create: { name: "HUST", scope: "UNIVERSITY", ownerId: mod.id, memberCount: 3 },
+  });
+  await prisma.communityMembership.upsert({
+    where: { userId_communityId: { userId: mod.id, communityId: hust.id } },
+    update: { role: "MODERATOR" },
+    create: { userId: mod.id, communityId: hust.id, role: "MODERATOR" },
+  });
+  await prisma.communityMembership.upsert({
+    where: { userId_communityId: { userId: alice.id, communityId: hust.id } },
     update: {},
-    create: { name: "HUST", scope: "UNIVERSITY", ownerId: mod.id, memberCount: 0 },
+    create: { userId: alice.id, communityId: hust.id },
+  });
+  await prisma.communityMembership.upsert({
+    where: { userId_communityId: { userId: bob.id, communityId: hust.id } },
+    update: {},
+    create: { userId: bob.id, communityId: hust.id },
   });
 
   const listing = await prisma.listing.create({
@@ -87,7 +115,15 @@ async function main() {
     },
   });
 
-  console.log("seeded:", { alice: alice.id, bob: bob.id, mod: mod.id, listing: listing.id });
+  await prisma.notification.create({
+    data: {
+      userId: admin.id,
+      kind: "COMMUNITY_ANNOUNCEMENT",
+      payload: { event: "seed.completed", communityId: hust.id },
+    },
+  });
+
+  console.log("seeded:", { alice: alice.id, bob: bob.id, mod: mod.id, admin: admin.id, listing: listing.id });
 }
 
 main()

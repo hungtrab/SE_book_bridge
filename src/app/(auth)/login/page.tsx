@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
@@ -59,6 +60,11 @@ export default function LoginPage() {
         >
           {pending ? "Signing in…" : "Sign in"}
         </button>
+        <p className="text-sm">
+          <Link href="/reset-password" className="text-blue-700 underline">
+            Forgot password?
+          </Link>
+        </p>
       </form>
     </div>
   );

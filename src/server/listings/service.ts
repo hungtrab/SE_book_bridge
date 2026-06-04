@@ -1,139 +1,211 @@
 // listings/service.ts — listing CRUD with price-cap and edit-block guards.
 
-import { z } from "zod";
-import type { User } from "@prisma/client";
+import type { ListingStatus, Prisma, User } from "@prisma/client";
 
 import { prisma } from "../lib/prisma";
 import {
-  BadRequestError,
   ConflictError,
   ForbiddenError,
   NotFoundError,
 } from "../lib/errors";
+import {
+  cleanListingData,
+  ListingCreateSchema,
+  ListingPatchSchema,
+  type ListingCreateInput,
+  type ListingPatchInput,
+  type ListingQueryInput,
+} from "./validation";
+import { emitListingCreated } from "./fanout";
 
+export { ListingCreateSchema, ListingPatchSchema, ListingQuerySchema } from "./validation";
 
-const PRICE_CAP_VND = parseInt(process.env.SALE_PRICE_CAP_VND ?? "50000", 10);
+const ACTIVE_TRANSACTION_STATUSES = ["ACCEPTED", "IN_DELIVERY"] as const;
+const DELETE_BLOCKING_TRANSACTION_STATUSES = ["ACCEPTED", "IN_DELIVERY"] as const;
 
-export const ListingCreateSchema = z.object({
-  title:           z.string().min(1).max(200),
-  author:          z.string().min(1).max(200),
-  isbn:            z.string().min(10).max(13).optional(),
-  publisher:       z.string().max(200).optional(),
-  publicationYear: z.number().int().min(1500).max(2100).optional(),
-  language:        z.string().max(10).optional(),
-  genre:           z.string().min(1).max(64),
-  condition:       z.enum(["NEW", "LIKE_NEW", "GOOD", "FAIR", "POOR"]),
-  description:     z.string().min(20).max(2000),
-  transactionType: z.enum(["GIFT", "EXCHANGE", "SELL"]),
-  askingPriceVnd:  z.number().int().min(0).max(PRICE_CAP_VND).optional(),
-  communityId:     z.string().optional(),
-  photoUrls:       z.array(z.string().url()).min(1).max(5),
-});
+export async function createListing(user: User, input: ListingCreateInput) {
+  const data = cleanListingData(ListingCreateSchema.parse(input));
 
-export const ListingPatchSchema = ListingCreateSchema
-  .omit({ photoUrls: true })
-  .partial();
-
-
-export async function createListing(user: User, input: z.infer<typeof ListingCreateSchema>) {
-  const data = ListingCreateSchema.parse(input);
-  if (data.transactionType === "SELL") {
-    if (data.askingPriceVnd === undefined)
-      throw new BadRequestError("Sell listings must include askingPriceVnd");
-    if (data.askingPriceVnd > PRICE_CAP_VND)
-      throw new BadRequestError(`Asking price exceeds the cap of ${PRICE_CAP_VND} VND`);
-  } else if (data.askingPriceVnd !== undefined) {
-    throw new BadRequestError("askingPriceVnd is only allowed for SELL listings");
-  }
-
-  return prisma.listing.create({
-    data: {
-      ownerId: user.id,
-      title: data.title,
-      author: data.author,
-      isbn: data.isbn,
-      publisher: data.publisher,
-      publicationYear: data.publicationYear,
-      language: data.language,
-      genre: data.genre,
-      condition: data.condition,
-      description: data.description,
-      transactionType: data.transactionType,
-      askingPriceVnd: data.askingPriceVnd,
-      communityId: data.communityId,
-      photos: {
-        create: data.photoUrls.map((url, i) => ({ url, position: i })),
+  return prisma.$transaction(async (tx) => {
+    if (data.communityId) {
+      const membership = await tx.communityMembership.findUnique({
+        where: { userId_communityId: { userId: user.id, communityId: data.communityId } },
+      });
+      if (!membership) throw new ForbiddenError("Join the community before publishing there");
+    }
+    const listing = await tx.listing.create({
+      data: {
+        ownerId: user.id,
+        title: data.title,
+        author: data.author,
+        isbn: data.isbn,
+        publisher: data.publisher,
+        publicationYear: data.publicationYear,
+        language: data.language,
+        genre: data.genre,
+        condition: data.condition,
+        description: data.description,
+        transactionType: data.transactionType,
+        askingPriceVnd: data.askingPriceVnd,
+        communityId: data.communityId,
+        photos: {
+          create: data.photoUrls.map((url, i) => ({ url, position: i })),
+        },
       },
-    },
-    include: { photos: true },
+      include: listingInclude(),
+    });
+    await emitListingCreated(tx, {
+      id: listing.id,
+      ownerId: listing.ownerId,
+      title: listing.title,
+      author: listing.author,
+      genre: listing.genre,
+      transactionType: listing.transactionType,
+      communityId: listing.communityId,
+    });
+    return listing;
   });
 }
 
 export async function getListing(id: string) {
-  const listing = await prisma.listing.findUnique({
-    where: { id },
-    include: { photos: true, owner: { select: { id: true, displayName: true, reputationTier: true } } },
+  const listing = await prisma.listing.findFirst({
+    where: { id, status: { not: "REMOVED" } },
+    include: listingInclude(),
   });
   if (!listing) throw new NotFoundError("Listing not found");
   return listing;
 }
 
-export async function patchListing(user: User, id: string, input: z.infer<typeof ListingPatchSchema>) {
+export async function patchListing(user: User, id: string, input: ListingPatchInput) {
   const listing = await prisma.listing.findUnique({
     where: { id },
-    include: { transactions: { where: { status: { in: ["ACCEPTED", "IN_DELIVERY"] } } } },
+    include: { transactions: { where: { status: { in: [...ACTIVE_TRANSACTION_STATUSES] } } } },
   });
-  if (!listing) throw new NotFoundError("Listing not found");
+  if (!listing || listing.status === "REMOVED") throw new NotFoundError("Listing not found");
   if (listing.ownerId !== user.id) throw new ForbiddenError();
-  if (listing.transactions.length > 0)
+  if (hasActiveListingTransaction(listing.transactions.map((transaction) => transaction.status))) {
     throw new ConflictError("Cannot edit a listing with an active transaction");
-
-  const data = ListingPatchSchema.parse(input);
-  if (data.transactionType === "SELL"
-      && data.askingPriceVnd !== undefined
-      && data.askingPriceVnd > PRICE_CAP_VND) {
-    throw new BadRequestError(`Asking price exceeds the cap of ${PRICE_CAP_VND} VND`);
   }
-  return prisma.listing.update({ where: { id }, data });
+
+  const data = cleanListingData(ListingPatchSchema.parse(input));
+  const { communityId, photoUrls, ...listingData } = data;
+  const updateData: Prisma.ListingUpdateInput = {
+    ...listingData,
+    ...(communityId !== undefined ? { community: { connect: { id: communityId } } } : {}),
+  };
+
+  return prisma.$transaction(async (tx) => {
+    if (communityId) {
+      const membership = await tx.communityMembership.findUnique({
+        where: { userId_communityId: { userId: user.id, communityId } },
+      });
+      if (!membership) throw new ForbiddenError("Join the community before publishing there");
+    }
+    if (photoUrls) {
+      await tx.listingPhoto.deleteMany({ where: { listingId: id } });
+      await tx.listingPhoto.createMany({
+        data: photoUrls.map((url, position) => ({ listingId: id, url, position })),
+      });
+    }
+    return tx.listing.update({
+      where: { id },
+      data: updateData,
+      include: listingInclude(),
+    });
+  });
 }
 
 export async function deleteListing(user: User, id: string) {
   const listing = await prisma.listing.findUnique({
     where: { id },
-    include: { transactions: { where: { status: { in: ["PENDING", "ACCEPTED", "IN_DELIVERY"] } } } },
+    include: {
+      transactions: {
+        where: { status: { in: [...DELETE_BLOCKING_TRANSACTION_STATUSES] } },
+        select: { id: true },
+      },
+    },
   });
-  if (!listing) throw new NotFoundError("Listing not found");
+  if (!listing || listing.status === "REMOVED") throw new NotFoundError("Listing not found");
   if (listing.ownerId !== user.id) throw new ForbiddenError();
-  // Cancel pending requests is the responsibility of #4's domain events;
-  // here we just soft-delete by flipping status.
-  await prisma.listing.update({ where: { id }, data: { status: "REMOVED" } });
+  if (listing.transactions.length > 0) {
+    throw new ConflictError("Cannot delete a listing with an active transaction");
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await tx.transaction.updateMany({
+      where: { listingId: id, status: "PENDING" },
+      data: { status: "CANCELLED" },
+    });
+    await tx.listing.update({ where: { id }, data: { status: "REMOVED" } });
+  });
+  return { ok: true };
 }
 
-export async function searchListings(opts: {
-  q?: string; genre?: string; condition?: string; transactionType?: string;
-  maxPrice?: number; communityId?: string; cursor?: string; pageSize?: number;
-}) {
+export async function searchListings(opts: ListingQueryInput) {
   const pageSize = Math.min(opts.pageSize ?? 20, 50);
-  const where: Record<string, unknown> = { status: "ACTIVE" };
-  if (opts.q)              where["OR"] = [
-                              { title:       { contains: opts.q, mode: "insensitive" } },
-                              { author:      { contains: opts.q, mode: "insensitive" } },
-                              { description: { contains: opts.q, mode: "insensitive" } },
-                              { isbn: opts.q },
-                            ];
-  if (opts.genre)           where["genre"]           = opts.genre;
-  if (opts.condition)       where["condition"]       = opts.condition;
-  if (opts.transactionType) where["transactionType"] = opts.transactionType;
-  if (opts.maxPrice !== undefined)
-    where["askingPriceVnd"] = { lte: opts.maxPrice };
-  if (opts.communityId)     where["communityId"]     = opts.communityId;
+  const where = {
+    status: "ACTIVE" as const,
+    ...(opts.q
+      ? {
+          OR: [
+            { title: { contains: opts.q, mode: "insensitive" as const } },
+            { author: { contains: opts.q, mode: "insensitive" as const } },
+            { description: { contains: opts.q, mode: "insensitive" as const } },
+            { isbn: opts.q.replace(/[-\s]/g, "").toUpperCase() },
+          ],
+        }
+      : {}),
+    ...(opts.genre ? { genre: opts.genre } : {}),
+    ...(opts.condition ? { condition: opts.condition } : {}),
+    ...(opts.transactionType ? { transactionType: opts.transactionType } : {}),
+    ...(opts.maxPrice !== undefined ? { askingPriceVnd: { lte: opts.maxPrice } } : {}),
+    ...(opts.communityId ? { communityId: opts.communityId } : {}),
+  };
 
-  return prisma.listing.findMany({
+  const rows = await prisma.listing.findMany({
     where,
-    include: { photos: { take: 1, orderBy: { position: "asc" } } },
+    include: {
+      photos: { take: 1, orderBy: { position: "asc" } },
+      owner: { select: { id: true, displayName: true, reputationTier: true } },
+    },
     orderBy: { createdAt: "desc" },
     take: pageSize + 1,
     cursor: opts.cursor ? { id: opts.cursor } : undefined,
     skip: opts.cursor ? 1 : 0,
   });
+
+  return {
+    items: rows.slice(0, pageSize),
+    nextCursor: rows.length > pageSize ? rows[pageSize].id : null,
+  };
+}
+
+export async function markReserved(listingId: string) {
+  return markListingStatus(listingId, "RESERVED");
+}
+
+export async function markActive(listingId: string) {
+  return markListingStatus(listingId, "ACTIVE");
+}
+
+export async function markCompleted(listingId: string) {
+  return markListingStatus(listingId, "COMPLETED");
+}
+
+export function hasActiveListingTransaction(statuses: string[]): boolean {
+  return statuses.some((status) => ACTIVE_TRANSACTION_STATUSES.includes(
+    status as (typeof ACTIVE_TRANSACTION_STATUSES)[number],
+  ));
+}
+
+async function markListingStatus(listingId: string, status: ListingStatus) {
+  return prisma.listing.update({ where: { id: listingId }, data: { status } });
+}
+
+function listingInclude() {
+  return {
+    photos: { orderBy: { position: "asc" as const } },
+    owner: { select: { id: true, displayName: true, reputationTier: true, reputationScore: true } },
+    community: { select: { id: true, name: true } },
+  };
 }

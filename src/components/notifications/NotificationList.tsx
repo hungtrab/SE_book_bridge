@@ -1,0 +1,64 @@
+"use client";
+
+import { useEffect, useState } from "react";
+
+type NotificationRow = {
+  id: string;
+  kind: string;
+  payload: unknown;
+  readAt: string | Date | null;
+  createdAt: string | Date;
+};
+
+export function NotificationList({ initial }: { initial: NotificationRow[] }) {
+  const [items, setItems] = useState(initial);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const source = new EventSource("/api/notifications/stream");
+    source.addEventListener("notification", (event) => {
+      const notification = JSON.parse((event as MessageEvent).data) as NotificationRow;
+      setItems((current) => current.some((row) => row.id === notification.id)
+        ? current
+        : [notification, ...current]);
+    });
+    source.onerror = () => setError("Realtime connection interrupted; browser will retry.");
+    source.onopen = () => setError(null);
+    return () => source.close();
+  }, []);
+
+  async function markRead(id: string) {
+    const res = await fetch(`/api/notifications/${id}/read`, { method: "POST" });
+    if (!res.ok) {
+      setError("Could not mark notification read");
+      return;
+    }
+    setItems((current) => current.map((item) => item.id === id ? { ...item, readAt: new Date().toISOString() } : item));
+  }
+
+  return (
+    <div className="space-y-3">
+      {error && <p className="text-sm text-amber-700">{error}</p>}
+      {items.length === 0 ? <p>No notifications yet.</p> : items.map((item) => (
+        <article key={item.id} className={`rounded border p-3 ${item.readAt ? "opacity-60" : "border-blue-400"}`}>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h2 className="font-semibold">{labelForKind(item.kind)}</h2>
+              <p className="break-all text-sm text-gray-600">{JSON.stringify(item.payload)}</p>
+              <p className="text-xs text-gray-500">{new Date(item.createdAt).toLocaleString()}</p>
+            </div>
+            {!item.readAt && (
+              <button type="button" onClick={() => markRead(item.id)} className="rounded border px-2 py-1 text-xs">
+                Mark read
+              </button>
+            )}
+          </div>
+        </article>
+      ))}
+    </div>
+  );
+}
+
+function labelForKind(kind: string) {
+  return kind.split("_").map((word) => word[0] + word.slice(1).toLowerCase()).join(" ");
+}

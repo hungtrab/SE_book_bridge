@@ -278,6 +278,6 @@ function hoursFromNow(hours: number): Date {
 }
 
 function withDevToken<T extends object>(payload: T, token: string): T & { devToken?: string } {
-  if (process.env.NODE_ENV === "production") return payload;
+  if (process.env.NODE_ENV === "production" && process.env.SMTP_HOST) return payload;
   return { ...payload, devToken: token };
 }

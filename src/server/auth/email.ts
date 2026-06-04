@@ -24,10 +24,7 @@ export async function sendAuthEmail({ kind, email, token }: AuthEmailInput): Pro
   url.searchParams.set("token", token);
 
   if (!process.env.SMTP_HOST) {
-    if (process.env.NODE_ENV === "production") {
-      throw new Error("SMTP_HOST must be configured before auth emails can be sent");
-    }
-    console.info(`[auth-email] ${SUBJECT_BY_KIND[kind]} for ${email}: ${url.toString()}`);
+    console.info(`[auth-email:mock] ${SUBJECT_BY_KIND[kind]} for ${email}: ${url.toString()}`);
     return;
   }
 

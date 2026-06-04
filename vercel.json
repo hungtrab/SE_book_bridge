@@ -10,7 +10,7 @@
     },
     {
       "path": "/api/cron/notification-immediate",
-      "schedule": "*/5 * * * *"
+      "schedule": "0 3 * * *"
     },
     {
       "path": "/api/cron/reputation",

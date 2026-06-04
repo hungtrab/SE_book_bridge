@@ -53,7 +53,9 @@ The included multi-stage `Dockerfile` builds the Next.js standalone server.
 Run `npx prisma migrate deploy` as a release step before starting a new image.
 
 `vercel.json` schedules transaction maintenance, reputation decay/anti-gaming,
-daily notification digests, and five-minute immediate-email delivery.
+daily notification digests, and immediate-email retry on a daily Hobby-safe
+schedule. Upgrade Vercel to Pro or move this job to Inngest/Trigger.dev if the
+team needs five-minute email delivery.
 Vercel SSE functions reconnect after the configured 60-second function duration;
 the notification client falls back to `GET /api/notifications?wait=1&after=...`
 long-polling if `EventSource` is blocked or interrupted.

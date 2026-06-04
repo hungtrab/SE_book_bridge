@@ -119,7 +119,7 @@ export function ListingForm({ mode, initial, communities = [] }: ListingFormProp
       });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) {
-        throw new Error(body.error ?? "Listing save failed");
+        throw new Error(readApiError(body, "Listing save failed"));
       }
       router.push(`/listings/${body.id}`);
       router.refresh();
@@ -255,6 +255,26 @@ export function ListingForm({ mode, initial, communities = [] }: ListingFormProp
       </button>
     </form>
   );
+}
+
+function readApiError(body: unknown, fallback: string) {
+  if (!body || typeof body !== "object") return fallback;
+  const payload = body as { error?: unknown; details?: unknown };
+  const details = collectZodErrors(payload.details);
+  if (details.length > 0) return details.join(" ");
+  return typeof payload.error === "string" ? payload.error : fallback;
+}
+
+function collectZodErrors(value: unknown): string[] {
+  if (!value || typeof value !== "object") return [];
+  const node = value as { _errors?: unknown };
+  const ownErrors = Array.isArray(node._errors)
+    ? node._errors.filter((item): item is string => typeof item === "string")
+    : [];
+  const childErrors = Object.entries(value)
+    .filter(([key]) => key !== "_errors")
+    .flatMap(([, child]) => collectZodErrors(child));
+  return [...ownErrors, ...childErrors];
 }
 
 function TextInput({

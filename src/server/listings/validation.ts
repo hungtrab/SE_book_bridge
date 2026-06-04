@@ -29,7 +29,10 @@ const ListingBaseSchema = z.object({
   language: z.preprocess(blankToUndefined, z.string().trim().min(1).max(10).optional()),
   genre: z.string().trim().min(1).max(64),
   condition: z.enum(BOOK_CONDITIONS),
-  description: z.string().trim().min(20).max(2000),
+  description: z.string()
+    .trim()
+    .min(20, "Description must be at least 20 characters.")
+    .max(2000, "Description must be at most 2000 characters."),
   transactionType: z.enum(TRANSACTION_TYPES),
   askingPriceVnd: z.preprocess(
     blankToUndefined,

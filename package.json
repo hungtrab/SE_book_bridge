@@ -5,7 +5,7 @@
   "description": "Community-based second-hand book sharing platform — SE 2025.2 capstone.",
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "prisma generate && next build",
     "start": "next start",
     "lint": "tsc --noEmit",
     "test": "vitest run",

@@ -5,6 +5,8 @@ import { getPublicProfile } from "@/server/users/service";
 import { ReportButton } from "@/components/moderation/ReportButton";
 import { ReputationBadge } from "@/components/reputation/ReputationBadge";
 import { TierProgressBar } from "@/components/reputation/TierProgressBar";
+import { FollowButton } from "@/components/social/FollowButton";
+import { getFollowState } from "@/server/social/follow";
 
 export default async function PublicProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -13,6 +15,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
     getCurrentUser(),
   ]);
   const isMe = viewer?.id === profile.id;
+  const followState = await getFollowState(viewer?.id, profile.id);
 
   return (
     <div className="space-y-6">
@@ -34,7 +37,9 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
             </Link>
           )}
           {viewer && !isMe && <ReportButton targetType="USER" targetId={profile.id} />}
+          {viewer && !isMe && <FollowButton userId={profile.id} initial={followState.following} initialCount={followState.followerCount} />}
         </div>
+        <p className="mt-2 text-sm text-gray-500">{followState.followerCount} followers · {followState.followingCount} following</p>
         {profile.bio && <p className="mt-4 whitespace-pre-wrap">{profile.bio}</p>}
         {profile.preferredGenres.length > 0 && (
           <div className="mt-4 flex flex-wrap gap-2">

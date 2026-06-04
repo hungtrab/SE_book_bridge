@@ -57,6 +57,8 @@ model User {
   reputationScore             Int                         @default(0) // denormalised — see ReputationEvent
   reputationTier              String                      @default("new")
   notificationEmailPreference NotificationEmailPreference @default(DAILY)
+  followerCount               Int                         @default(0)
+  followingCount              Int                         @default(0)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -89,6 +91,7 @@ model User {
   notifications    Notification[]
 
   @@index([reputationTier])
+  @@index([locationDistrict])
 }
 
 model Session {
@@ -194,6 +197,8 @@ model Listing {
   @@index([genre])
   @@index([transactionType])
   @@index([communityId])
+  @@index([status, genre, transactionType])
+  @@index([status, createdAt])
 }
 
 model ListingPhoto {
@@ -234,6 +239,7 @@ model FeedItem {
   seen      Boolean  @default(false)
   createdAt DateTime @default(now())
 
+  @@unique([userId, listingId, kind])
   @@index([userId, createdAt])
 }
 

@@ -42,6 +42,14 @@ npm test                         # unit tests
 npm run lint                     # eslint + tsc
 ```
 
+Demo accounts from `npm run db:seed` all use password `Password1`:
+
+| Role | Email |
+|---|---|
+| User | `alice@bookbridge.local`, `bob@bookbridge.local`, `clara@bookbridge.local`, `duy@bookbridge.local` |
+| Moderator | `mod@bookbridge.local` |
+| Admin | `admin@bookbridge.local` |
+
 ## Project layout
 
 ```

@@ -15,6 +15,7 @@ export async function NavBar() {
         <Link href="/" className="font-semibold">📚 BookBridge</Link>
         <Link href="/listings">Listings</Link>
         <Link href="/search">Search</Link>
+        <Link href="/explore">Explore</Link>
         <Link href="/communities">Communities</Link>
         <span className="ml-auto flex items-center gap-3">
           {user ? (

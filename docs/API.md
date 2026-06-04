@@ -47,6 +47,8 @@ Conventions:
 | GET | `/api/feed` | personalised feed (auth) |
 | POST | `/api/follow` | `{ userId }` — follow a user |
 | DELETE | `/api/follow/[userId]` | unfollow |
+| GET | `/api/feed/stream` | realtime personalised feed SSE |
+| GET | `/api/users/[id]/listings` | public paginated listings for a user |
 
 ## Transactions & Messaging [#4]
 

@@ -64,7 +64,6 @@ the clients use native `EventSource` retry as fallback.
   the 1 000-concurrent-users target.
 * **Notifications fan-out**: when `Follow` count grows large, swap the
   inline write of `FeedItem` rows for a Redis Streams + worker pattern.
-* **Search**: `ILIKE` is fine up to ~50 k listings. Past that, switch to
-  Postgres full-text search (`tsvector`) — schema migration but no
-  application change because the queries already abstract behind
-  `searchListings()`.
+* **Search**: listing discovery uses a generated PostgreSQL `tsvector`
+  column with a GIN index. Keep the `searchListings()` abstraction if the
+  team later moves to trigram fuzzy search or an external search service.

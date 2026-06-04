@@ -6,10 +6,11 @@ import { ReportButton } from "@/components/moderation/ReportButton";
 import { ReputationBadge } from "@/components/reputation/ReputationBadge";
 import { getCurrentUser } from "@/server/lib/auth-context";
 import { getListing } from "@/server/listings/service";
+import { relatedListings } from "@/server/search/service";
 
 export default async function ListingDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const [listing, user] = await Promise.all([getListing(id), getCurrentUser()]);
+  const [listing, user, related] = await Promise.all([getListing(id), getCurrentUser(), relatedListings(id)]);
   const isOwner = user?.id === listing.ownerId;
 
   return (
@@ -65,6 +66,20 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
         <h2 className="text-xl font-semibold">Description</h2>
         <p className="whitespace-pre-wrap">{listing.description}</p>
       </section>
+      {related.length > 0 && (
+        <section>
+          <h2 className="mb-2 text-xl font-semibold">Related listings</h2>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {related.map((item) => (
+              <Link key={item.id} href={`/listings/${item.id}`} className="rounded border p-3">
+                {item.photos[0] && <img src={item.photos[0].url} alt="" className="mb-2 h-28 w-full rounded object-cover" />}
+                <h3 className="font-semibold">{item.title}</h3>
+                <p className="text-sm">{item.author}</p>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }

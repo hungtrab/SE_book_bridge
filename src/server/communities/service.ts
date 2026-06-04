@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { prisma } from "../lib/prisma";
 import { ConflictError, ForbiddenError, NotFoundError } from "../lib/errors";
+import { fanoutExistingListingsToUser } from "../feed/fanout";
 
 export const MAX_COMMUNITIES_PER_USER = 20;
 
@@ -103,6 +104,7 @@ export async function joinCommunity(userId: string, communityId: string) {
     if (!canJoinCommunity(count)) throw new ConflictError("You can join at most 20 communities");
     await tx.communityMembership.create({ data: { userId, communityId } });
     await tx.community.update({ where: { id: communityId }, data: { memberCount: { increment: 1 } } });
+    await fanoutExistingListingsToUser(tx, userId, { communityId });
     return { joined: true };
   });
 }

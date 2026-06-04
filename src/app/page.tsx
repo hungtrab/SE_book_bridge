@@ -1,9 +1,14 @@
 import Link from "next/link";
 
 import { getCurrentUser } from "@/server/lib/auth-context";
+import { FeedList } from "@/components/feed/FeedList";
+import { listFeed, syncFeedForUser } from "@/server/feed/service";
 
 export default async function HomePage() {
   const user = await getCurrentUser();
+  const feed = user
+    ? await syncFeedForUser(user.id).then(() => listFeed(user.id))
+    : null;
   return (
     <div className="space-y-6">
       <section>
@@ -14,13 +19,15 @@ export default async function HomePage() {
       </section>
 
       {user ? (
-        <section>
+        <section className="space-y-4">
           <h2 className="text-xl font-semibold">Hi, {user.displayName}.</h2>
           <p className="mt-1">
             Browse <Link className="underline" href="/listings">listings</Link>,
             check your <Link className="underline" href="/transactions">transactions</Link>,
             or visit your <Link className="underline" href={`/profile/${user.id}`}>profile</Link>.
           </p>
+          <h2 className="text-xl font-semibold">Your feed</h2>
+          <FeedList initial={feed?.items ?? []} />
         </section>
       ) : (
         <section>
@@ -32,12 +39,6 @@ export default async function HomePage() {
         </section>
       )}
 
-      <section className="text-sm text-[color:var(--muted)]">
-        TODO (Person 3): personalised feed of new listings from followed users
-        and joined sub-communities. See{" "}
-        <code>src/server/feed/service.ts</code> and{" "}
-        <code>docs/TASKS.md</code> §3.
-      </section>
     </div>
   );
 }

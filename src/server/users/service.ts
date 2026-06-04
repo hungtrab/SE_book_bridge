@@ -37,6 +37,8 @@ export async function getPublicProfile(userId: string) {
       locationDistrict: true,
       reputationScore: true,
       reputationTier: true,
+      followerCount: true,
+      followingCount: true,
       createdAt: true,
       listings: {
         where: { status: "ACTIVE" },
@@ -57,6 +59,20 @@ export async function getPublicProfile(userId: string) {
   });
   if (!user) throw new NotFoundError("User not found");
   return user;
+}
+
+export async function listPublicUserListings(userId: string, cursor?: string) {
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { id: true } });
+  if (!user) throw new NotFoundError("User not found");
+  const rows = await prisma.listing.findMany({
+    where: { ownerId: userId, status: "ACTIVE" },
+    include: { photos: { take: 1, orderBy: { position: "asc" } } },
+    orderBy: { createdAt: "desc" },
+    take: 21,
+    cursor: cursor ? { id: cursor } : undefined,
+    skip: cursor ? 1 : 0,
+  });
+  return { items: rows.slice(0, 20), nextCursor: rows.length > 20 ? rows[20].id : null };
 }
 
 export async function deleteMyAccount(userId: string) {
@@ -100,5 +116,7 @@ export const userSelect = {
   status: true,
   reputationScore: true,
   reputationTier: true,
+  followerCount: true,
+  followingCount: true,
   createdAt: true,
 } as const;

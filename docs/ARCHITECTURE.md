@@ -65,8 +65,7 @@ report.upheld   ─►  reputation -15 target (Person 5)
                    listing -> REMOVED if applicable (Person 2)
 ```
 
-The event names + payload shapes live in
-`src/server/lib/events.ts` (TODO: Person 6 to seed this).
+The event names + payload shapes live in `src/server/lib/events.ts`.
 
 ## Data layer
 

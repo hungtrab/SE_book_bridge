@@ -50,7 +50,7 @@ export async function createListing(user: User, input: ListingCreateInput) {
         askingPriceVnd: data.askingPriceVnd,
         communityId: data.communityId,
         photos: {
-          create: data.photoUrls.map((url, i) => ({ url, position: i })),
+          create: (data.photoUrls ?? []).map((url, i) => ({ url, position: i })),
         },
       },
       include: listingInclude(),

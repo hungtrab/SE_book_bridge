@@ -104,8 +104,8 @@ export function ListingForm({ mode, initial, communities = [] }: ListingFormProp
     try {
       const uploaded = await uploadSelectedPhotos();
       const nextPhotoUrls = uploaded.length > 0 ? uploaded : photoUrls;
-      if (nextPhotoUrls.length < 1 || nextPhotoUrls.length > 5) {
-        throw new Error("Listing must have 1 to 5 photos.");
+      if (nextPhotoUrls.length > 5) {
+        throw new Error("Listing can have at most 5 photos.");
       }
       const payload = {
         ...form,
@@ -232,7 +232,7 @@ export function ListingForm({ mode, initial, communities = [] }: ListingFormProp
           onChange={(e) => setFiles(e.target.files)}
         />
         <span className="text-xs text-gray-500">
-          Upload 1 to 5 JPEG, PNG, or WebP files. Each file must be at most 5MB.
+          Optional for demo. Upload up to 5 JPEG, PNG, or WebP files. Each file must be at most 5MB.
         </span>
       </label>
 

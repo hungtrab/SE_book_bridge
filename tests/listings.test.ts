@@ -42,6 +42,17 @@ describe("listing validation", () => {
       askingPriceVnd: 10_000,
     }).success).toBe(false);
   });
+
+  it("allows creating a listing without photos for quick demos", () => {
+    const { photoUrls: _photoUrls, ...withoutPhotos } = validListing;
+
+    expect(ListingCreateSchema.safeParse(withoutPhotos).success).toBe(true);
+    expect(ListingCreateSchema.safeParse({ ...validListing, photoUrls: [] }).success).toBe(true);
+    expect(ListingCreateSchema.safeParse({
+      ...validListing,
+      photoUrls: Array.from({ length: 6 }, (_, index) => `https://example.com/photo-${index}.jpg`),
+    }).success).toBe(false);
+  });
 });
 
 describe("listing edit guard", () => {

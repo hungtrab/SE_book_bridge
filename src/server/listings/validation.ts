@@ -39,11 +39,11 @@ const ListingBaseSchema = z.object({
 });
 
 export const ListingCreateSchema = ListingBaseSchema.extend({
-  photoUrls: z.array(z.string().url()).min(1).max(5),
+  photoUrls: z.array(z.string().url()).max(5).optional(),
 }).superRefine(validateListingBusinessRules);
 
 export const ListingPatchSchema = ListingBaseSchema.extend({
-  photoUrls: z.array(z.string().url()).min(1).max(5).optional(),
+  photoUrls: z.array(z.string().url()).max(5).optional(),
 }).partial().superRefine(validateListingBusinessRules);
 
 export const ListingQuerySchema = z.object({

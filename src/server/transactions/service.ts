@@ -35,7 +35,7 @@ export async function requestListing(user: User, input: z.infer<typeof RequestSc
       select: { id: true },
     });
     if (existing) throw new ConflictError("You already have an open request for this listing");
-    return tx.transaction.create({
+    const transaction = await tx.transaction.create({
       data: {
         listingId: listing.id, ownerId: listing.ownerId, requesterId: user.id,
         type: listing.transactionType, agreedPriceVnd: listing.askingPriceVnd, status: "PENDING",
@@ -43,6 +43,16 @@ export async function requestListing(user: User, input: z.infer<typeof RequestSc
       },
       include: transactionInclude(),
     });
+    await dispatchNotifications(tx, {
+      kind: "transaction.requested",
+      actorId: user.id,
+      transactionId: transaction.id,
+      listingId: listing.id,
+      title: listing.title,
+      ownerId: listing.ownerId,
+      requesterId: user.id,
+    });
+    return transaction;
   });
 }
 

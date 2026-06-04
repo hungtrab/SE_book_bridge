@@ -49,6 +49,30 @@ describe("notification dispatcher", () => {
       action: "WARN",
     })).toEqual([]);
   });
+
+  it("notifies listing owner when a requester opens a transaction", () => {
+    expect(notificationTargets({
+      kind: "transaction.requested",
+      actorId: "requester",
+      transactionId: "txn",
+      listingId: "listing",
+      title: "Sapiens",
+      ownerId: "owner",
+      requesterId: "requester",
+    })).toEqual([{
+      userId: "owner",
+      kind: "TRANSACTION_STATUS_CHANGED",
+      payload: {
+        kind: "transaction.requested",
+        actorId: "requester",
+        transactionId: "txn",
+        listingId: "listing",
+        title: "Sapiens",
+        ownerId: "owner",
+        requesterId: "requester",
+      },
+    }]);
+  });
 });
 
 describe("grant export", () => {

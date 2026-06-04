@@ -8,6 +8,15 @@ export type DomainEvent =
       communityMemberIds: string[];
     }
   | {
+      kind: "transaction.requested";
+      actorId: string;
+      transactionId: string;
+      listingId: string;
+      title: string;
+      ownerId: string;
+      requesterId: string;
+    }
+  | {
       kind: "transaction.status_changed";
       actorId: string;
       transactionId: string;

@@ -23,6 +23,14 @@ export function notificationTargets(event: DomainEvent): NotificationTarget[] {
           payload: event,
         })),
       ], event.actorId);
+    case "transaction.requested":
+      return event.ownerId === event.actorId
+        ? []
+        : [{
+            userId: event.ownerId,
+            kind: "TRANSACTION_STATUS_CHANGED",
+            payload: event,
+          }];
     case "transaction.status_changed":
       return uniqueTargets(event.recipientIds.map((userId) => ({
         userId,

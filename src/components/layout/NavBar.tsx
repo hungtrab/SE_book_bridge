@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getCurrentUser } from "@/server/lib/auth-context";
 import { unreadNotificationCount } from "@/server/notifications/service";
 import { hasModerationAccess } from "@/server/moderation/queue";
+import { LogoutButton } from "@/components/auth/LogoutButton";
 
 export async function NavBar() {
   const user = await getCurrentUser();
@@ -31,6 +32,7 @@ export async function NavBar() {
               {user.role === "ADMIN" && <Link href="/admin" className="link-soft">Admin</Link>}
               <Link href="/profile/sessions" className="link-soft">Sessions</Link>
               <Link href={`/profile/${user.id}`} className="rounded-full border border-[color:var(--card-border)] px-3 py-1 font-semibold transition hover:border-blue-400 hover:text-blue-600">{user.displayName}</Link>
+              <LogoutButton />
             </>
           ) : (
             <>

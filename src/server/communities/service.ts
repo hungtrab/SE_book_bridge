@@ -18,6 +18,10 @@ export const CommunityQuerySchema = z.object({
   scope: z.enum(["UNIVERSITY", "LOCATION", "GENRE"]).optional(),
 });
 
+export const CommunityModeratorGrantSchema = z.object({
+  email: z.string().trim().email(),
+});
+
 export function canJoinCommunity(currentCount: number): boolean {
   return currentCount < MAX_COMMUNITIES_PER_USER;
 }
@@ -122,5 +126,43 @@ export async function leaveCommunity(userId: string, communityId: string) {
       });
     }
     return { joined: false };
+  });
+}
+
+export async function grantCommunityModerator(
+  actor: User,
+  communityId: string,
+  input: z.infer<typeof CommunityModeratorGrantSchema>,
+) {
+  const data = CommunityModeratorGrantSchema.parse(input);
+  return prisma.$transaction(async (tx) => {
+    const community = await tx.community.findUnique({ where: { id: communityId } });
+    if (!community) throw new NotFoundError("Community not found");
+    if (community.ownerId !== actor.id && actor.role !== "ADMIN") {
+      throw new ForbiddenError("Only the community owner or an admin can grant moderator access");
+    }
+
+    const target = await tx.user.findUnique({
+      where: { email: data.email.toLowerCase() },
+      select: { id: true, displayName: true, email: true },
+    });
+    if (!target) throw new NotFoundError("User not found");
+
+    const existing = await tx.communityMembership.findUnique({
+      where: { userId_communityId: { userId: target.id, communityId } },
+    });
+    await tx.communityMembership.upsert({
+      where: { userId_communityId: { userId: target.id, communityId } },
+      create: { userId: target.id, communityId, role: "MODERATOR" },
+      update: { role: "MODERATOR" },
+    });
+    if (!existing) {
+      await tx.community.update({
+        where: { id: communityId },
+        data: { memberCount: { increment: 1 } },
+      });
+      await fanoutExistingListingsToUser(tx, target.id, { communityId });
+    }
+    return { userId: target.id, displayName: target.displayName, role: "MODERATOR" as const };
   });
 }

@@ -11,18 +11,18 @@ export default async function ModerationPage({ searchParams }: { searchParams: P
   const reports = await listModerationQueue(user, status);
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-bold">Moderation queue</h1>
+      <h1 className="text-2xl font-bold">Moderator ticket queue</h1>
       <nav className="flex gap-3 text-sm">
         {["PENDING", "RESOLVED", "REJECTED"].map((value) => <Link key={value} href={`/moderation?status=${value}`} className="underline">{value}</Link>)}
       </nav>
-      {reports.length === 0 ? <p>No reports in this queue.</p> : reports.map((report) => (
+      {reports.length === 0 ? <p>No tickets in this queue.</p> : reports.map((report) => (
         <article key={report.id} className="rounded border p-4">
           <div className="flex justify-between gap-3">
             <div>
-              <h2 className="font-semibold">{report.targetType}: {report.reason}</h2>
+              <h2 className="font-semibold">{report.targetType} ticket: {report.reason}</h2>
               <p className="text-sm">{report.details ?? "No details"}</p>
               <p className="text-xs text-gray-500">
-                Filed by {report.isSystemGenerated ? "anti-gaming scan" : report.filer?.displayName ?? "unknown"} · {report.createdAt.toLocaleString()}
+                Sent by {report.isSystemGenerated ? "anti-gaming scan" : report.filer?.displayName ?? "unknown"} · {report.createdAt.toLocaleString()}
               </p>
             </div>
             <span className="text-sm font-semibold">{report.status}</span>

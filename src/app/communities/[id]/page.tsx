@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { CommunityActions } from "@/components/communities/CommunityActions";
+import { CommunityModeratorForm } from "@/components/communities/CommunityModeratorForm";
 import { getCurrentUser } from "@/server/lib/auth-context";
 import { getCommunity } from "@/server/communities/service";
 
@@ -8,6 +9,7 @@ export default async function CommunityDetailPage({ params }: { params: Promise<
   const { id } = await params;
   const user = await getCurrentUser();
   const community = await getCommunity(id, user?.id);
+  const canGrantModerator = Boolean(user && (community.ownerId === user.id || user.role === "ADMIN"));
   return (
     <div className="space-y-6">
       <div className="flex items-start justify-between">
@@ -33,6 +35,7 @@ export default async function CommunityDetailPage({ params }: { params: Promise<
       </section>
       <section>
         <h2 className="mb-2 text-xl font-semibold">Members</h2>
+        {canGrantModerator && <CommunityModeratorForm communityId={community.id} />}
         <div className="flex flex-wrap gap-2">
           {community.memberships.map((membership) => (
             <Link key={membership.userId} href={`/profile/${membership.userId}`} className="rounded border px-2 py-1 text-sm">

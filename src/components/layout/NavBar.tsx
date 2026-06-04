@@ -27,7 +27,7 @@ export async function NavBar() {
               <Link href="/transactions" className="link-soft">My Txns</Link>
               <Link href="/messages" className="link-soft">Messages</Link>
               <Link href="/notifications" className="link-soft">Notifications{unread > 0 ? ` (${unread})` : ""}</Link>
-              <Link href="/reports" className="link-soft">My Reports</Link>
+              <Link href="/reports" className="link-soft">My Tickets</Link>
               {canModerate && <Link href="/moderation" className="link-soft">Moderation</Link>}
               {user.role === "ADMIN" && <Link href="/admin" className="link-soft">Admin</Link>}
               <Link href="/profile/sessions" className="link-soft">Sessions</Link>

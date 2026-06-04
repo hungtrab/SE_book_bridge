@@ -89,7 +89,8 @@ describe("notification digest", () => {
       payload: { conversationId: "c1" },
       createdAt: new Date("2026-06-04T00:00:00Z"),
     }]);
-    expect(digest).toContain("NEW_MESSAGE");
-    expect(digest).toContain("conversationId");
+    expect(digest).toContain("New message");
+    expect(digest).toContain("You received a new chat message");
+    expect(digest).toContain("/messages/c1");
   });
 });

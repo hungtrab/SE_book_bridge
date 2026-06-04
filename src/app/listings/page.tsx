@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { LISTING_GENRES } from "@/lib/listing-genres";
 import { ListingQuerySchema, searchListings } from "@/server/listings/service";
 
 export default async function ListingsPage({
@@ -32,7 +33,10 @@ export default async function ListingsPage({
 
       <form className="card-surface grid gap-2 rounded-2xl p-4 sm:grid-cols-5">
         <input name="q" placeholder="Search title, author, ISBN" className="rounded border px-2 py-1 sm:col-span-2" defaultValue={single(params?.q) ?? ""} />
-        <input name="genre" placeholder="Genre" className="rounded border px-2 py-1" defaultValue={single(params?.genre) ?? ""} />
+        <select name="genre" className="rounded border px-2 py-1" defaultValue={single(params?.genre) ?? ""}>
+          <option value="">Any genre</option>
+          {LISTING_GENRES.map((genre) => <option key={genre} value={genre}>{genre}</option>)}
+        </select>
         <select name="type" className="rounded border px-2 py-1" defaultValue={single(params?.type) ?? ""}>
           <option value="">Any type</option>
           <option value="GIFT">Gift</option>

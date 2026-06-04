@@ -1,4 +1,5 @@
 import { BadRequestError, NotFoundError } from "../lib/errors";
+import { normalizeListingGenre } from "@/lib/listing-genres";
 import { IsbnSchema } from "./validation";
 
 type OpenLibraryBook = {
@@ -49,9 +50,17 @@ export async function lookupIsbn(rawIsbn: string): Promise<IsbnLookupResult> {
     publisher: book.publishers?.[0],
     publicationYear: parsePublicationYear(book.publish_date),
     language: book.languages?.[0]?.key?.split("/").pop(),
-    genre: book.subjects?.[0],
+    genre: normalizeSubjectGenre(book.subjects),
     coverUrl: book.covers?.[0] ? `https://covers.openlibrary.org/b/id/${book.covers[0]}-L.jpg` : undefined,
   };
+}
+
+function normalizeSubjectGenre(subjects?: string[]) {
+  for (const subject of subjects ?? []) {
+    const genre = normalizeListingGenre(subject);
+    if (genre) return genre;
+  }
+  return undefined;
 }
 
 async function resolveFirstAuthor(book: OpenLibraryBook): Promise<string | undefined> {

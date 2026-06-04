@@ -14,6 +14,7 @@ export const ReportSchema = z.object({
   targetId: z.string().min(1),
   reason: z.string().trim().min(3).max(120),
   details: z.string().trim().max(2000).optional(),
+  evidenceUrl: z.string().trim().url().max(500).optional().or(z.literal("")),
 });
 
 export const ModerationActionSchema = z.object({
@@ -24,7 +25,7 @@ export const ModerationActionSchema = z.object({
 export async function fileReport(user: User, input: z.infer<typeof ReportSchema>) {
   const data = ReportSchema.parse(input);
   const target = await resolveTarget(user, data.targetType, data.targetId);
-  if (target.targetUserId === user.id) throw new BadRequestError("You cannot report yourself");
+  if (target.targetUserId === user.id) throw new BadRequestError("You cannot create a ticket about yourself");
   const duplicate = await prisma.report.findFirst({
     where: {
       filerId: user.id,
@@ -34,13 +35,13 @@ export async function fileReport(user: User, input: z.infer<typeof ReportSchema>
     },
     select: { id: true },
   });
-  if (duplicate) throw new ConflictError("You already have a pending report for this target");
+  if (duplicate) throw new ConflictError("You already have a pending ticket for this target");
   return prisma.report.create({
     data: {
       filerId: user.id,
       targetType: data.targetType,
       reason: data.reason,
-      details: data.details,
+      details: formatTicketDetails(data.details, data.evidenceUrl),
       ...target.data,
     },
   });
@@ -66,8 +67,8 @@ export async function applyModerationAction(
   }
   return prisma.$transaction(async (tx) => {
     const report = await tx.report.findUnique({ where: { id: reportId } });
-    if (!report) throw new NotFoundError("Report not found");
-    if (report.status !== "PENDING") throw new ConflictError("Report is already resolved");
+    if (!report) throw new NotFoundError("Ticket not found");
+    if (report.status !== "PENDING") throw new ConflictError("Ticket is already resolved");
     const targetUserId = await moderationTargetUser(tx, report);
     assertActionCompatible(data.action, report);
 
@@ -150,7 +151,7 @@ async function resolveTarget(user: User, targetType: ReportTargetType, targetId:
       select: { id: true, ownerId: true, requesterId: true },
     });
     if (!row) throw new NotFoundError("Target transaction not found");
-    if (user.id !== row.ownerId && user.id !== row.requesterId) throw new ForbiddenError("You cannot report this transaction");
+    if (user.id !== row.ownerId && user.id !== row.requesterId) throw new ForbiddenError("You cannot create a ticket for this transaction");
     const targetUserId = user.id === row.ownerId ? row.requesterId : row.ownerId;
     return {
       data: { targetTransactionId: row.id, targetUserId },
@@ -164,14 +165,21 @@ async function resolveTarget(user: User, targetType: ReportTargetType, targetId:
   });
   if (!row) throw new NotFoundError("Target message not found");
   if (user.id !== row.conversation.userAId && user.id !== row.conversation.userBId) {
-    throw new ForbiddenError("You cannot report this message");
+    throw new ForbiddenError("You cannot create a ticket for this message");
   }
-  if (user.id === row.senderId) throw new BadRequestError("You cannot report your own message");
+  if (user.id === row.senderId) throw new BadRequestError("You cannot create a ticket about your own message");
   return {
     data: { targetMessageId: row.id, targetUserId: row.senderId },
     where: { targetMessageId: row.id },
     targetUserId: row.senderId,
   };
+}
+
+function formatTicketDetails(details?: string, evidenceUrl?: string) {
+  const lines = [];
+  if (details?.trim()) lines.push(details.trim());
+  if (evidenceUrl?.trim()) lines.push(`Evidence: ${evidenceUrl.trim()}`);
+  return lines.length > 0 ? lines.join("\n\n") : undefined;
 }
 
 async function moderationTargetUser(tx: Prisma.TransactionClient, report: {
@@ -192,12 +200,12 @@ function assertActionCompatible(action: ModerationActionKind, report: {
   targetTransactionId?: string | null;
   targetMessageId: string | null;
 }) {
-  if (action === "REMOVE_LISTING" && !report.targetListingId) throw new BadRequestError("This report does not target a listing");
+  if (action === "REMOVE_LISTING" && !report.targetListingId) throw new BadRequestError("This ticket does not target a listing");
   if (action === "SUSPEND_USER" && !report.targetUserId && !report.targetListingId && !report.targetMessageId) {
-    throw new BadRequestError("This report does not identify a user");
+    throw new BadRequestError("This ticket does not identify a user");
   }
-  if (action === "RESTORE" && !report.targetListingId && !report.targetUserId) throw new BadRequestError("Nothing can be restored for this report");
+  if (action === "RESTORE" && !report.targetListingId && !report.targetUserId) throw new BadRequestError("Nothing can be restored for this ticket");
   if ((action === "RESOLVE_DISPUTE" || action === "REJECT_DISPUTE") && !report.targetTransactionId) {
-    throw new BadRequestError("This report does not target a transaction dispute");
+    throw new BadRequestError("This ticket does not target a transaction dispute");
   }
 }

@@ -1,6 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
+
+import { presentNotification } from "@/lib/notifications/presentation";
 
 type NotificationRow = {
   id: string;
@@ -77,9 +80,8 @@ export function NotificationList({ initial }: { initial: NotificationRow[] }) {
       {items.length === 0 ? <p>No notifications yet.</p> : items.map((item) => (
         <article key={item.id} className={`rounded border p-3 ${item.readAt ? "opacity-60" : "border-blue-400"}`}>
           <div className="flex items-start justify-between gap-3">
-            <div>
-              <h2 className="font-semibold">{labelForKind(item.kind)}</h2>
-              <p className="break-all text-sm text-gray-600">{JSON.stringify(item.payload)}</p>
+            <div className="space-y-1">
+              <NotificationText item={item} />
               <p className="text-xs text-gray-500">{new Date(item.createdAt).toLocaleString()}</p>
             </div>
             {!item.readAt && (
@@ -94,8 +96,17 @@ export function NotificationList({ initial }: { initial: NotificationRow[] }) {
   );
 }
 
-function labelForKind(kind: string) {
-  return kind.split("_").map((word) => word[0] + word.slice(1).toLowerCase()).join(" ");
+function NotificationText({ item }: { item: NotificationRow }) {
+  const notification = presentNotification(item.kind, item.payload);
+  const content = (
+    <>
+      <h2 className="font-semibold">{notification.title}</h2>
+      <p className="text-sm text-gray-600">{notification.body}</p>
+    </>
+  );
+  return notification.href
+    ? <Link href={notification.href} className="block hover:text-blue-600">{content}</Link>
+    : content;
 }
 
 function latestCreatedAt(items: NotificationRow[]) {

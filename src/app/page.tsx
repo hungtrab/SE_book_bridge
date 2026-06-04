@@ -85,7 +85,7 @@ export default async function HomePage() {
           {[
             ["List books", "Create clean listings with photos, condition, type, and symbolic pricing."],
             ["Exchange safely", "Request, accept, chat, ship, complete, rate, and dispute with audit logs."],
-            ["Build trust", "Reputation tiers, reports, moderation, communities, and notifications keep the platform healthy."],
+            ["Build trust", "Reputation tiers, moderator tickets, communities, and notifications keep the platform healthy."],
           ].map(([title, body]) => (
             <article key={title} className="card-surface interactive-card rounded-2xl p-5">
               <h2 className="text-lg font-bold">{title}</h2>

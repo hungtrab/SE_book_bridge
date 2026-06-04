@@ -46,7 +46,7 @@ export function ModerationActionForm({ reportId, targetType }: { reportId: strin
             <option value="REJECT_DISPUTE">Reject dispute</option>
           </>
         )}
-        <option value="REJECT_REPORT">Reject report</option>
+        <option value="REJECT_REPORT">Close ticket without action</option>
       </select>
       <input required minLength={3} maxLength={2000} value={notes} onChange={(event) => setNotes(event.target.value)} placeholder="Audit notes" className="min-w-64 flex-1 rounded border px-2 py-1" />
       <button disabled={pending} className="rounded bg-red-700 px-3 py-1 text-white disabled:opacity-50">{pending ? "Applying..." : "Apply"}</button>

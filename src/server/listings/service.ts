@@ -174,6 +174,8 @@ export async function searchListings(opts: ListingQueryInput) {
             { title: { contains: opts.q, mode: "insensitive" as const } },
             { author: { contains: opts.q, mode: "insensitive" as const } },
             { description: { contains: opts.q, mode: "insensitive" as const } },
+            { genre: { contains: opts.q, mode: "insensitive" as const } },
+            { community: { name: { contains: opts.q, mode: "insensitive" as const } } },
             { isbn: opts.q.replace(/[-\s]/g, "").toUpperCase() },
           ],
         }

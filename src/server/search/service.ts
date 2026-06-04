@@ -49,6 +49,8 @@ export async function searchListings(input: SearchInput) {
       OR l."author" ILIKE ${textPattern} ESCAPE ${LIKE_ESCAPE}
       OR l."description" ILIKE ${textPattern} ESCAPE ${LIKE_ESCAPE}
       OR l."isbn" ILIKE ${isbnPattern} ESCAPE ${LIKE_ESCAPE}
+      OR l."genre" ILIKE ${textPattern} ESCAPE ${LIKE_ESCAPE}
+      OR c."name" ILIKE ${textPattern} ESCAPE ${LIKE_ESCAPE}
     )`);
   }
   if (genre) filters.push(Prisma.sql`LOWER(l."genre") = LOWER(${genre})`);
@@ -65,6 +67,8 @@ export async function searchListings(input: SearchInput) {
         CASE WHEN l."title" ILIKE ${textPattern} ESCAPE ${LIKE_ESCAPE} THEN 8 ELSE 0 END
         + CASE WHEN l."author" ILIKE ${textPattern} ESCAPE ${LIKE_ESCAPE} THEN 5 ELSE 0 END
         + CASE WHEN l."isbn" ILIKE ${isbnPattern} ESCAPE ${LIKE_ESCAPE} THEN 5 ELSE 0 END
+        + CASE WHEN l."genre" ILIKE ${textPattern} ESCAPE ${LIKE_ESCAPE} THEN 3 ELSE 0 END
+        + CASE WHEN c."name" ILIKE ${textPattern} ESCAPE ${LIKE_ESCAPE} THEN 3 ELSE 0 END
         + CASE WHEN l."description" ILIKE ${textPattern} ESCAPE ${LIKE_ESCAPE} THEN 2 ELSE 0 END
       )::real`
     : Prisma.sql`0::real`;

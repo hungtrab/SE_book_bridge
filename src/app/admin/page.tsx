@@ -20,7 +20,7 @@ export default async function AdminPage() {
         <Stat label="Books circulated" value={stats.booksCirculated} />
         <Stat label="Active listings" value={stats.activeListings} />
         <Stat label="Communities" value={stats.communities} />
-        <Stat label="Pending reports" value={stats.pendingReports} />
+        <Stat label="Pending tickets" value={stats.pendingReports} />
         <Stat label="Unread notifications" value={stats.unreadNotifications} />
       </div>
       <p className="text-xs text-gray-500">Generated {stats.generatedAt.toLocaleString()}</p>

@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { LISTING_GENRES } from "@/lib/listing-genres";
+
 type ListingFormInitial = {
   id?: string;
   title?: string;
@@ -163,7 +165,18 @@ export function ListingForm({ mode, initial, communities = [] }: ListingFormProp
         <TextInput label="Publisher" value={form.publisher} onChange={(value) => update("publisher", value)} />
         <TextInput label="Publication year" value={form.publicationYear} onChange={(value) => update("publicationYear", value)} />
         <TextInput label="Language" value={form.language} onChange={(value) => update("language", value)} />
-        <TextInput label="Genre" value={form.genre} onChange={(value) => update("genre", value)} required />
+        <label className="block">
+          <span className="text-sm">Genre</span>
+          <select
+            required
+            className="mt-1 block w-full rounded border px-2 py-1"
+            value={form.genre}
+            onChange={(e) => update("genre", e.target.value)}
+          >
+            <option value="">Choose genre</option>
+            {LISTING_GENRES.map((genre) => <option key={genre} value={genre}>{genre}</option>)}
+          </select>
+        </label>
       </div>
 
       <label className="block">

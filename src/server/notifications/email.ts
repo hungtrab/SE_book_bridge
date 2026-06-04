@@ -1,10 +1,15 @@
 import nodemailer from "nodemailer";
 
+import { presentNotification } from "@/lib/notifications/presentation";
 import { prisma } from "../lib/prisma";
 
 export function renderDigest(items: Array<{ kind: string; payload: unknown; createdAt: Date }>): string {
   return items
-    .map((item) => `- ${item.kind} (${item.createdAt.toISOString()}): ${JSON.stringify(item.payload)}`)
+    .map((item) => {
+      const notification = presentNotification(item.kind, item.payload);
+      const link = notification.href ? ` (${notification.href})` : "";
+      return `- ${notification.title}: ${notification.body}${link} — ${item.createdAt.toISOString()}`;
+    })
     .join("\n");
 }
 
@@ -79,7 +84,7 @@ export async function runImmediateNotificationEmails(now = new Date()) {
       await transporter.sendMail({
         from: process.env.EMAIL_FROM ?? "BookBridge <noreply@bookbridge.local>",
         to: user.email,
-        subject: `BookBridge: ${notification.kind}`,
+        subject: `BookBridge: ${presentNotification(notification.kind, notification.payload).title}`,
         text: `Hello ${user.displayName},\n\n${renderDigest([notification])}`,
       });
       await prisma.notification.updateMany({

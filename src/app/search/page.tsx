@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { LISTING_GENRES } from "@/lib/listing-genres";
 import { listCommunities } from "@/server/communities/service";
 import { searchListings, SearchSchema } from "@/server/search/service";
 
@@ -28,11 +29,14 @@ export default async function SearchPage({ searchParams }: { searchParams?: Prom
       <div>
         <p className="text-sm font-semibold text-blue-600">Discovery</p>
         <h1 className="text-3xl font-black tracking-tight">Search books</h1>
-        <p className="mt-1 text-[color:var(--muted)]">Full-text search with filters for genre, condition, price, community, and district radius.</p>
+        <p className="mt-1 text-[color:var(--muted)]">Search by title, author, ISBN, genre, community, condition, price, and district radius.</p>
       </div>
       <form className="card-surface grid gap-2 rounded-2xl p-4 md:grid-cols-4">
         <input name="q" defaultValue={single(params?.q) ?? ""} placeholder='Keywords or author:"Harari"' className="rounded border px-2 py-1 md:col-span-2" />
-        <input name="genre" defaultValue={single(params?.genre) ?? ""} placeholder="Genre" className="rounded border px-2 py-1" />
+        <select name="genre" defaultValue={single(params?.genre) ?? ""} className="rounded border px-2 py-1">
+          <option value="">Any genre</option>
+          {LISTING_GENRES.map((genre) => <option key={genre} value={genre}>{genre}</option>)}
+        </select>
         <input name="author" defaultValue={single(params?.author) ?? ""} placeholder="Author" className="rounded border px-2 py-1" />
         <select name="condition" defaultValue={single(params?.condition) ?? ""} className="rounded border px-2 py-1">
           <option value="">Any condition</option>

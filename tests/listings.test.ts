@@ -101,7 +101,7 @@ describe("ISBN lookup", () => {
       publisher: "Harper",
       publicationYear: 2015,
       language: "eng",
-      genre: "History",
+      genre: "history",
       coverUrl: "https://covers.openlibrary.org/b/id/12345-L.jpg",
     });
   });

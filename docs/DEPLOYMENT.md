@@ -30,6 +30,7 @@ recommend the simplest setup for the course demo:
 |---|---|---|
 | `DATABASE_URL` | yes | Postgres connection string |
 | `SESSION_SECRET` | yes | 32+ bytes, generate with `openssl rand -hex 32` |
+| `NEXT_PUBLIC_APP_URL` | yes for email links | e.g. `https://se-book-bridge.vercel.app` |
 | `EMAIL_FROM`, `SMTP_*`, `EMAIL_DIGEST_ENABLED` | for verification + digest | Use SES / SendGrid / Mailgun |
 | `UPLOAD_BACKEND` | yes (`local` or `s3`) | S3 needed in prod |
 | `S3_BUCKET`, `S3_REGION`, `S3_ENDPOINT`, `S3_PUBLIC_BASE_URL`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` | when UPLOAD_BACKEND=s3 | `S3_ENDPOINT`/`S3_PUBLIC_BASE_URL` are useful for Cloudflare R2 or MinIO |

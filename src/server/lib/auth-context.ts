@@ -62,12 +62,10 @@ export async function getCurrentUser(): Promise<User | null> {
   const { userId, lastSeenAt } = session;
   if (!userId) return null;
   if (!lastSeenAt || Date.now() - lastSeenAt > INACTIVE_TIMEOUT_MS) {
-    await clearSession();
     return null;
   }
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) {
-    await clearSession();
     return null;
   }
   if (session.sessionId) {
@@ -76,12 +74,9 @@ export async function getCurrentUser(): Promise<User | null> {
       select: { revokedAt: true, expiresAt: true },
     });
     if (!dbSession || dbSession.revokedAt || dbSession.expiresAt < new Date()) {
-      await clearSession();
       return null;
     }
   }
-  session.lastSeenAt = Date.now();
-  await session.save();
   if (session.sessionId) {
     await prisma.session.updateMany({
       where: { id: session.sessionId, revokedAt: null },

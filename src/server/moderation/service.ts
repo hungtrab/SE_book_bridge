@@ -72,6 +72,13 @@ export async function applyModerationAction(
     const targetUserId = await moderationTargetUser(tx, report);
     assertActionCompatible(data.action, report);
 
+    if (data.action === "RESOLVE_DISPUTE" || data.action === "REJECT_DISPUTE") {
+      const txn = await tx.transaction.findUnique({ where: { id: report.targetTransactionId! }, select: { status: true } });
+      if (txn?.status !== "DISPUTED") {
+        throw new ConflictError(`Transaction is no longer disputed (status: ${txn?.status}); use "Close ticket without action" instead`);
+      }
+    }
+
     if (data.action === "REMOVE_LISTING") {
       await tx.listing.update({ where: { id: report.targetListingId! }, data: { status: "REMOVED" } });
     } else if (data.action === "SUSPEND_USER") {

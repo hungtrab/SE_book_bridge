@@ -29,8 +29,11 @@ export default async function ModerationPage({ searchParams }: { searchParams: P
           </div>
           <p className="mt-2 text-sm">
             Target: {report.targetUser?.displayName ?? report.targetListing?.title ?? report.targetTransaction?.id ?? report.targetMessage?.body ?? "unknown"}
+            {report.targetTransaction && ` (status: ${report.targetTransaction.status})`}
           </p>
-          {report.status === "PENDING" && <ModerationActionForm reportId={report.id} targetType={report.targetType} />}
+          {report.status === "PENDING" && (
+            <ModerationActionForm reportId={report.id} targetType={report.targetType} transactionStatus={report.targetTransaction?.status} />
+          )}
           {report.actions.map((action) => (
             <p key={action.id} className="mt-2 text-xs text-gray-500">{action.kind} by {action.byUser.displayName}: {action.notes}</p>
           ))}

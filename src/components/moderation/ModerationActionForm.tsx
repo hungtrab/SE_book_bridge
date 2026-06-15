@@ -3,11 +3,12 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-export function ModerationActionForm({ reportId, targetType }: { reportId: string; targetType: string }) {
+export function ModerationActionForm({ reportId, targetType, transactionStatus }: { reportId: string; targetType: string; transactionStatus?: string }) {
   const router = useRouter();
+  const canResolveDispute = targetType === "TRANSACTION" && transactionStatus === "DISPUTED";
   const defaultAction = targetType === "LISTING"
     ? "REMOVE_LISTING"
-    : targetType === "TRANSACTION"
+    : canResolveDispute
       ? "RESOLVE_DISPUTE"
       : "WARN";
   const [action, setAction] = useState(defaultAction);
@@ -40,7 +41,7 @@ export function ModerationActionForm({ reportId, targetType }: { reportId: strin
         <option value="REMOVE_LISTING">Remove listing</option>
         <option value="SUSPEND_USER">Suspend user</option>
         <option value="RESTORE">Restore target</option>
-        {targetType === "TRANSACTION" && (
+        {canResolveDispute && (
           <>
             <option value="RESOLVE_DISPUTE">Resolve dispute</option>
             <option value="REJECT_DISPUTE">Reject dispute</option>

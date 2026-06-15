@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 
 export function CommunityCreateForm() {
   const router = useRouter();
-  const [form, setForm] = useState({ name: "", scope: "UNIVERSITY", description: "" });
+  const [form, setForm] = useState({ name: "", scope: "UNIVERSITY", description: "", isPrivate: false });
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
@@ -53,6 +53,14 @@ export function CommunityCreateForm() {
         value={form.description}
         onChange={(e) => setForm({ ...form, description: e.target.value })}
       />
+      <label className="flex items-center gap-2 text-sm">
+        <input
+          type="checkbox"
+          checked={form.isPrivate}
+          onChange={(e) => setForm({ ...form, isPrivate: e.target.checked })}
+        />
+        Private community (join by invite code only)
+      </label>
       {error && <p className="text-sm text-red-600">{error}</p>}
       <button disabled={pending} className="rounded bg-blue-600 px-3 py-2 text-white disabled:opacity-50">
         {pending ? "Creating..." : "Create"}

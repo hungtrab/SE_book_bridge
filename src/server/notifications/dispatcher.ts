@@ -53,6 +53,20 @@ export function notificationTargets(event: DomainEvent): NotificationTarget[] {
       return event.userId === event.actorId
         ? []
         : [{ userId: event.userId, kind: "MODERATION_ACTION", payload: event }];
+    case "community.post_created":
+      return uniqueTargets(event.recipientIds.map((userId) => ({
+        userId,
+        kind: "COMMUNITY_POST_CREATED" as const,
+        payload: event,
+      })), event.actorId);
+    case "community.post_liked":
+      return event.authorId === event.actorId
+        ? []
+        : [{ userId: event.authorId, kind: "COMMUNITY_POST_LIKED" as const, payload: event }];
+    case "community.post_commented":
+      return event.authorId === event.actorId
+        ? []
+        : [{ userId: event.authorId, kind: "COMMUNITY_POST_COMMENTED" as const, payload: event }];
   }
 }
 

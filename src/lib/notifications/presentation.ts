@@ -85,6 +85,37 @@ export function presentNotification(kind: string, payload: unknown): Notificatio
     };
   }
 
+  if (kind === "COMMUNITY_POST_CREATED") {
+    const communityName = stringValue(data.communityName);
+    return {
+      title: communityName ? `New post in ${communityName}` : "New community post",
+      body: title ? `"${title}" was posted.` : "A new post was created in your community.",
+      href: stringValue(data.postId) && stringValue(data.communityId)
+        ? `/communities/${data.communityId}#post-${data.postId}`
+        : communityHref(data),
+    };
+  }
+
+  if (kind === "COMMUNITY_POST_LIKED") {
+    return {
+      title: "Someone liked your post",
+      body: title ? `Your post "${title}" received a like.` : "Someone liked one of your community posts.",
+      href: stringValue(data.postId) && stringValue(data.communityId)
+        ? `/communities/${data.communityId}#post-${data.postId}`
+        : undefined,
+    };
+  }
+
+  if (kind === "COMMUNITY_POST_COMMENTED") {
+    return {
+      title: "New comment on your post",
+      body: title ? `Someone commented on "${title}".` : "Someone commented on one of your community posts.",
+      href: stringValue(data.postId) && stringValue(data.communityId)
+        ? `/communities/${data.communityId}#post-${data.postId}`
+        : undefined,
+    };
+  }
+
   return {
     title: humanEnum(kind),
     body: "You have a new BookBridge notification.",

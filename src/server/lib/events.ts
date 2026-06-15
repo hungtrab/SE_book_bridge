@@ -49,4 +49,29 @@ export type DomainEvent =
       userId: string;
       reportId: string;
       action: string;
+    }
+  | {
+      kind: "community.post_created";
+      actorId: string;
+      communityId: string;
+      communityName: string;
+      postId: string;
+      postTitle: string;
+      recipientIds: string[];
+    }
+  | {
+      kind: "community.post_liked";
+      actorId: string;
+      postId: string;
+      postTitle: string;
+      authorId: string;
+    }
+  | {
+      kind: "community.post_commented";
+      actorId: string;
+      postId: string;
+      postTitle: string;
+      communityId: string;
+      authorId: string;
+      commentId: string;
     };

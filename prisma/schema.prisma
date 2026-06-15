@@ -89,6 +89,9 @@ model User {
   communitiesOwned Community[]
   memberships      CommunityMembership[]
   notifications    Notification[]
+  communityPosts   CommunityPost[]
+  postLikes        CommunityPostLike[]
+  postComments     CommunityPostComment[]
 
   @@index([reputationTier])
   @@index([locationDistrict])
@@ -479,13 +482,17 @@ model Community {
   name        String         @unique
   scope       CommunityScope
   description String?
-  memberCount Int            @default(0) // denormalised
+  memberCount Int            @default(0)
+  isPrivate   Boolean        @default(false)
+  inviteCode  String?        @unique
   createdAt   DateTime       @default(now())
 
   memberships CommunityMembership[]
   listings    Listing[]
+  posts       CommunityPost[]
 
   @@index([scope])
+  @@index([inviteCode])
 }
 
 enum CommunityRole {
@@ -494,15 +501,65 @@ enum CommunityRole {
 }
 
 model CommunityMembership {
-  userId      String
-  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  communityId String
-  community   Community     @relation(fields: [communityId], references: [id], onDelete: Cascade)
-  role        CommunityRole @default(MEMBER)
-  joinedAt    DateTime      @default(now())
+  userId           String
+  user             User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  communityId      String
+  community        Community     @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  role             CommunityRole @default(MEMBER)
+  communityPoints  Int           @default(0)
+  joinedAt         DateTime      @default(now())
 
   @@id([userId, communityId])
   @@index([communityId])
+  @@index([communityId, communityPoints])
+}
+
+model CommunityPost {
+  id           String    @id @default(cuid())
+  communityId  String
+  community    Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  authorId     String
+  author       User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  title        String
+  body         String
+  isPinned     Boolean   @default(false)
+  likeCount    Int       @default(0)
+  commentCount Int       @default(0)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  likes    CommunityPostLike[]
+  comments CommunityPostComment[]
+
+  @@index([communityId, createdAt])
+  @@index([authorId])
+}
+
+model CommunityPostLike {
+  userId    String
+  postId    String
+  createdAt DateTime @default(now())
+
+  user User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@id([userId, postId])
+  @@index([postId])
+}
+
+model CommunityPostComment {
+  id        String   @id @default(cuid())
+  postId    String
+  authorId  String
+  body      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  post   CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([postId, createdAt])
+  @@index([authorId])
 }
 
 enum NotificationKind {
@@ -512,6 +569,9 @@ enum NotificationKind {
   COMMUNITY_ANNOUNCEMENT
   REPUTATION_TIER_CHANGED
   MODERATION_ACTION
+  COMMUNITY_POST_CREATED
+  COMMUNITY_POST_LIKED
+  COMMUNITY_POST_COMMENTED
 }
 
 enum NotificationEmailPreference {

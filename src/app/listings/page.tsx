@@ -81,5 +81,6 @@ export default async function ListingsPage({
 }
 
 function single(value: string | string[] | undefined): string | undefined {
-  return Array.isArray(value) ? value[0] : value;
+  const item = Array.isArray(value) ? value[0] : value;
+  return item === undefined || item === "" ? undefined : item;
 }

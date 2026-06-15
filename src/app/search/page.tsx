@@ -74,7 +74,8 @@ export default async function SearchPage({ searchParams }: { searchParams?: Prom
 }
 
 function single(value: string | string[] | undefined) {
-  return Array.isArray(value) ? value[0] : value;
+  const item = Array.isArray(value) ? value[0] : value;
+  return item === undefined || item === "" ? undefined : item;
 }
 
 function nextQuery(params: Record<string, string | string[] | undefined> | undefined, cursor: string) {

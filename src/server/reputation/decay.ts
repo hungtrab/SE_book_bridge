@@ -5,19 +5,12 @@ import { ReputationWeights } from "./scoring";
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
 export async function runReputationDecay(now = new Date()) {
-  const inactiveBefore = new Date(now.getTime() - THIRTY_DAYS_MS);
-  const users = await prisma.user.findMany({
-    where: {
-      status: "ACTIVE",
-      reputationScore: { gt: 0 },
-      OR: [
-        { reputationEvents: { none: {} }, createdAt: { lt: inactiveBefore } },
-        { reputationEvents: { every: { createdAt: { lt: inactiveBefore } } } },
-      ],
-    },
-    select: { id: true },
+  const candidates = await prisma.user.findMany({
+    where: { status: "ACTIVE", reputationScore: { gt: 0 } },
+    select: { id: true, status: true, reputationScore: true, createdAt: true, lastReputationEventAt: true },
   });
-  for (const user of users) {
+  const toDecay = candidates.filter((u) => shouldDecayUser(u, now));
+  for (const user of toDecay) {
     await prisma.$transaction((tx) => addReputationEvent(tx, {
       userId: user.id,
       kind: "TIME_DECAY",
@@ -25,7 +18,7 @@ export async function runReputationDecay(now = new Date()) {
       context: { appliedAt: now.toISOString() },
     }));
   }
-  return { decayedUsers: users.length };
+  return { decayedUsers: toDecay.length };
 }
 
 export function shouldDecayUser(

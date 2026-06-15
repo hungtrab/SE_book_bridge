@@ -109,7 +109,7 @@ export async function applyModerationAction(
       where: { id: reportId },
       data: { status: rejected ? "REJECTED" : "RESOLVED", resolvedAt: new Date() },
     });
-    if (targetUserId) {
+    if (targetUserId && data.action !== "REJECT_REPORT") {
       await dispatchNotifications(tx, {
         kind: "moderation.action",
         actorId: moderator.id,
@@ -122,12 +122,11 @@ export async function applyModerationAction(
   });
 }
 
+const COMMUNITY_MOD_ALLOWED_ACTIONS: ModerationActionKind[] = ["WARN", "REMOVE_LISTING", "REJECT_REPORT"];
+
 export function canCommunityModeratorApplyAction(role: User["role"], action: ModerationActionKind) {
-  return role === "ADMIN"
-    || role === "MODERATOR"
-    || action === "WARN"
-    || action === "REMOVE_LISTING"
-    || action === "REJECT_REPORT";
+  if (role === "ADMIN" || role === "MODERATOR") return true;
+  return COMMUNITY_MOD_ALLOWED_ACTIONS.includes(action);
 }
 
 async function resolveTarget(user: User, targetType: ReportTargetType, targetId: string) {

@@ -34,7 +34,7 @@ export async function addReputationEvent(
   });
   await tx.user.update({
     where: { id: input.userId },
-    data: { reputationScore: nextScore, reputationTier: nextTier },
+    data: { reputationScore: nextScore, reputationTier: nextTier, lastReputationEventAt: new Date() },
   });
   if (nextTier !== user.reputationTier) {
     await dispatchNotifications(tx, {

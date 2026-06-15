@@ -56,6 +56,7 @@ model User {
 
   reputationScore             Int                         @default(0) // denormalised — see ReputationEvent
   reputationTier              String                      @default("new")
+  lastReputationEventAt       DateTime?
   notificationEmailPreference NotificationEmailPreference @default(DAILY)
   followerCount               Int                         @default(0)
   followingCount              Int                         @default(0)

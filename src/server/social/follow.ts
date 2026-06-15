@@ -38,6 +38,36 @@ export async function unfollowUser(followerId: string, followeeId: string) {
   });
 }
 
+const PROFILE_SUMMARY_SELECT = {
+  id: true,
+  displayName: true,
+  avatarUrl: true,
+  reputationScore: true,
+  reputationTier: true,
+} as const;
+
+export async function listFollowers(userId: string) {
+  const user = await prisma.user.findFirst({ where: { id: userId, status: "ACTIVE" }, select: { id: true } });
+  if (!user) throw new NotFoundError("User not found");
+  const rows = await prisma.follow.findMany({
+    where: { followeeId: userId },
+    include: { follower: { select: PROFILE_SUMMARY_SELECT } },
+    orderBy: { createdAt: "desc" },
+  });
+  return rows.map((row) => row.follower);
+}
+
+export async function listFollowing(userId: string) {
+  const user = await prisma.user.findFirst({ where: { id: userId, status: "ACTIVE" }, select: { id: true } });
+  if (!user) throw new NotFoundError("User not found");
+  const rows = await prisma.follow.findMany({
+    where: { followerId: userId },
+    include: { followee: { select: PROFILE_SUMMARY_SELECT } },
+    orderBy: { createdAt: "desc" },
+  });
+  return rows.map((row) => row.followee);
+}
+
 export async function getFollowState(viewerId: string | undefined, userId: string) {
   const [counts, relation] = await Promise.all([
     prisma.user.findUnique({

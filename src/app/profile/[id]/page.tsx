@@ -39,7 +39,11 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
           {viewer && !isMe && <ReportButton targetType="USER" targetId={profile.id} />}
           {viewer && !isMe && <FollowButton userId={profile.id} initial={followState.following} initialCount={followState.followerCount} />}
         </div>
-        <p className="mt-2 text-sm text-[color:var(--muted)]">{followState.followerCount} followers · {followState.followingCount} following</p>
+        <p className="mt-2 text-sm text-[color:var(--muted)]">
+          <Link href={`/profile/${profile.id}/followers`} className="link-soft">{followState.followerCount} followers</Link>
+          {" · "}
+          <Link href={`/profile/${profile.id}/following`} className="link-soft">{followState.followingCount} following</Link>
+        </p>
         {profile.bio && <p className="mt-4 whitespace-pre-wrap">{profile.bio}</p>}
         {profile.preferredGenres.length > 0 && (
           <div className="mt-4 flex flex-wrap gap-2">

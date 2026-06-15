@@ -24,13 +24,13 @@ export function CommunityModeratorForm({ communityId }: { communityId: string })
       setMessage(body.error ?? "Could not grant moderator access");
       return;
     }
-    setMessage(`${body.displayName ?? email} is now a community moderator.`);
+    setMessage(`${body.displayName ?? email} is now a moderator.`);
     setEmail("");
     router.refresh();
   }
 
   return (
-    <form onSubmit={submit} className="mt-3 flex flex-col gap-2 rounded border p-3 sm:flex-row">
+    <form onSubmit={submit} className="mb-3 flex flex-col gap-2 rounded border p-3 sm:flex-row">
       <input
         required
         type="email"

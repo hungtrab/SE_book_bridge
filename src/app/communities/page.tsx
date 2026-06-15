@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { CommunityCreateForm } from "@/components/communities/CommunityCreateForm";
+import { JoinByCodeForm } from "@/components/communities/JoinByCodeForm";
 import { getCurrentUser } from "@/server/lib/auth-context";
 import { listCommunities } from "@/server/communities/service";
 
@@ -32,14 +33,26 @@ export default async function CommunitiesPage({
         <div className="space-y-3">
           {communities.map((community) => (
             <Link key={community.id} href={`/communities/${community.id}`} className="card-surface interactive-card block rounded-2xl p-4">
-              <h2 className="text-lg font-bold">{community.name}</h2>
-              <p className="text-sm">{community.scope} · {community.memberCount} members</p>
-              <p className="text-sm text-gray-500">{community.description ?? "No description"}</p>
+              <div className="flex items-start justify-between">
+                <div>
+                  <h2 className="text-lg font-bold">{community.name}</h2>
+                  <p className="text-sm">{community.scope} · {community.memberCount} members{community.isPrivate ? " · Private" : ""}</p>
+                  <p className="text-sm text-gray-500">{community.description ?? "No description"}</p>
+                </div>
+                {community.isPrivate && (
+                  <span className="rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-600">Private</span>
+                )}
+              </div>
             </Link>
           ))}
         </div>
       </section>
-      {user && <CommunityCreateForm />}
+      {user && (
+        <aside className="space-y-4">
+          <CommunityCreateForm />
+          <JoinByCodeForm />
+        </aside>
+      )}
     </div>
   );
 }

@@ -1,9 +1,11 @@
 import type { User } from "@prisma/client";
 import { z } from "zod";
+import { randomBytes } from "crypto";
 
 import { prisma } from "../lib/prisma";
 import { ConflictError, ForbiddenError, NotFoundError } from "../lib/errors";
 import { fanoutExistingListingsToUser } from "../feed/fanout";
+import { dispatchNotifications } from "../notifications/dispatcher";
 
 export const MAX_COMMUNITIES_PER_USER = 20;
 
@@ -11,6 +13,7 @@ export const CommunityCreateSchema = z.object({
   name: z.string().trim().min(2).max(64),
   scope: z.enum(["UNIVERSITY", "LOCATION", "GENRE"]),
   description: z.string().trim().max(500).optional(),
+  isPrivate: z.boolean().optional().default(false),
 });
 
 export const CommunityQuerySchema = z.object({
@@ -22,8 +25,35 @@ export const CommunityModeratorGrantSchema = z.object({
   email: z.string().trim().email(),
 });
 
+export const CommunityPostCreateSchema = z.object({
+  title: z.string().trim().min(1).max(200),
+  body: z.string().trim().min(1).max(5000),
+  isPinned: z.boolean().optional().default(false),
+});
+
+export const JoinByCodeSchema = z.object({
+  code: z.string().trim().min(1),
+});
+
+export const CommunityPostCommentCreateSchema = z.object({
+  body: z.string().trim().min(1).max(2000),
+});
+
+function generateInviteCode(): string {
+  return randomBytes(4).toString("hex").toUpperCase();
+}
+
 export function canJoinCommunity(currentCount: number): boolean {
   return currentCount < MAX_COMMUNITIES_PER_USER;
+}
+
+function assertCommunityMod(actor: User, community: { ownerId: string; id: string }, membership: { role: string } | null | undefined) {
+  const isMod = membership?.role === "MODERATOR";
+  const isOwner = community.ownerId === actor.id;
+  const isAdmin = actor.role === "ADMIN";
+  if (!isMod && !isOwner && !isAdmin) {
+    throw new ForbiddenError("Only community moderators or admins can perform this action");
+  }
 }
 
 export async function listCommunities(input: z.infer<typeof CommunityQuerySchema>, userId?: string) {
@@ -64,14 +94,50 @@ export async function getCommunity(id: string, userId?: string) {
         orderBy: { createdAt: "desc" },
         include: { photos: { take: 1, orderBy: { position: "asc" } } },
       },
+      posts: {
+        orderBy: [{ isPinned: "desc" }, { createdAt: "desc" }],
+        take: 20,
+        include: {
+          author: { select: { id: true, displayName: true, avatarUrl: true } },
+          comments: {
+            take: 5,
+            orderBy: { createdAt: "asc" },
+            include: { author: { select: { id: true, displayName: true, avatarUrl: true } } },
+          },
+          ...(userId ? { likes: { where: { userId }, select: { userId: true } } } : {}),
+        },
+      },
     },
   });
   if (!community) throw new NotFoundError("Community not found");
+
+  const myMembership = userId
+    ? community.memberships.find((m) => m.userId === userId) ?? null
+    : null;
+
+  // Private communities: only members can see full details
+  if (community.isPrivate && !myMembership && userId !== community.ownerId) {
+    return {
+      id: community.id,
+      name: community.name,
+      scope: community.scope,
+      description: community.description,
+      memberCount: community.memberCount,
+      isPrivate: true,
+      ownerId: community.ownerId,
+      owner: community.owner,
+      createdAt: community.createdAt,
+      memberships: [],
+      listings: [],
+      posts: [],
+      myMembership: null,
+      inviteCode: null,
+    };
+  }
+
   return {
     ...community,
-    myMembership: userId
-      ? community.memberships.find((membership) => membership.userId === userId) ?? null
-      : null,
+    myMembership,
   };
 }
 
@@ -83,12 +149,16 @@ export async function createCommunity(user: User, input: z.infer<typeof Communit
     const existing = await tx.community.findUnique({ where: { name: data.name } });
     if (existing) throw new ConflictError("A community with this name already exists");
 
+    const inviteCode = generateInviteCode();
+
     return tx.community.create({
       data: {
         ownerId: user.id,
         name: data.name,
         scope: data.scope,
         description: data.description,
+        isPrivate: data.isPrivate,
+        inviteCode,
         memberCount: 1,
         memberships: { create: { userId: user.id, role: "MODERATOR" } },
       },
@@ -100,6 +170,7 @@ export async function joinCommunity(userId: string, communityId: string) {
   return prisma.$transaction(async (tx) => {
     const community = await tx.community.findUnique({ where: { id: communityId } });
     if (!community) throw new NotFoundError("Community not found");
+    if (community.isPrivate) throw new ForbiddenError("This community is private — use an invite code to join");
     const existing = await tx.communityMembership.findUnique({
       where: { userId_communityId: { userId, communityId } },
     });
@@ -110,6 +181,23 @@ export async function joinCommunity(userId: string, communityId: string) {
     await tx.community.update({ where: { id: communityId }, data: { memberCount: { increment: 1 } } });
     await fanoutExistingListingsToUser(tx, userId, { communityId });
     return { joined: true };
+  });
+}
+
+export async function joinCommunityByCode(userId: string, code: string) {
+  return prisma.$transaction(async (tx) => {
+    const community = await tx.community.findUnique({ where: { inviteCode: code.toUpperCase() } });
+    if (!community) throw new NotFoundError("Invalid invite code");
+    const existing = await tx.communityMembership.findUnique({
+      where: { userId_communityId: { userId, communityId: community.id } },
+    });
+    if (existing) return { joined: true, communityId: community.id };
+    const count = await tx.communityMembership.count({ where: { userId } });
+    if (!canJoinCommunity(count)) throw new ConflictError("You can join at most 20 communities");
+    await tx.communityMembership.create({ data: { userId, communityId: community.id } });
+    await tx.community.update({ where: { id: community.id }, data: { memberCount: { increment: 1 } } });
+    await fanoutExistingListingsToUser(tx, userId, { communityId: community.id });
+    return { joined: true, communityId: community.id };
   });
 }
 
@@ -126,6 +214,18 @@ export async function leaveCommunity(userId: string, communityId: string) {
       });
     }
     return { joined: false };
+  });
+}
+
+export async function deleteCommunity(actor: User, communityId: string) {
+  return prisma.$transaction(async (tx) => {
+    const community = await tx.community.findUnique({ where: { id: communityId } });
+    if (!community) throw new NotFoundError("Community not found");
+    if (community.ownerId !== actor.id && actor.role !== "ADMIN") {
+      throw new ForbiddenError("Only the community owner or an admin can delete this community");
+    }
+    await tx.community.delete({ where: { id: communityId } });
+    return { deleted: true };
   });
 }
 
@@ -164,5 +264,260 @@ export async function grantCommunityModerator(
       await fanoutExistingListingsToUser(tx, target.id, { communityId });
     }
     return { userId: target.id, displayName: target.displayName, role: "MODERATOR" as const };
+  });
+}
+
+export async function revokeCommunityModerator(actor: User, communityId: string, targetUserId: string) {
+  return prisma.$transaction(async (tx) => {
+    const community = await tx.community.findUnique({ where: { id: communityId } });
+    if (!community) throw new NotFoundError("Community not found");
+    if (community.ownerId !== actor.id && actor.role !== "ADMIN") {
+      throw new ForbiddenError("Only the community owner or an admin can revoke moderator access");
+    }
+    if (targetUserId === community.ownerId) throw new ForbiddenError("Cannot demote the community owner");
+    await tx.communityMembership.update({
+      where: { userId_communityId: { userId: targetUserId, communityId } },
+      data: { role: "MEMBER" },
+    });
+    return { userId: targetUserId, role: "MEMBER" as const };
+  });
+}
+
+export async function removeMember(actor: User, communityId: string, targetUserId: string) {
+  return prisma.$transaction(async (tx) => {
+    const community = await tx.community.findUnique({ where: { id: communityId } });
+    if (!community) throw new NotFoundError("Community not found");
+    const actorMembership = await tx.communityMembership.findUnique({
+      where: { userId_communityId: { userId: actor.id, communityId } },
+    });
+    assertCommunityMod(actor, community, actorMembership);
+    if (targetUserId === community.ownerId) throw new ForbiddenError("Cannot remove the community owner");
+    const deleted = await tx.communityMembership.deleteMany({ where: { userId: targetUserId, communityId } });
+    if (deleted.count > 0) {
+      await tx.community.update({ where: { id: communityId }, data: { memberCount: { decrement: 1 } } });
+    }
+    return { removed: true };
+  });
+}
+
+export async function regenerateInviteCode(actor: User, communityId: string) {
+  const community = await prisma.community.findUnique({ where: { id: communityId } });
+  if (!community) throw new NotFoundError("Community not found");
+  if (community.ownerId !== actor.id && actor.role !== "ADMIN") {
+    throw new ForbiddenError("Only the community owner or an admin can regenerate the invite code");
+  }
+  const inviteCode = generateInviteCode();
+  await prisma.community.update({ where: { id: communityId }, data: { inviteCode } });
+  return { inviteCode };
+}
+
+export async function createCommunityPost(
+  actor: User,
+  communityId: string,
+  input: z.infer<typeof CommunityPostCreateSchema>,
+) {
+  const data = CommunityPostCreateSchema.parse(input);
+  return prisma.$transaction(async (tx) => {
+    const community = await tx.community.findUnique({ where: { id: communityId } });
+    if (!community) throw new NotFoundError("Community not found");
+    const membership = await tx.communityMembership.findUnique({
+      where: { userId_communityId: { userId: actor.id, communityId } },
+    });
+    if (!membership && community.ownerId !== actor.id && actor.role !== "ADMIN") {
+      throw new ForbiddenError("You must be a member to post in this community");
+    }
+    // Only mods/owner/admin can pin
+    if (data.isPinned) {
+      assertCommunityMod(actor, community, membership);
+    }
+    const post = await tx.communityPost.create({
+      data: {
+        communityId,
+        authorId: actor.id,
+        title: data.title,
+        body: data.body,
+        isPinned: data.isPinned,
+      },
+      include: { author: { select: { id: true, displayName: true, avatarUrl: true } } },
+    });
+    // Award community points to the author for posting
+    await tx.communityMembership.updateMany({
+      where: { userId: actor.id, communityId },
+      data: { communityPoints: { increment: 5 } },
+    });
+    // Notify all community members about the new post
+    const memberIds = await tx.communityMembership.findMany({
+      where: { communityId },
+      select: { userId: true },
+    });
+    await dispatchNotifications(tx, {
+      kind: "community.post_created",
+      actorId: actor.id,
+      communityId,
+      communityName: community.name,
+      postId: post.id,
+      postTitle: post.title,
+      recipientIds: memberIds.map((m) => m.userId),
+    });
+    return post;
+  });
+}
+
+export async function deleteCommunityPost(actor: User, communityId: string, postId: string) {
+  return prisma.$transaction(async (tx) => {
+    const post = await tx.communityPost.findUnique({ where: { id: postId } });
+    if (!post || post.communityId !== communityId) throw new NotFoundError("Post not found");
+    const community = await tx.community.findUnique({ where: { id: communityId } });
+    if (!community) throw new NotFoundError("Community not found");
+    const membership = await tx.communityMembership.findUnique({
+      where: { userId_communityId: { userId: actor.id, communityId } },
+    });
+    const isAuthor = post.authorId === actor.id;
+    const isMod = membership?.role === "MODERATOR" || community.ownerId === actor.id || actor.role === "ADMIN";
+    if (!isAuthor && !isMod) throw new ForbiddenError("Cannot delete this post");
+    await tx.communityPost.delete({ where: { id: postId } });
+    return { deleted: true };
+  });
+}
+
+export async function pinCommunityPost(actor: User, communityId: string, postId: string, pinned: boolean) {
+  return prisma.$transaction(async (tx) => {
+    const community = await tx.community.findUnique({ where: { id: communityId } });
+    if (!community) throw new NotFoundError("Community not found");
+    const membership = await tx.communityMembership.findUnique({
+      where: { userId_communityId: { userId: actor.id, communityId } },
+    });
+    assertCommunityMod(actor, community, membership);
+    const post = await tx.communityPost.findUnique({ where: { id: postId } });
+    if (!post || post.communityId !== communityId) throw new NotFoundError("Post not found");
+    await tx.communityPost.update({ where: { id: postId }, data: { isPinned: pinned } });
+    return { pinned };
+  });
+}
+
+export async function grantCommunityModeratorById(actor: User, communityId: string, targetUserId: string) {
+  return prisma.$transaction(async (tx) => {
+    const community = await tx.community.findUnique({ where: { id: communityId } });
+    if (!community) throw new NotFoundError("Community not found");
+    if (community.ownerId !== actor.id && actor.role !== "ADMIN") {
+      throw new ForbiddenError("Only the community owner or an admin can grant moderator access");
+    }
+    if (targetUserId === community.ownerId) throw new ForbiddenError("Owner already has full permissions");
+    const existing = await tx.communityMembership.findUnique({
+      where: { userId_communityId: { userId: targetUserId, communityId } },
+    });
+    await tx.communityMembership.upsert({
+      where: { userId_communityId: { userId: targetUserId, communityId } },
+      create: { userId: targetUserId, communityId, role: "MODERATOR" },
+      update: { role: "MODERATOR" },
+    });
+    if (!existing) {
+      await tx.community.update({ where: { id: communityId }, data: { memberCount: { increment: 1 } } });
+      await fanoutExistingListingsToUser(tx, targetUserId, { communityId });
+    }
+    return { userId: targetUserId, role: "MODERATOR" as const };
+  });
+}
+
+export async function likePost(actor: User, communityId: string, postId: string) {
+  return prisma.$transaction(async (tx) => {
+    const post = await tx.communityPost.findUnique({ where: { id: postId } });
+    if (!post || post.communityId !== communityId) throw new NotFoundError("Post not found");
+
+    const existing = await tx.communityPostLike.findUnique({
+      where: { userId_postId: { userId: actor.id, postId } },
+    });
+
+    if (existing) {
+      await tx.communityPostLike.delete({ where: { userId_postId: { userId: actor.id, postId } } });
+      await tx.communityPost.update({ where: { id: postId }, data: { likeCount: { decrement: 1 } } });
+      await tx.communityMembership.updateMany({
+        where: { userId: actor.id, communityId },
+        data: { communityPoints: { decrement: 2 } },
+      });
+      return { liked: false, likeCount: post.likeCount - 1 };
+    }
+
+    await tx.communityPostLike.create({ data: { userId: actor.id, postId } });
+    await tx.communityPost.update({ where: { id: postId }, data: { likeCount: { increment: 1 } } });
+    await tx.communityMembership.updateMany({
+      where: { userId: actor.id, communityId },
+      data: { communityPoints: { increment: 2 } },
+    });
+
+    if (post.authorId !== actor.id) {
+      await dispatchNotifications(tx, {
+        kind: "community.post_liked",
+        actorId: actor.id,
+        postId,
+        postTitle: post.title,
+        authorId: post.authorId,
+      });
+    }
+
+    return { liked: true, likeCount: post.likeCount + 1 };
+  });
+}
+
+export async function createComment(
+  actor: User,
+  communityId: string,
+  postId: string,
+  input: z.infer<typeof CommunityPostCommentCreateSchema>,
+) {
+  const data = CommunityPostCommentCreateSchema.parse(input);
+  return prisma.$transaction(async (tx) => {
+    const post = await tx.communityPost.findUnique({ where: { id: postId } });
+    if (!post || post.communityId !== communityId) throw new NotFoundError("Post not found");
+    const membership = await tx.communityMembership.findUnique({
+      where: { userId_communityId: { userId: actor.id, communityId } },
+    });
+    const community = await tx.community.findUnique({ where: { id: communityId } });
+    if (!community) throw new NotFoundError("Community not found");
+    if (!membership && community.ownerId !== actor.id && actor.role !== "ADMIN") {
+      throw new ForbiddenError("You must be a member to comment");
+    }
+
+    const comment = await tx.communityPostComment.create({
+      data: { postId, authorId: actor.id, body: data.body },
+      include: { author: { select: { id: true, displayName: true, avatarUrl: true } } },
+    });
+    await tx.communityPost.update({ where: { id: postId }, data: { commentCount: { increment: 1 } } });
+    await tx.communityMembership.updateMany({
+      where: { userId: actor.id, communityId },
+      data: { communityPoints: { increment: 3 } },
+    });
+
+    if (post.authorId !== actor.id) {
+      await dispatchNotifications(tx, {
+        kind: "community.post_commented",
+        actorId: actor.id,
+        postId,
+        postTitle: post.title,
+        communityId,
+        authorId: post.authorId,
+        commentId: comment.id,
+      });
+    }
+
+    return comment;
+  });
+}
+
+export async function deleteComment(actor: User, communityId: string, postId: string, commentId: string) {
+  return prisma.$transaction(async (tx) => {
+    const comment = await tx.communityPostComment.findUnique({ where: { id: commentId } });
+    if (!comment || comment.postId !== postId) throw new NotFoundError("Comment not found");
+    const community = await tx.community.findUnique({ where: { id: communityId } });
+    if (!community) throw new NotFoundError("Community not found");
+    const membership = await tx.communityMembership.findUnique({
+      where: { userId_communityId: { userId: actor.id, communityId } },
+    });
+    const isAuthor = comment.authorId === actor.id;
+    const isMod = membership?.role === "MODERATOR" || community.ownerId === actor.id || actor.role === "ADMIN";
+    if (!isAuthor && !isMod) throw new ForbiddenError("Cannot delete this comment");
+    await tx.communityPostComment.delete({ where: { id: commentId } });
+    await tx.communityPost.update({ where: { id: postId }, data: { commentCount: { decrement: 1 } } });
+    return { deleted: true };
   });
 }

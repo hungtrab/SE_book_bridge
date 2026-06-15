@@ -29,18 +29,18 @@ export function JoinByCodeForm() {
   }
 
   return (
-    <form onSubmit={submit} className="space-y-2 rounded border p-4">
+    <form onSubmit={submit} className="card-surface space-y-3 rounded-2xl p-4">
       <h2 className="font-semibold">Join by invite code</h2>
       <div className="flex gap-2">
         <input
           required
-          className="flex-1 rounded border px-2 py-1 font-mono uppercase tracking-widest"
+          className="field flex-1 font-mono uppercase tracking-widest"
           placeholder="XXXXXXXX"
           maxLength={8}
           value={code}
           onChange={(e) => setCode(e.target.value.toUpperCase())}
         />
-        <button disabled={pending} className="rounded bg-blue-600 px-3 py-2 text-white disabled:opacity-50">
+        <button disabled={pending} className="btn-primary">
           {pending ? "Joining..." : "Join"}
         </button>
       </div>

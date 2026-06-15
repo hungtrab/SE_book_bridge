@@ -22,13 +22,13 @@ export function InviteCodePanel({ communityId, inviteCode }: { communityId: stri
   }
 
   return (
-    <div className="flex items-center gap-2 rounded border bg-gray-50 p-3">
+    <div className="card-surface flex items-center gap-2 rounded-2xl p-3">
       <span className="text-sm text-gray-600">Invite code:</span>
-      <code className="flex-1 rounded bg-white px-2 py-1 font-mono text-sm font-bold tracking-widest">{inviteCode}</code>
-      <button type="button" onClick={copy} className="rounded border px-2 py-1 text-xs">
+      <code className="flex-1 rounded-lg bg-gray-50 px-2 py-1 font-mono text-sm font-bold tracking-widest text-gray-900">{inviteCode}</code>
+      <button type="button" onClick={copy} className="btn-secondary btn-sm">
         {copied ? "Copied!" : "Copy"}
       </button>
-      <button type="button" onClick={regenerate} disabled={pending} className="rounded border px-2 py-1 text-xs disabled:opacity-50">
+      <button type="button" onClick={regenerate} disabled={pending} className="btn-ghost btn-sm">
         {pending ? "..." : "Regenerate"}
       </button>
     </div>

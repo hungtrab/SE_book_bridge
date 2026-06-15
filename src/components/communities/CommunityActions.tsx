@@ -60,7 +60,7 @@ export function CommunityActions({
             type="button"
             disabled={pending}
             onClick={() => act("leave")}
-            className="rounded border px-3 py-2 text-sm disabled:opacity-50"
+            className="btn-secondary btn-sm"
           >
             {pending ? "Leaving..." : "Leave"}
           </button>
@@ -70,21 +70,21 @@ export function CommunityActions({
               type="button"
               disabled={pending}
               onClick={() => act("join")}
-              className="rounded bg-blue-600 px-3 py-2 text-sm text-white disabled:opacity-50"
+              className="btn-primary btn-sm"
             >
               {pending ? "Joining..." : "Join"}
             </button>
           )
         )
       )}
-      {isOwner && <span className="rounded bg-gray-100 px-2 py-1 text-xs font-medium text-gray-600">Owner</span>}
-      {isMod && !isOwner && <span className="rounded bg-blue-100 px-2 py-1 text-xs font-medium text-blue-700">Moderator</span>}
+      {isOwner && <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-700">Owner</span>}
+      {isMod && !isOwner && <span className="rounded-full bg-blue-100 px-2.5 py-1 text-xs font-semibold text-blue-700">Moderator</span>}
       {canDelete && (
         <button
           type="button"
           disabled={pending}
           onClick={handleDelete}
-          className="rounded border border-red-300 px-3 py-1 text-sm text-red-600 hover:bg-red-50 disabled:opacity-50"
+          className={confirmDelete ? "btn-danger btn-sm" : "btn-danger-soft btn-sm"}
         >
           {confirmDelete ? "Confirm delete?" : "Delete community"}
         </button>

@@ -35,7 +35,7 @@ export function CommunityPostForm({ communityId }: { communityId: string }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="rounded bg-blue-600 px-3 py-2 text-sm text-white"
+        className="btn-primary btn-sm"
       >
         + New post
       </button>
@@ -43,18 +43,18 @@ export function CommunityPostForm({ communityId }: { communityId: string }) {
   }
 
   return (
-    <form onSubmit={submit} className="space-y-2 rounded border p-4">
+    <form onSubmit={submit} className="card-surface fade-in-up space-y-3 rounded-2xl p-4">
       <h3 className="font-semibold">New post</h3>
       <input
         required
-        className="block w-full rounded border px-2 py-1"
+        className="field"
         placeholder="Title"
         value={form.title}
         onChange={(e) => setForm({ ...form, title: e.target.value })}
       />
       <textarea
         required
-        className="block w-full rounded border px-2 py-1"
+        className="field"
         placeholder="Write something..."
         rows={4}
         value={form.body}
@@ -62,10 +62,10 @@ export function CommunityPostForm({ communityId }: { communityId: string }) {
       />
       {error && <p className="text-sm text-red-600">{error}</p>}
       <div className="flex gap-2">
-        <button disabled={pending} className="rounded bg-blue-600 px-3 py-2 text-sm text-white disabled:opacity-50">
+        <button disabled={pending} className="btn-primary btn-sm">
           {pending ? "Posting..." : "Post"}
         </button>
-        <button type="button" onClick={() => setOpen(false)} className="rounded border px-3 py-2 text-sm">
+        <button type="button" onClick={() => setOpen(false)} className="btn-ghost btn-sm">
           Cancel
         </button>
       </div>

@@ -30,6 +30,14 @@ export default async function CommunityDetailPage({ params }: { params: Promise<
   const isMember = Boolean(community.myMembership);
   const canViewContent = !community.isPrivate || isMember || isAdmin;
 
+  const rankOf = (m: (typeof community.memberships)[number]) =>
+    m.userId === community.ownerId ? 0 : m.role === "MODERATOR" ? 1 : 2;
+  const sortedMembers = [...community.memberships].sort((a, b) => {
+    const r = rankOf(a) - rankOf(b);
+    if (r !== 0) return r;
+    return a.user.displayName.localeCompare(b.user.displayName);
+  });
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -150,39 +158,61 @@ export default async function CommunityDetailPage({ params }: { params: Promise<
           </section>
 
           {/* Active listings */}
-          <section>
-            <h2 className="mb-2 text-xl font-semibold">Active listings</h2>
-            {community.listings.length === 0 ? (
-              <p className="text-sm text-gray-500">No active listings.</p>
-            ) : (
-              <div className="grid gap-3 sm:grid-cols-2">
-                {community.listings.map((listing) => {
-                  const canDelete = isMod || listing.ownerId === user?.id;
-                  return (
-                    <div key={listing.id} className="relative">
-                      <Link href={`/listings/${listing.id}`} className="block rounded border p-3">
-                        {listing.photos[0] && (
-                          <img src={listing.photos[0].url} alt="" className="mb-2 h-32 w-full rounded object-cover" />
+          <details open className="group rounded-2xl border border-gray-200 bg-white">
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-4 py-3 text-xl font-semibold">
+              <span className="flex items-center gap-2">
+                <span className="inline-block transition-transform group-open:rotate-90">›</span>
+                Active listings
+                <span className="text-sm font-normal text-gray-500">({community.listings.length})</span>
+              </span>
+              {isMember && (
+                <Link
+                  href={`/listings/new?communityId=${community.id}`}
+                  className="btn-primary btn-xs"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  + Add listing
+                </Link>
+              )}
+            </summary>
+            <div className="border-t border-gray-100 px-4 py-3">
+              {community.listings.length === 0 ? (
+                <p className="text-sm text-gray-500">No active listings.</p>
+              ) : (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {community.listings.map((listing) => {
+                    const canDelete = isMod || listing.ownerId === user?.id;
+                    return (
+                      <div key={listing.id} className="relative">
+                        <Link href={`/listings/${listing.id}`} className="block rounded border p-3">
+                          {listing.photos[0] && (
+                            <img src={listing.photos[0].url} alt="" className="mb-2 h-32 w-full rounded object-cover" />
+                          )}
+                          <h3 className="font-semibold">{listing.title}</h3>
+                          <p className="text-sm">{listing.author}</p>
+                        </Link>
+                        {canDelete && (
+                          <ListingDeleteButton listingId={listing.id} communityId={community.id} />
                         )}
-                        <h3 className="font-semibold">{listing.title}</h3>
-                        <p className="text-sm">{listing.author}</p>
-                      </Link>
-                      {canDelete && (
-                        <ListingDeleteButton listingId={listing.id} communityId={community.id} />
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </section>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </details>
 
           {/* Members */}
-          <section>
-            <h2 className="mb-2 text-xl font-semibold">Members</h2>
-            {isMod && <CommunityModeratorForm communityId={community.id} />}
-            <div className="mt-3 space-y-1">
-              {community.memberships.map((m) => (
+          <details open className="group rounded-2xl border border-gray-200 bg-white">
+            <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-3 text-xl font-semibold">
+              <span className="inline-block transition-transform group-open:rotate-90">›</span>
+              Members
+              <span className="text-sm font-normal text-gray-500">({community.memberships.length})</span>
+            </summary>
+            <div className="border-t border-gray-100 px-4 py-3">
+              {isMod && <CommunityModeratorForm communityId={community.id} />}
+              <div className="mt-3 space-y-1">
+              {sortedMembers.map((m) => (
                 <div key={m.userId} className="flex items-center justify-between rounded border px-3 py-2">
                   <Link href={`/profile/${m.userId}`} className="text-sm font-medium hover:underline">
                     {m.user.displayName}
@@ -204,8 +234,9 @@ export default async function CommunityDetailPage({ params }: { params: Promise<
                   </div>
                 </div>
               ))}
+              </div>
             </div>
-          </section>
+          </details>
         </>
       )}
     </div>

@@ -169,7 +169,6 @@ export default async function CommunityDetailPage({ params }: { params: Promise<
                 <Link
                   href={`/listings/new?communityId=${community.id}`}
                   className="btn-primary btn-xs"
-                  onClick={(e) => e.stopPropagation()}
                 >
                   + Add listing
                 </Link>

@@ -93,7 +93,7 @@ export default async function CommunityDetailPage({ params }: { params: Promise<
                         postId={post.id}
                         isPinned={post.isPinned}
                         likeCount={post.likeCount}
-                        likedByMe={post.likes.length > 0}
+                        likedByMe={(post.likes?.length ?? 0) > 0}
                         canPin={isMod}
                         canDelete={isMod || user?.id === post.authorId}
                         canLike={isMember}

@@ -147,12 +147,16 @@ async function main() {
   const communities = await seedCommunities(users.mod.id);
   await seedMemberships(users, communities);
   await cleanupKnownDemoRows();
+  await prisma.communityPostComment.deleteMany({ where: { author: { email: { in: DEMO_EMAILS } } } });
+  await prisma.communityPostLike.deleteMany({ where: { user: { email: { in: DEMO_EMAILS } } } });
+  await prisma.communityPost.deleteMany({ where: { author: { email: { in: DEMO_EMAILS } } } });
   const listings = await seedListings(users, communities);
   await seedFollows(users);
   await syncFollowCounters();
   await seedFeedItems(listings);
   await seedTransactions(users, listings);
   await seedReports(users, listings);
+  await seedCommunityPosts(users, communities);
   await seedNotifications(users, communities);
 
   console.log("seeded:", {
@@ -435,6 +439,110 @@ async function seedReports(
       details: "Sample pending report for moderation queue demo.",
     },
   });
+}
+
+async function seedCommunityPosts(
+  users: Awaited<ReturnType<typeof seedUsers>>,
+  communities: Awaited<ReturnType<typeof seedCommunities>>,
+) {
+  const byName = new Map(communities.map((c) => [c.name, c]));
+
+  const postsData = [
+    {
+      communityName: "HUST",
+      authorId: users.alice.id,
+      title: "Best CS textbooks for 2nd year?",
+      body: "Đang tìm sách CTDL+GT và Kiến trúc máy tính. Ai có gợi ý không?",
+      isPinned: false,
+    },
+    {
+      communityName: "HUST",
+      authorId: users.mod.id,
+      title: "Welcome to HUST Readers!",
+      body: "Chào mừng mọi người đến với cộng đồng trao đổi sách HUST. Hãy giới thiệu bản thân và sách bạn đang đọc nhé.",
+      isPinned: true,
+    },
+    {
+      communityName: "Software Textbooks",
+      authorId: users.clara.id,
+      title: "DDIA review sau 3 tháng đọc",
+      body: "Cuốn Designing Data-Intensive Applications xứng đáng 5 sao. Chapter về replication và consensus là highlight.",
+      isPinned: false,
+    },
+    {
+      communityName: "Non-fiction Vietnam",
+      authorId: users.bob.id,
+      title: "Gợi ý sách lịch sử Việt Nam",
+      body: "Ai có sách về lịch sử cận đại VN muốn trao đổi không? Mình đang tìm Bên Thắng Cuộc hoặc tương tự.",
+      isPinned: false,
+    },
+    {
+      communityName: "Cau Giay Book Swap",
+      authorId: users.duy.id,
+      title: "Điểm swap cuối tuần này",
+      body: "Mình ở gần Cầu Giấy Tower, ai muốn gặp trực tiếp trao đổi sách thứ 7 này không? Khoảng 9h sáng.",
+      isPinned: false,
+    },
+  ];
+
+  const createdPosts = [];
+  for (const p of postsData) {
+    const community = byName.get(p.communityName)!;
+    const post = await prisma.communityPost.create({
+      data: {
+        communityId: community.id,
+        authorId: p.authorId,
+        title: p.title,
+        body: p.body,
+        isPinned: p.isPinned,
+      },
+    });
+    createdPosts.push({ post, communityName: p.communityName });
+  }
+
+  // Likes
+  const likesData = [
+    { postIndex: 0, userId: users.bob.id },
+    { postIndex: 0, userId: users.duy.id },
+    { postIndex: 1, userId: users.alice.id },
+    { postIndex: 1, userId: users.bob.id },
+    { postIndex: 1, userId: users.duy.id },
+    { postIndex: 2, userId: users.alice.id },
+    { postIndex: 3, userId: users.alice.id },
+    { postIndex: 4, userId: users.bob.id },
+  ];
+  for (const like of likesData) {
+    const { post } = createdPosts[like.postIndex];
+    await prisma.communityPostLike.upsert({
+      where: { userId_postId: { userId: like.userId, postId: post.id } },
+      update: {},
+      create: { userId: like.userId, postId: post.id },
+    });
+    await prisma.communityPost.update({
+      where: { id: post.id },
+      data: { likeCount: { increment: 1 } },
+    });
+  }
+
+  // Comments
+  const commentsData = [
+    { postIndex: 0, authorId: users.bob.id, body: "Mình có Giải thuật và Lập trình của thầy Lê Minh Hoàng, bạn cần không?" },
+    { postIndex: 0, authorId: users.duy.id, body: "Tìm CLRS thì khó lắm, thường chỉ có bản PDF thôi." },
+    { postIndex: 1, authorId: users.alice.id, body: "Cảm ơn mod! Mình mới join, rất vui được trao đổi sách cùng mọi người 😊" },
+    { postIndex: 2, authorId: users.alice.id, body: "Đồng ý! Chapter consensus algorithm đọc xong phải đọc lại 2 lần mới hiểu hết." },
+    { postIndex: 3, authorId: users.alice.id, body: "Mình có Bên Thắng Cuộc tập 1, đang tìm tập 2. Trade không?" },
+    { postIndex: 4, authorId: users.bob.id, body: "Mình ở Cầu Giấy, sẽ ghé! Mang theo Murakami nhé." },
+  ];
+  for (const c of commentsData) {
+    const { post } = createdPosts[c.postIndex];
+    await prisma.communityPostComment.create({
+      data: { postId: post.id, authorId: c.authorId, body: c.body },
+    });
+    await prisma.communityPost.update({
+      where: { id: post.id },
+      data: { commentCount: { increment: 1 } },
+    });
+  }
 }
 
 async function seedNotifications(

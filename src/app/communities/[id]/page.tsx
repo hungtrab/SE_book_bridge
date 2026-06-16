@@ -5,6 +5,7 @@ import { CommunityActions } from "@/components/communities/CommunityActions";
 import { CommunityModeratorForm } from "@/components/communities/CommunityModeratorForm";
 import { CommunityPostForm } from "@/components/communities/CommunityPostForm";
 import { InviteCodePanel } from "@/components/communities/InviteCodePanel";
+import { ListingDeleteButton } from "@/components/communities/ListingDeleteButton";
 import { PostActions } from "@/components/communities/PostActions";
 import { MemberActions } from "@/components/communities/MemberActions";
 import { CommentSection } from "@/components/communities/CommentSection";
@@ -28,6 +29,14 @@ export default async function CommunityDetailPage({ params }: { params: Promise<
   const isMod = isOwner || isAdmin || myRole === "MODERATOR";
   const isMember = Boolean(community.myMembership);
   const canViewContent = !community.isPrivate || isMember || isAdmin;
+
+  const rankOf = (m: (typeof community.memberships)[number]) =>
+    m.userId === community.ownerId ? 0 : m.role === "MODERATOR" ? 1 : 2;
+  const sortedMembers = [...community.memberships].sort((a, b) => {
+    const r = rankOf(a) - rankOf(b);
+    if (r !== 0) return r;
+    return a.user.displayName.localeCompare(b.user.displayName);
+  });
 
   return (
     <div className="space-y-6">
@@ -80,70 +89,129 @@ export default async function CommunityDetailPage({ params }: { params: Promise<
             {community.posts.length === 0 ? (
               <p className="text-sm text-gray-500">No posts yet.</p>
             ) : (
-              <div className="space-y-3">
-                {community.posts.map((post) => (
-                  <div key={post.id} className="rounded border p-4">
-                    <div className="mb-1 flex items-start justify-between gap-2">
-                      <h3 className="font-semibold">
-                        {post.isPinned && <span className="mr-1 text-xs font-normal text-blue-600">[Pinned]</span>}
-                        {post.title}
-                      </h3>
-                      <PostActions
+              <div>
+                {community.posts.map((post, i) => {
+                  const initials = (post.author.displayName?.[0] ?? "?").toUpperCase();
+                  return (
+                    <div
+                      key={post.id}
+                      style={{ animationDelay: `${Math.min(i * 60, 300)}ms` }}
+                      className={`fade-in-up mb-4 overflow-hidden rounded-2xl border shadow-sm transition-shadow duration-200 hover:shadow-md ${
+                        post.isPinned ? "border-blue-200 bg-blue-50/60" : "border-gray-200 bg-white"
+                      }`}
+                    >
+                      {/* Header */}
+                      <div className="flex items-start justify-between gap-2 px-4 pt-3">
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-violet-500 font-semibold text-white shadow-sm">
+                            {initials}
+                          </div>
+                          <div className="leading-tight">
+                            <p className="font-bold text-gray-900">
+                              {post.author.displayName}
+                              {post.isPinned && (
+                                <span className="ml-2 text-xs font-normal text-blue-600">[Pinned]</span>
+                              )}
+                            </p>
+                            <p className="text-sm text-gray-500">
+                              · {new Date(post.createdAt).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </div>
+                        <PostActions
+                          communityId={community.id}
+                          postId={post.id}
+                          isPinned={post.isPinned}
+                          likeCount={post.likeCount}
+                          likedByMe={(post.likes?.length ?? 0) > 0}
+                          canPin={isMod}
+                          canDelete={isMod || user?.id === post.authorId}
+                          canLike={isMember}
+                        />
+                      </div>
+
+                      {/* Content */}
+                      <div className="px-4 pb-3 pt-2">
+                        <h3 className="text-base font-semibold">{post.title}</h3>
+                        <p className="mt-1 whitespace-pre-wrap text-sm text-gray-700">{post.body}</p>
+                      </div>
+
+                      {/* Stats bar */}
+                      <div className="border-t border-gray-100 px-4 py-2 text-xs text-gray-500">
+                        ♥ {post.likeCount} · {post.commentCount} comments
+                      </div>
+
+                      <CommentSection
                         communityId={community.id}
                         postId={post.id}
-                        isPinned={post.isPinned}
-                        likeCount={post.likeCount}
-                        likedByMe={(post.likes?.length ?? 0) > 0}
-                        canPin={isMod}
-                        canDelete={isMod || user?.id === post.authorId}
-                        canLike={isMember}
+                        initialComments={post.comments}
+                        commentCount={post.commentCount}
+                        canComment={isMember}
+                        currentUserId={user?.id}
+                        isMod={isMod}
                       />
                     </div>
-                    <p className="whitespace-pre-wrap text-sm text-gray-700">{post.body}</p>
-                    <p className="mt-2 text-xs text-gray-400">
-                      {post.author.displayName} · {new Date(post.createdAt).toLocaleDateString()}
-                    </p>
-                    <CommentSection
-                      communityId={community.id}
-                      postId={post.id}
-                      initialComments={post.comments}
-                      commentCount={post.commentCount}
-                      canComment={isMember}
-                      currentUserId={user?.id}
-                      isMod={isMod}
-                    />
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </section>
 
           {/* Active listings */}
-          <section>
-            <h2 className="mb-2 text-xl font-semibold">Active listings</h2>
-            {community.listings.length === 0 ? (
-              <p className="text-sm text-gray-500">No active listings.</p>
-            ) : (
-              <div className="grid gap-3 sm:grid-cols-2">
-                {community.listings.map((listing) => (
-                  <Link key={listing.id} href={`/listings/${listing.id}`} className="rounded border p-3">
-                    {listing.photos[0] && (
-                      <img src={listing.photos[0].url} alt="" className="mb-2 h-32 w-full rounded object-cover" />
-                    )}
-                    <h3 className="font-semibold">{listing.title}</h3>
-                    <p className="text-sm">{listing.author}</p>
-                  </Link>
-                ))}
-              </div>
-            )}
-          </section>
+          <details open className="group rounded-2xl border border-gray-200 bg-white">
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-4 py-3 text-xl font-semibold">
+              <span className="flex items-center gap-2">
+                <span className="inline-block transition-transform group-open:rotate-90">›</span>
+                Active listings
+                <span className="text-sm font-normal text-gray-500">({community.listings.length})</span>
+              </span>
+              {isMember && (
+                <Link
+                  href={`/listings/new?communityId=${community.id}`}
+                  className="btn-primary btn-xs"
+                >
+                  + Add listing
+                </Link>
+              )}
+            </summary>
+            <div className="border-t border-gray-100 px-4 py-3">
+              {community.listings.length === 0 ? (
+                <p className="text-sm text-gray-500">No active listings.</p>
+              ) : (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {community.listings.map((listing) => {
+                    const canDelete = isMod || listing.ownerId === user?.id;
+                    return (
+                      <div key={listing.id} className="relative">
+                        <Link href={`/listings/${listing.id}`} className="block rounded border p-3">
+                          {listing.photos[0] && (
+                            <img src={listing.photos[0].url} alt="" className="mb-2 h-32 w-full rounded object-cover" />
+                          )}
+                          <h3 className="font-semibold">{listing.title}</h3>
+                          <p className="text-sm">{listing.author}</p>
+                        </Link>
+                        {canDelete && (
+                          <ListingDeleteButton listingId={listing.id} communityId={community.id} />
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </details>
 
           {/* Members */}
-          <section>
-            <h2 className="mb-2 text-xl font-semibold">Members</h2>
-            {isMod && <CommunityModeratorForm communityId={community.id} />}
-            <div className="mt-3 space-y-1">
-              {community.memberships.map((m) => (
+          <details open className="group rounded-2xl border border-gray-200 bg-white">
+            <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-3 text-xl font-semibold">
+              <span className="inline-block transition-transform group-open:rotate-90">›</span>
+              Members
+              <span className="text-sm font-normal text-gray-500">({community.memberships.length})</span>
+            </summary>
+            <div className="border-t border-gray-100 px-4 py-3">
+              {isMod && <CommunityModeratorForm communityId={community.id} />}
+              <div className="mt-3 space-y-1">
+              {sortedMembers.map((m) => (
                 <div key={m.userId} className="flex items-center justify-between rounded border px-3 py-2">
                   <Link href={`/profile/${m.userId}`} className="text-sm font-medium hover:underline">
                     {m.user.displayName}
@@ -165,8 +233,9 @@ export default async function CommunityDetailPage({ params }: { params: Promise<
                   </div>
                 </div>
               ))}
+              </div>
             </div>
-          </section>
+          </details>
         </>
       )}
     </div>

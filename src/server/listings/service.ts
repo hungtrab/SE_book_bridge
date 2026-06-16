@@ -149,7 +149,33 @@ export async function deleteListing(user: User, id: string) {
     },
   });
   if (!listing || listing.status === "REMOVED") throw new NotFoundError("Listing not found");
-  if (listing.ownerId !== user.id) throw new ForbiddenError();
+
+  const isOwner = listing.ownerId === user.id;
+  const isAdmin = user.role === "ADMIN";
+  let isCommunityMod = false;
+  let isCommunityOwner = false;
+  if (!isOwner && !isAdmin && listing.communityId) {
+    const community = await prisma.community.findUnique({
+      where: { id: listing.communityId },
+      select: { ownerId: true },
+    });
+    if (community?.ownerId === user.id) {
+      isCommunityOwner = true;
+    } else {
+      const membership = await prisma.communityMembership.findUnique({
+        where: { userId_communityId: { userId: user.id, communityId: listing.communityId } },
+        select: { role: true },
+      });
+      if (membership?.role === "MODERATOR") {
+        isCommunityMod = true;
+      }
+    }
+  }
+
+  if (!isOwner && !isAdmin && !isCommunityMod && !isCommunityOwner) {
+    throw new ForbiddenError();
+  }
+
   if (listing.transactions.length > 0) {
     throw new ConflictError("Cannot delete a listing with an active transaction");
   }

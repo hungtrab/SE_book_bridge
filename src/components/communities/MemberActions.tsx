@@ -39,7 +39,7 @@ export function MemberActions({ communityId, userId, currentRole }: Props) {
           type="button"
           disabled={pending}
           onClick={() => setRole("MODERATOR")}
-          className="rounded px-2 py-0.5 text-xs text-blue-600 hover:bg-blue-50 disabled:opacity-50"
+          className="btn-ghost btn-xs"
         >
           Make mod
         </button>
@@ -48,7 +48,7 @@ export function MemberActions({ communityId, userId, currentRole }: Props) {
           type="button"
           disabled={pending}
           onClick={() => setRole("MEMBER")}
-          className="rounded px-2 py-0.5 text-xs text-gray-600 hover:bg-gray-100 disabled:opacity-50"
+          className="btn-secondary btn-xs"
         >
           Demote
         </button>
@@ -57,7 +57,7 @@ export function MemberActions({ communityId, userId, currentRole }: Props) {
         type="button"
         disabled={pending}
         onClick={removeMember}
-        className="rounded px-2 py-0.5 text-xs text-red-600 hover:bg-red-50 disabled:opacity-50"
+        className="btn-danger-soft btn-xs"
       >
         Remove
       </button>

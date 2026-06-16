@@ -19,6 +19,7 @@ export function PostActions({ communityId, postId, isPinned, likeCount, likedByM
   const [pending, setPending] = useState(false);
   const [optimisticLikes, setOptimisticLikes] = useState(likeCount);
   const [optimisticLiked, setOptimisticLiked] = useState(likedByMe);
+  const [popping, setPopping] = useState(false);
 
   async function togglePin() {
     setPending(true);
@@ -43,6 +44,10 @@ export function PostActions({ communityId, postId, isPinned, likeCount, likedByM
     const nextLiked = !optimisticLiked;
     setOptimisticLiked(nextLiked);
     setOptimisticLikes((n) => n + (nextLiked ? 1 : -1));
+    if (nextLiked) {
+      setPopping(true);
+      setTimeout(() => setPopping(false), 280);
+    }
     const res = await fetch(`/api/communities/${communityId}/posts/${postId}/likes`, { method: "POST" });
     if (!res.ok) {
       setOptimisticLiked(optimisticLiked);
@@ -56,22 +61,27 @@ export function PostActions({ communityId, postId, isPinned, likeCount, likedByM
         <button
           type="button"
           onClick={toggleLike}
-          className={`flex items-center gap-1 rounded px-2 py-0.5 text-xs transition-colors ${
-            optimisticLiked ? "text-pink-600 hover:text-pink-700" : "text-gray-500 hover:text-pink-600"
+          className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold transition-all duration-150 active:scale-90 ${
+            optimisticLiked
+              ? "bg-pink-50 text-pink-600 hover:bg-pink-100"
+              : "text-gray-500 hover:bg-gray-100 hover:text-pink-600"
           }`}
         >
-          {optimisticLiked ? "♥" : "♡"} {optimisticLikes}
+          <span className={`text-sm leading-none ${popping ? "like-pop" : ""}`}>
+            {optimisticLiked ? "♥" : "♡"}
+          </span>
+          {optimisticLikes}
         </button>
       )}
       {!canLike && likeCount > 0 && (
-        <span className="text-xs text-gray-400">♥ {likeCount}</span>
+        <span className="flex items-center gap-1 px-2 text-xs text-gray-400">♥ {likeCount}</span>
       )}
       {canPin && (
         <button
           type="button"
           disabled={pending}
           onClick={togglePin}
-          className="rounded px-2 py-0.5 text-xs text-blue-600 hover:bg-blue-50 disabled:opacity-50"
+          className="rounded-full px-3 py-1 text-xs font-semibold text-blue-600 transition-all duration-150 hover:bg-blue-50 active:scale-90 disabled:opacity-50"
         >
           {isPinned ? "Unpin" : "Pin"}
         </button>
@@ -81,7 +91,7 @@ export function PostActions({ communityId, postId, isPinned, likeCount, likedByM
           type="button"
           disabled={pending}
           onClick={deletePost}
-          className="rounded px-2 py-0.5 text-xs text-red-600 hover:bg-red-50 disabled:opacity-50"
+          className="rounded-full px-3 py-1 text-xs font-semibold text-red-500 transition-all duration-150 hover:bg-red-50 active:scale-90 disabled:opacity-50"
         >
           Delete
         </button>

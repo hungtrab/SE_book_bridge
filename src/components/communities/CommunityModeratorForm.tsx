@@ -30,19 +30,19 @@ export function CommunityModeratorForm({ communityId }: { communityId: string })
   }
 
   return (
-    <form onSubmit={submit} className="mb-3 flex flex-col gap-2 rounded border p-3 sm:flex-row">
+    <form onSubmit={submit} className="card-surface mb-3 flex flex-col gap-2 rounded-2xl p-3 sm:flex-row sm:items-center">
       <input
         required
         type="email"
         value={email}
         onChange={(event) => setEmail(event.target.value)}
         placeholder="User email to promote"
-        className="min-w-0 flex-1 rounded border px-2 py-1"
+        className="field min-w-0 flex-1"
       />
-      <button disabled={pending} className="rounded bg-blue-600 px-3 py-1 text-white disabled:opacity-50">
+      <button disabled={pending} className="btn-primary">
         {pending ? "Granting..." : "Grant moderator"}
       </button>
-      {message && <p className="text-sm sm:w-full">{message}</p>}
+      {message && <p className="text-sm text-gray-600 sm:w-full">{message}</p>}
     </form>
   );
 }

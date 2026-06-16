@@ -62,15 +62,22 @@ export default async function ListingsPage({
                 by {l.author} · owner {l.owner.displayName} ({l.owner.reputationTier})
               </p>
               <p className="mt-3 flex flex-wrap gap-2 text-xs">
-                <span className="badge-soft rounded-full px-2 py-1">{l.transactionType}</span>
+                <span className={`rounded-full px-2 py-1 font-semibold ${
+                  l.transactionType === "SELL"
+                    ? "bg-amber-100 text-amber-700"
+                    : l.transactionType === "EXCHANGE"
+                    ? "bg-violet-100 text-violet-700"
+                    : "bg-emerald-100 text-emerald-700"
+                }`}>{l.transactionType}</span>
                 <span className="badge-soft rounded-full px-2 py-1">{l.condition}</span>
                 <span className="badge-soft rounded-full px-2 py-1">{l.genre}</span>
               </p>
-              <p className="mt-2 text-xs text-[color:var(--muted)]">
-                {l.transactionType} · {l.condition} · {l.genre}
-                {l.askingPriceVnd != null && (
-                  <span> · {l.askingPriceVnd.toLocaleString()} VND</span>
-                )}
+              <p className="mt-2 text-sm font-semibold">
+                {l.transactionType === "SELL"
+                  ? `${(l.askingPriceVnd ?? 0).toLocaleString()} VND`
+                  : l.transactionType === "EXCHANGE"
+                  ? "Open to swap"
+                  : "Free gift"}
               </p>
             </li>
           ))}

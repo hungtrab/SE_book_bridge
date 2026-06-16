@@ -60,8 +60,8 @@ export default async function HomePage() {
               </div>
             </div>
             <div className="absolute bottom-2 right-0 w-64 rounded-3xl border border-white/10 bg-white/10 p-4 backdrop-blur">
-              <p className="text-sm font-semibold text-white">Community feed</p>
-              <p className="mt-1 text-sm text-slate-300">Follow readers and see new books in real time.</p>
+              <p className="text-sm font-semibold text-slate-900">Community feed</p>
+              <p className="mt-1 text-sm text-slate-800">Follow readers and see new books in real time.</p>
             </div>
           </div>
         </div>

@@ -64,6 +64,17 @@ export async function listMyReports(userId: string) {
   });
 }
 
+export async function listActionsAgainstMe(userId: string) {
+  return prisma.moderationAction.findMany({
+    where: { onUserId: userId },
+    include: {
+      byUser: { select: { displayName: true } },
+      report: { select: { reason: true, targetType: true } },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+}
+
 export async function applyModerationAction(
   moderator: User,
   reportId: string,

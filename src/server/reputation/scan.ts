@@ -1,5 +1,5 @@
 import { prisma } from "../lib/prisma";
-import { findLowDiversityUsers, findReciprocalOnlyPairs } from "./anti-gaming";
+import { findCollusionGroups, findLowDiversityUsers, findReciprocalOnlyPairs } from "./anti-gaming";
 
 export async function runAntiGamingScan() {
   const recentFlagBoundary = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
@@ -12,16 +12,29 @@ export async function runAntiGamingScan() {
     ownerId: txn.ownerId,
     requesterId: txn.requesterId,
   }));
+
   const pairs = findReciprocalOnlyPairs(input);
+  const collusionGroups = findCollusionGroups(input);
   const lowDiversity = findLowDiversityUsers(input);
+
   const flags = new Map<string, string[]>();
+
   for (const [a, b] of pairs) {
     flags.set(a, [...(flags.get(a) ?? []), `reciprocal-only pair with ${b}`]);
     flags.set(b, [...(flags.get(b) ?? []), `reciprocal-only pair with ${a}`]);
   }
-  for (const userId of lowDiversity) {
-    flags.set(userId, [...(flags.get(userId) ?? []), "fewer than two unique counterparties"]);
+  for (const group of collusionGroups) {
+    const others = group.join(", ");
+    for (const userId of group) {
+      flags.set(userId, [...(flags.get(userId) ?? []), `closed trading group with [${others}]`]);
+    }
   }
+  for (const userId of lowDiversity) {
+    if (!flags.has(userId)) {
+      flags.set(userId, ["fewer than two unique counterparties across 3+ transactions"]);
+    }
+  }
+
   let created = 0;
   for (const [userId, reasons] of flags) {
     const exists = await prisma.report.findFirst({

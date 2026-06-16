@@ -22,10 +22,19 @@ export const ModerationActionSchema = z.object({
   notes: z.string().trim().min(3).max(2000),
 });
 
+const REPORT_RATE_LIMIT = 5;
+const REPORT_RATE_WINDOW_MS = 24 * 60 * 60 * 1000;
+
 export async function fileReport(user: User, input: z.infer<typeof ReportSchema>) {
   const data = ReportSchema.parse(input);
   const target = await resolveTarget(user, data.targetType, data.targetId);
   if (target.targetUserId === user.id) throw new BadRequestError("You cannot create a ticket about yourself");
+  const recentCount = await prisma.report.count({
+    where: { filerId: user.id, createdAt: { gte: new Date(Date.now() - REPORT_RATE_WINDOW_MS) } },
+  });
+  if (recentCount >= REPORT_RATE_LIMIT) {
+    throw new ConflictError("You have filed too many tickets today. Please wait 24 hours.");
+  }
   const duplicate = await prisma.report.findFirst({
     where: {
       filerId: user.id,

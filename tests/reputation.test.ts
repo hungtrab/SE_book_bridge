@@ -8,6 +8,7 @@ import {
 } from "@/server/reputation/scoring";
 
 import {
+  findCollusionGroups,
   findLowDiversityUsers,
   findReciprocalOnlyPairs,
   type CompletedTxn,
@@ -76,15 +77,50 @@ describe("anti-gaming heuristics", () => {
     expect(pairs).toEqual([]);
   });
 
-  it("low-diversity threshold flags users with single partner", () => {
+  it("low-diversity does not flag users with fewer than 3 transactions (new user guard)", () => {
+    // User with only 1-2 completed transactions should NOT be flagged as low-diversity
     const flagged = findLowDiversityUsers([
-      txn("1", "X", "Y"),
-      txn("2", "Y", "X"),    // X and Y both have only 1 counterparty
-      txn("3", "Z", "W"),    // Z has only W
-      txn("4", "W", "P"),    // W now has 2 partners: Z and P; P has only W
+      txn("1", "NewUser", "Bob"),
+      txn("2", "NewUser", "Bob"),
     ]);
-    // X, Y, Z, P should be flagged (one counterparty each); W has 2.
-    expect(new Set(flagged)).toEqual(new Set(["X", "Y", "Z", "P"]));
+    expect(flagged).not.toContain("NewUser");
+  });
+
+  it("low-diversity flags users with 3+ transactions but only 1 unique partner", () => {
+    const txns = [
+      txn("1", "Farmer", "Victim"),
+      txn("2", "Farmer", "Victim"),
+      txn("3", "Farmer", "Victim"),
+    ];
+    const flagged = findLowDiversityUsers(txns);
+    expect(flagged).toContain("Farmer");
+    expect(flagged).toContain("Victim");
+  });
+
+  it("findCollusionGroups catches 3-person ring (A→B→C→A)", () => {
+    const groups = findCollusionGroups([
+      txn("1", "A", "B"),
+      txn("2", "B", "C"),
+      txn("3", "C", "A"),
+    ]);
+    expect(groups).toHaveLength(1);
+    expect(groups[0]).toEqual(["A", "B", "C"]);
+  });
+
+  it("findCollusionGroups does not flag healthy open network", () => {
+    // A trades with B and C; B also trades with D — open network, not a closed group
+    const groups = findCollusionGroups([
+      txn("1", "A", "B"),
+      txn("2", "A", "C"),
+      txn("3", "B", "D"),
+    ]);
+    expect(groups).toHaveLength(0);
+  });
+
+  it("findCollusionGroups ignores pairs (already handled by findReciprocalOnlyPairs)", () => {
+    // A pair of size 2 should not appear in collusion groups (min size is 3)
+    const groups = findCollusionGroups([txn("1", "A", "B"), txn("2", "B", "A")]);
+    expect(groups).toHaveLength(0);
   });
 });
 

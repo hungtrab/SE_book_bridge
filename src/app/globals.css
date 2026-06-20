@@ -536,6 +536,28 @@ select:-webkit-autofill {
   97% { opacity: 1; }
 }
 
+.hotspot-action {
+  animation: hotspot-pulse 2s ease-in-out infinite;
+}
+
+@keyframes hotspot-pulse {
+  0%, 100% { box-shadow: 0 0 12px rgba(201, 168, 76, 0.3); }
+  50% { box-shadow: 0 0 24px rgba(201, 168, 76, 0.6); }
+}
+
+.hotspot-inspect {
+  animation: hotspot-inspect-pulse 3s ease-in-out infinite;
+}
+
+@keyframes hotspot-inspect-pulse {
+  0%, 100% { box-shadow: 0 0 8px rgba(255, 255, 255, 0.1); }
+  50% { box-shadow: 0 0 16px rgba(255, 255, 255, 0.25); }
+}
+
+.game-container:fullscreen {
+  border-radius: 0;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

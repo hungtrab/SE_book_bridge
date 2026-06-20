@@ -5,26 +5,31 @@ export type ChoiceEffect = {
   statusOverride?: GameStatus;
 };
 
-export type StoryChoice = {
+export type ParticleTheme = "stars" | "sand" | "embers" | "gold";
+
+export type Hotspot = {
   id: string;
+  x: number;
+  y: number;
   emoji: string;
   label: string;
-  nextNodeId: string | null;
+  kind: "action" | "inspect";
+  nextNodeId?: string | null;
   effect?: ChoiceEffect;
   flavorText?: string;
+  inspectText?: string;
 };
-
-export type ParticleTheme = "stars" | "sand" | "embers" | "gold";
 
 export type StoryNode = {
   id: string;
   ambiance: string;
   narration: string;
-  choices: StoryChoice[];
+  hotspots: Hotspot[];
   particleTheme: ParticleTheme;
+  sceneWidth: number;
+  backgroundGradient: string;
+  backgroundImage?: string;
   isVictory?: boolean;
-  isGameOver?: boolean;
-  gameOverText?: string;
 };
 
 export type GameState = {

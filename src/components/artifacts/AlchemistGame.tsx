@@ -1,16 +1,15 @@
 "use client";
 
-import { useCallback, useReducer, useState } from "react";
+import { useCallback, useReducer, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 
-import type { GameAction, GameState, StoryChoice } from "@/lib/artifacts/game-types";
+import type { GameAction, GameState, Hotspot } from "@/lib/artifacts/game-types";
 import { INITIAL_NODE_ID, STORY_NODES } from "@/lib/artifacts/alchemist-story";
 import { GameNarration } from "./GameNarration";
-import { GameChoices } from "./GameChoices";
 import { GameOverScreen } from "./GameOverScreen";
 import { VictoryScreen } from "./VictoryScreen";
 import { HealthBar } from "./HealthBar";
-import { SceneIllustration } from "./SceneIllustration";
+import { PanoramaViewer } from "./PanoramaViewer";
 import { DesertParticles } from "./DesertParticles";
 
 const MAX_HEALTH = 100;
@@ -28,11 +27,10 @@ function gameReducer(state: GameState, action: GameAction): GameState {
     case "CHOOSE": {
       const newHealth = Math.max(0, state.health + (action.effect?.healthDelta ?? 0));
       const targetNode = STORY_NODES[action.nextNodeId];
-      const status = targetNode?.isVictory ? "victory" : "playing";
       return {
         currentNodeId: action.nextNodeId,
         health: newHealth,
-        status,
+        status: targetNode?.isVictory ? "victory" : "playing",
         choiceHistory: [...state.choiceHistory, action.choiceId],
         lastFlavorText: action.flavorText ?? null,
       };
@@ -44,159 +42,200 @@ function gameReducer(state: GameState, action: GameAction): GameState {
   }
 }
 
-const backgrounds: Record<string, string> = {
-  "node-1-pyramids": "radial-gradient(ellipse at 50% 20%, #0c1445 0%, #0a0a0f 70%)",
-  "node-2-robbers": "radial-gradient(ellipse at 50% 80%, #1a1208 0%, #0a0a0f 70%)",
-  "node-3-truth": "radial-gradient(ellipse at 50% 50%, #1a0505 0%, #0a0a0f 70%)",
-  "node-4-revelation": "radial-gradient(ellipse at 50% 30%, #0c1445 0%, #0a0a0f 70%)",
-  "node-5-victory": "radial-gradient(ellipse at 50% 40%, #1a1408 0%, #0a0a0f 70%)",
-};
-
 export function AlchemistGame() {
   const [state, dispatch] = useReducer(gameReducer, INITIAL_STATE);
   const [typingDone, setTypingDone] = useState(false);
   const [transitioning, setTransitioning] = useState(false);
   const [flavorText, setFlavorText] = useState<string | null>(null);
+  const [narrationOpen, setNarrationOpen] = useState(true);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const gameRef = useRef<HTMLDivElement>(null);
 
   const node = STORY_NODES[state.currentNodeId];
 
   const handleNarrationComplete = useCallback(() => setTypingDone(true), []);
 
-  function handleChoose(choice: StoryChoice) {
-    if (transitioning) return;
+  function handleHotspot(hotspot: Hotspot) {
+    if (transitioning || hotspot.kind === "inspect") return;
+
     setTransitioning(true);
     setTypingDone(false);
 
-    if (choice.flavorText) {
-      setFlavorText(choice.flavorText);
+    if (hotspot.flavorText) {
+      setFlavorText(hotspot.flavorText);
     }
 
     setTimeout(() => {
       setFlavorText(null);
-      if (choice.effect?.statusOverride === "game_over" || choice.nextNodeId === null) {
-        dispatch({ type: "GAME_OVER", flavorText: choice.flavorText ?? "You have fallen." });
-      } else {
+      if (hotspot.effect?.statusOverride === "game_over" || hotspot.nextNodeId === null) {
+        dispatch({ type: "GAME_OVER", flavorText: hotspot.flavorText ?? "You have fallen." });
+      } else if (hotspot.nextNodeId) {
         dispatch({
           type: "CHOOSE",
-          choiceId: choice.id,
-          nextNodeId: choice.nextNodeId,
-          effect: choice.effect,
-          flavorText: choice.flavorText,
+          choiceId: hotspot.id,
+          nextNodeId: hotspot.nextNodeId,
+          effect: hotspot.effect,
+          flavorText: hotspot.flavorText,
         });
       }
+      setNarrationOpen(true);
       setTransitioning(false);
-    }, choice.flavorText ? 2500 : 600);
+    }, hotspot.flavorText ? 2500 : 600);
   }
 
   function handleRestart() {
     setTypingDone(false);
     setTransitioning(false);
     setFlavorText(null);
+    setNarrationOpen(true);
     dispatch({ type: "RESTART" });
+  }
+
+  function toggleFullscreen() {
+    if (!gameRef.current) return;
+    if (document.fullscreenElement) {
+      document.exitFullscreen();
+      setIsFullscreen(false);
+    } else {
+      gameRef.current.requestFullscreen();
+      setIsFullscreen(true);
+    }
   }
 
   return (
     <div
-      className="game-container relative min-h-[calc(100vh-4rem)] overflow-hidden rounded-2xl"
+      ref={gameRef}
+      className="game-container relative overflow-hidden rounded-2xl"
       style={{
         "--game-bg": "#0a0a0f",
         "--game-text": "#e2e0d8",
         "--game-accent": "#c9a84c",
         "--game-muted": "#6b6860",
-        background: backgrounds[state.currentNodeId] ?? backgrounds["node-1-pyramids"],
-        transition: "background 1s ease",
+        height: isFullscreen ? "100vh" : "calc(100vh - 6rem)",
+        background: "#0a0a0f",
       } as React.CSSProperties}
     >
-      <DesertParticles theme={node?.particleTheme ?? "stars"} />
+      {/* Panorama scene */}
+      <AnimatePresence mode="wait">
+        {state.status === "playing" && node && !flavorText && (
+          <motion.div
+            key={node.id}
+            className="absolute inset-0"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <DesertParticles theme={node.particleTheme} />
+            <PanoramaViewer
+              backgroundGradient={node.backgroundGradient}
+              backgroundImage={node.backgroundImage}
+              sceneWidth={node.sceneWidth}
+              hotspots={node.hotspots}
+              disabled={!typingDone || transitioning}
+              onHotspotClick={handleHotspot}
+            />
+          </motion.div>
+        )}
 
-      <div className="relative z-10 mx-auto flex min-h-[calc(100vh-4rem)] max-w-2xl flex-col px-4 py-8 sm:px-6">
-        {/* Header */}
-        <div className="mb-6 flex items-center justify-between">
-          <div className="font-mono text-xs tracking-wider"
-            style={{ color: "var(--game-accent)" }}>
-            📜 The Alchemist Quest
+        {flavorText && (
+          <motion.div
+            key="flavor"
+            className="absolute inset-0 z-30 flex items-center justify-center bg-black/80 px-6"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <p className="max-w-lg text-center font-serif text-lg italic leading-relaxed sm:text-xl"
+              style={{ color: "var(--game-muted)" }}>
+              {flavorText}
+            </p>
+          </motion.div>
+        )}
+
+        {state.status === "game_over" && !flavorText && (
+          <motion.div
+            key="game-over"
+            className="absolute inset-0 z-30 bg-black/90"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <GameOverScreen flavorText={state.lastFlavorText} onRestart={handleRestart} />
+          </motion.div>
+        )}
+
+        {state.status === "victory" && node && !flavorText && (
+          <motion.div
+            key="victory"
+            className="absolute inset-0 z-30 overflow-y-auto"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={{ background: "radial-gradient(ellipse at 50% 30%, #1a1408 0%, #0a0a0f 70%)" }}
+          >
+            <DesertParticles theme="gold" />
+            <div className="relative z-10">
+              <VictoryScreen
+                narration={node.narration}
+                health={state.health}
+                maxHealth={MAX_HEALTH}
+                onRestart={handleRestart}
+              />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Top bar — ambiance + health + fullscreen */}
+      {state.status === "playing" && node && (
+        <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex items-center justify-between bg-gradient-to-b from-black/60 to-transparent px-4 py-3 sm:px-6">
+          <div className="font-mono text-xs tracking-wider" style={{ color: "var(--game-accent)" }}>
+            📜 {node.ambiance}
           </div>
-          <HealthBar health={state.health} maxHealth={MAX_HEALTH} />
+          <div className="pointer-events-auto flex items-center gap-3">
+            <HealthBar health={state.health} maxHealth={MAX_HEALTH} />
+            <button
+              type="button"
+              onClick={toggleFullscreen}
+              className="rounded-lg bg-black/40 px-2 py-1 text-xs text-white/50 backdrop-blur transition-colors hover:text-white/80"
+            >
+              {isFullscreen ? "⊡" : "⛶"}
+            </button>
+          </div>
         </div>
+      )}
 
-        {/* Main content */}
-        <div className="flex flex-1 flex-col justify-center">
-          <AnimatePresence mode="wait">
-            {flavorText && (
+      {/* Narration panel — collapsible overlay at bottom */}
+      {state.status === "playing" && node && !flavorText && (
+        <div className="absolute inset-x-0 bottom-0 z-20">
+          <button
+            type="button"
+            onClick={() => setNarrationOpen(!narrationOpen)}
+            className="mx-auto mb-1 flex items-center gap-1 rounded-t-lg bg-black/60 px-4 py-1 text-[11px] text-white/50 backdrop-blur transition-colors hover:text-white/80"
+          >
+            {narrationOpen ? "▼ Hide story" : "▲ Show story"}
+          </button>
+          <AnimatePresence>
+            {narrationOpen && (
               <motion.div
-                key="flavor"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="flex min-h-[40vh] items-center justify-center"
+                initial={{ y: "100%" }}
+                animate={{ y: 0 }}
+                exit={{ y: "100%" }}
+                transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                className="max-h-[40vh] overflow-y-auto border-t border-white/10 bg-black/80 px-4 py-4 backdrop-blur-md sm:px-8"
               >
-                <p className="mx-auto max-w-md text-center font-serif text-lg italic leading-relaxed"
-                  style={{ color: "var(--game-muted)" }}>
-                  {flavorText}
-                </p>
-              </motion.div>
-            )}
-
-            {!flavorText && state.status === "playing" && node && (
-              <motion.div
-                key={node.id}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.4 }}
-              >
-                <SceneIllustration nodeId={node.id} />
                 <GameNarration
+                  key={node.id}
                   text={node.narration}
-                  ambiance={node.ambiance}
+                  ambiance=""
                   onComplete={handleNarrationComplete}
-                />
-                <GameChoices
-                  choices={node.choices}
-                  disabled={!typingDone || transitioning}
-                  onChoose={handleChoose}
-                />
-              </motion.div>
-            )}
-
-            {!flavorText && state.status === "game_over" && (
-              <motion.div
-                key="game-over"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-              >
-                <GameOverScreen
-                  flavorText={state.lastFlavorText}
-                  onRestart={handleRestart}
-                />
-              </motion.div>
-            )}
-
-            {!flavorText && state.status === "victory" && node && (
-              <motion.div
-                key="victory"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-              >
-                <VictoryScreen
-                  narration={node.narration}
-                  health={state.health}
-                  maxHealth={MAX_HEALTH}
-                  onRestart={handleRestart}
                 />
               </motion.div>
             )}
           </AnimatePresence>
         </div>
-
-        {/* Footer */}
-        <div className="mt-8 text-center font-mono text-[10px] tracking-wider"
-          style={{ color: "var(--game-muted)", opacity: 0.5 }}>
-          BookBridge Interactive Artifact · Based on &quot;The Alchemist&quot; by Paulo Coelho
-        </div>
-      </div>
+      )}
     </div>
   );
 }

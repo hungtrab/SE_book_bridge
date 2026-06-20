@@ -95,6 +95,10 @@ source, publication dates, and outbound links are stored. Full articles are
 not copied. Each source ID has a database uniqueness constraint, making the
 import idempotent.
 
+Imported content appears in the global `/bulletins` feed. Community feeds
+show member-created posts only; external API content is never inserted into a
+community's visible discussion timeline.
+
 Required Vercel variables:
 
 ```text

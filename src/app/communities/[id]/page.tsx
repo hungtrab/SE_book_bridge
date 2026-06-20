@@ -3,11 +3,9 @@ import { notFound } from "next/navigation";
 
 import { CommentSection } from "@/components/communities/CommentSection";
 import { CommunityActions } from "@/components/communities/CommunityActions";
-import { CommunityModeratorForm } from "@/components/communities/CommunityModeratorForm";
+import { CommunitySidebarPanels } from "@/components/communities/CommunitySidebarPanels";
 import { CommunityPostForm } from "@/components/communities/CommunityPostForm";
 import { InviteCodePanel } from "@/components/communities/InviteCodePanel";
-import { ListingDeleteButton } from "@/components/communities/ListingDeleteButton";
-import { MemberActions } from "@/components/communities/MemberActions";
 import { PostActions, type ReactionName } from "@/components/communities/PostActions";
 import { getCurrentUser } from "@/server/lib/auth-context";
 import { getCommunity } from "@/server/communities/service";
@@ -112,40 +110,7 @@ export default async function CommunityDetailPage({ params }: { params: Promise<
             ))}
           </main>
 
-          <aside className="space-y-4 lg:sticky lg:top-24">
-            <section className="community-card p-4">
-              <div className="flex items-center justify-between">
-                <h2 className="font-bold">Books in this group</h2>
-                {isMember && <Link href={`/listings/new?communityId=${community.id}`} className="text-sm font-semibold text-blue-600">Add book</Link>}
-              </div>
-              <div className="mt-3 space-y-3">
-                {community.listings.slice(0, 6).map((listing) => (
-                  <div key={listing.id} className="relative flex gap-2">
-                    {listing.photos[0] && <img src={listing.photos[0].url} alt={listing.title} className="h-14 w-14 rounded-lg object-cover" />}
-                    <Link href={`/listings/${listing.id}`} className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold">{listing.title}</p>
-                      <p className="truncate text-xs text-gray-500">{listing.author}</p>
-                    </Link>
-                    {(isMod || listing.ownerId === user?.id) && <ListingDeleteButton listingId={listing.id} communityId={community.id} />}
-                  </div>
-                ))}
-              </div>
-            </section>
-
-            <section className="community-card p-4">
-              <h2 className="font-bold">Members</h2>
-              {isMod && <div className="mt-3"><CommunityModeratorForm communityId={community.id} /></div>}
-              <div className="mt-3 space-y-2">
-                {community.memberships.slice(0, 12).map((membership) => (
-                  <div key={membership.userId} className="flex items-center justify-between gap-2">
-                    <Link href={`/profile/${membership.userId}`} className="truncate text-sm font-semibold">{membership.user.displayName}</Link>
-                    <span className="text-xs text-gray-500">{membership.userId === community.ownerId ? "Owner" : membership.role}</span>
-                    {isMod && membership.userId !== community.ownerId && membership.userId !== user?.id && <MemberActions communityId={community.id} userId={membership.userId} currentRole={membership.role} />}
-                  </div>
-                ))}
-              </div>
-            </section>
-          </aside>
+          <aside className="lg:sticky lg:top-24"><CommunitySidebarPanels communityId={community.id} ownerId={community.ownerId} currentUserId={user?.id} isMember={isMember} isMod={isMod} listings={community.listings} members={community.memberships} /></aside>
         </div>
       )}
     </div>

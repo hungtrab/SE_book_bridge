@@ -101,6 +101,7 @@ export async function getCommunity(id: string, userId?: string) {
         include: { photos: { take: 1, orderBy: { position: "asc" } } },
       },
       posts: {
+        where: { kind: "MEMBER" },
         orderBy: [{ isPinned: "desc" }, { createdAt: "desc" }],
         take: 20,
         include: {
@@ -448,6 +449,12 @@ export async function reactToPost(
   return prisma.$transaction(async (tx) => {
     const post = await tx.communityPost.findUnique({ where: { id: postId } });
     if (!post || post.communityId !== communityId) throw new NotFoundError("Post not found");
+    if (post.kind !== "BULLETIN") {
+      const membership = await tx.communityMembership.findUnique({
+        where: { userId_communityId: { userId: actor.id, communityId } },
+      });
+      if (!membership && actor.role !== "ADMIN") throw new ForbiddenError("Join the community to react");
+    }
 
     const existing = await tx.communityPostLike.findUnique({
       where: { userId_postId: { userId: actor.id, postId } },
@@ -505,7 +512,7 @@ export async function createComment(
     });
     const community = await tx.community.findUnique({ where: { id: communityId } });
     if (!community) throw new NotFoundError("Community not found");
-    if (!membership && community.ownerId !== actor.id && actor.role !== "ADMIN") {
+    if (!membership && post.kind !== "BULLETIN" && community.ownerId !== actor.id && actor.role !== "ADMIN") {
       throw new ForbiddenError("You must be a member to comment");
     }
     if (data.parentId) {
@@ -564,7 +571,9 @@ export async function reactToComment(
     const membership = await tx.communityMembership.findUnique({
       where: { userId_communityId: { userId: actor.id, communityId } },
     });
-    if (!membership && actor.role !== "ADMIN") throw new ForbiddenError("Join the community to react");
+    const post = await tx.communityPost.findUnique({ where: { id: postId }, select: { kind: true } });
+    if (!post) throw new NotFoundError("Post not found");
+    if (!membership && post.kind !== "BULLETIN" && actor.role !== "ADMIN") throw new ForbiddenError("Join the community to react");
     const existing = await tx.communityCommentReaction.findUnique({
       where: { userId_commentId: { userId: actor.id, commentId } },
     });

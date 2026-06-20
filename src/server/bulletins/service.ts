@@ -72,6 +72,36 @@ export async function runDailyBulletinImport() {
   };
 }
 
+export async function listBulletins() {
+  return prisma.communityPost.findMany({
+    where: { kind: "BULLETIN" },
+    orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }],
+    take: 30,
+    include: {
+      community: { select: { id: true, name: true } },
+      author: { select: { id: true, displayName: true, avatarUrl: true } },
+      likes: { select: { userId: true, reaction: true } },
+      comments: {
+        where: { parentId: null },
+        take: 10,
+        orderBy: { createdAt: "asc" },
+        include: {
+          author: { select: { id: true, displayName: true, avatarUrl: true } },
+          reactions: { select: { userId: true, reaction: true } },
+          replies: {
+            take: 5,
+            orderBy: { createdAt: "asc" },
+            include: {
+              author: { select: { id: true, displayName: true, avatarUrl: true } },
+              reactions: { select: { userId: true, reaction: true } },
+            },
+          },
+        },
+      },
+    },
+  });
+}
+
 async function fetchOpenLibraryTrending(): Promise<Bulletin[]> {
   const response = await fetch("https://openlibrary.org/trending/daily.json?limit=12", {
     headers: { "User-Agent": "BookBridge/1.0 (community book discovery)" },

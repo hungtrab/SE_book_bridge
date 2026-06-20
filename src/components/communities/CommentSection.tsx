@@ -1,8 +1,8 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import { REACTIONS, type ReactionName } from "./PostActions";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 
 interface Comment {
   id: string;
@@ -25,13 +25,13 @@ interface Props {
 
 export function CommentSection(props: Props) {
   const { communityId, postId, initialComments, commentCount, canComment, currentUserId, isMod } = props;
-  const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const [comments, setComments] = useState(initialComments);
   const [body, setBody] = useState("");
   const [replyTo, setReplyTo] = useState<{ id: string; name: string } | null>(null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   function focusComposer(comment?: Comment) {
     setReplyTo(comment ? { id: comment.id, name: comment.author.displayName } : null);
@@ -63,19 +63,33 @@ export function CommentSection(props: Props) {
   }
 
   async function deleteComment(commentId: string) {
-    if (!confirm("Delete this comment?")) return;
     await fetch(`/api/communities/${communityId}/posts/${postId}/comments/${commentId}`, { method: "DELETE" });
     setComments((rows) => rows.filter((row) => row.id !== commentId).map((row) => ({ ...row, replies: row.replies?.filter((reply) => reply.id !== commentId) })));
-    router.refresh();
+    setDeleteId(null);
   }
 
   async function react(commentId: string, reaction: ReactionName) {
-    await fetch(`/api/communities/${communityId}/posts/${postId}/comments/${commentId}/reactions`, {
+    if (!currentUserId) return;
+    const before = comments;
+    const update = (comment: Comment): Comment => {
+      if (comment.id !== commentId) return { ...comment, replies: comment.replies?.map(update) };
+      const existing = comment.reactions.find((row) => row.userId === currentUserId);
+      const reactions = existing?.reaction === reaction
+        ? comment.reactions.filter((row) => row.userId !== currentUserId)
+        : [...comment.reactions.filter((row) => row.userId !== currentUserId), { userId: currentUserId, reaction }];
+      return { ...comment, reactions };
+    };
+    setComments((rows) => rows.map(update));
+    const res = await fetch(`/api/communities/${communityId}/posts/${postId}/comments/${commentId}/reactions`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ reaction }),
     });
-    router.refresh();
+    if (!res.ok) {
+      setComments(before);
+      const body = await res.json().catch(() => ({}));
+      setError(body.error ?? "Could not save reaction");
+    }
   }
 
   const hiddenCount = Math.max(0, commentCount - comments.reduce((sum, comment) => sum + 1 + (comment.replies?.length ?? 0), 0));
@@ -84,10 +98,10 @@ export function CommentSection(props: Props) {
       {hiddenCount > 0 && <p className="text-sm font-semibold text-gray-500">View {hiddenCount} more comments</p>}
       {comments.map((comment) => (
         <div key={comment.id}>
-          <CommentBubble comment={comment} currentUserId={currentUserId} canDelete={comment.author.id === currentUserId || isMod} canReact={canComment} onReply={() => focusComposer(comment)} onDelete={deleteComment} onReact={react} />
+          <CommentBubble comment={comment} currentUserId={currentUserId} canDelete={comment.author.id === currentUserId || isMod} canReact={canComment} onReply={() => focusComposer(comment)} onDelete={setDeleteId} onReact={react} />
           {(comment.replies ?? []).map((reply) => (
             <div key={reply.id} className="ml-10 border-l-2 border-gray-200 pl-3">
-              <CommentBubble comment={reply} currentUserId={currentUserId} canDelete={reply.author.id === currentUserId || isMod} canReact={canComment} onReply={() => focusComposer(comment)} onDelete={deleteComment} onReact={react} />
+              <CommentBubble comment={reply} currentUserId={currentUserId} canDelete={reply.author.id === currentUserId || isMod} canReact={canComment} onReply={() => focusComposer(comment)} onDelete={setDeleteId} onReact={react} />
             </div>
           ))}
         </div>
@@ -103,6 +117,7 @@ export function CommentSection(props: Props) {
         </form>
       )}
       {error && <p className="text-sm text-red-600">{error}</p>}
+      <ConfirmDialog open={Boolean(deleteId)} title="Delete this comment?" message="This comment and any replies beneath it will be permanently removed." confirmLabel="Delete" dangerous onConfirm={() => deleteId && deleteComment(deleteId)} onCancel={() => setDeleteId(null)} />
     </div>
   );
 }
@@ -116,7 +131,6 @@ function CommentBubble({ comment, currentUserId, canDelete, canReact, onReply, o
   onDelete: (id: string) => void;
   onReact: (id: string, reaction: ReactionName) => void;
 }) {
-  const [picker, setPicker] = useState(false);
   const mine = comment.reactions.find((reaction) => reaction.userId === currentUserId)?.reaction;
   return (
     <div className="my-2 flex items-start gap-2">
@@ -128,11 +142,13 @@ function CommentBubble({ comment, currentUserId, canDelete, canReact, onReply, o
           {comment.reactions.length > 0 && <span className="absolute -bottom-3 right-2 rounded-full bg-white px-1.5 py-0.5 text-xs shadow">{comment.reactions.slice(0, 3).map((reaction) => REACTIONS.find((item) => item.type === reaction.reaction)?.emoji).join("")} {comment.reactions.length}</span>}
         </div>
         <div className="relative mt-1 flex gap-3 px-2 text-xs font-semibold text-gray-500">
-          <button type="button" disabled={!canReact} onClick={() => onReact(comment.id, mine ?? "LIKE")} onMouseEnter={() => canReact && setPicker(true)} className={mine ? "text-blue-600" : ""}>{mine ? REACTIONS.find((item) => item.type === mine)?.label : "Like"}</button>
+          <span className="reaction-hover-zone inline-block">
+          <span className="reaction-picker reaction-picker-comment">{REACTIONS.map((reaction) => <button key={reaction.type} type="button" title={reaction.label} onClick={() => onReact(comment.id, reaction.type)}>{reaction.emoji}</button>)}</span>
+          <button type="button" disabled={!canReact} onClick={() => onReact(comment.id, mine ?? "LIKE")} className={mine ? "text-blue-600" : ""}>{mine ? REACTIONS.find((item) => item.type === mine)?.label : "Like"}</button>
+          </span>
           <button type="button" onClick={onReply}>Reply</button>
           <span>{new Date(comment.createdAt).toLocaleDateString()}</span>
           {canDelete && <button type="button" onClick={() => onDelete(comment.id)} className="text-red-500">Delete</button>}
-          {picker && <div className="reaction-picker reaction-picker-comment" onMouseLeave={() => setPicker(false)}>{REACTIONS.map((reaction) => <button key={reaction.type} type="button" title={reaction.label} onClick={() => { onReact(comment.id, reaction.type); setPicker(false); }}>{reaction.emoji}</button>)}</div>}
         </div>
       </div>
     </div>

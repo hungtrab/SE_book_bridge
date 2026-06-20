@@ -9,6 +9,9 @@ const SOURCE_LABELS: Record<string, string> = {
   projectGutenberg: "Project Gutenberg",
   internetArchive: "Internet Archive",
   newYorkTimes: "NYT Best Sellers",
+  guardianBooks: "Guardian Books",
+  nprBooks: "NPR Book of the Day",
+  apBooks: "AP Books & Literature",
 };
 
 export function BulletinImportPanel() {
@@ -36,7 +39,7 @@ export function BulletinImportPanel() {
         router.refresh();
       }
     } catch {
-      setError("Network error — could not reach the bulletin import service.");
+      setError("Network error - could not reach the bulletin import service.");
     } finally {
       setPending(false);
     }
@@ -44,9 +47,10 @@ export function BulletinImportPanel() {
 
   return (
     <div className="community-card overflow-hidden">
-      {/* Header */}
       <div className="flex items-center gap-2 border-b border-slate-100 bg-gradient-to-r from-blue-50 to-violet-50 px-4 py-3">
-        <span className="text-lg">📰</span>
+        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-xs font-black text-blue-700 shadow-sm">
+          RSS
+        </span>
         <div>
           <p className="text-xs font-bold uppercase tracking-widest text-blue-600">Admin</p>
           <h3 className="text-sm font-black text-gray-900">Bulletin sources</h3>
@@ -60,7 +64,10 @@ export function BulletinImportPanel() {
           <strong className="text-gray-700">Library of Congress</strong>,{" "}
           <strong className="text-gray-700">Project Gutenberg</strong>,{" "}
           <strong className="text-gray-700">Internet Archive</strong>, and{" "}
-          <strong className="text-gray-700">NYT Best Sellers</strong> when configured.
+          <strong className="text-gray-700">NYT Best Sellers</strong> when configured, plus daily
+          books coverage from <strong className="text-gray-700">Guardian Books</strong>,{" "}
+          <strong className="text-gray-700">NPR Book of the Day</strong>, and{" "}
+          <strong className="text-gray-700">AP Books &amp; Literature</strong>.
         </p>
 
         <button
@@ -71,34 +78,40 @@ export function BulletinImportPanel() {
         >
           {pending ? (
             <span className="flex items-center justify-center gap-2">
-              <svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
+              <svg
+                className="h-3.5 w-3.5 animate-spin"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2.5}
+              >
                 <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
               </svg>
-              Importing…
+              Importing...
             </span>
           ) : (
-            "🔄 Refresh bulletin feed"
+            "Refresh bulletin feed"
           )}
         </button>
 
-        {/* Success result */}
         {result && (
           <div className="rounded-xl border border-green-200 bg-green-50 p-3 text-xs">
             <p className="font-bold text-green-700">
-              ✅ {result.created} new · {result.skipped} already existed
+              Imported {result.created} new / {result.skipped} already existed
             </p>
             <ul className="mt-1.5 space-y-0.5 text-green-600">
               {Object.entries(result.sources).map(([source, count]) => (
-                <li key={source}>{SOURCE_LABELS[source] ?? source}: {count}</li>
+                <li key={source}>
+                  {SOURCE_LABELS[source] ?? source}: {count}
+                </li>
               ))}
             </ul>
           </div>
         )}
 
-        {/* Error */}
         {error && (
           <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-700">
-            ⚠️ {error}
+            Import failed: {error}
           </div>
         )}
       </div>

@@ -88,7 +88,12 @@ Sources:
   feed;
 - [Internet Archive](https://archive.org/), using the public advanced search
   API for recently archived texts;
-- optional [New York Times Books API](https://developer.nytimes.com/docs/books-product/1/overview).
+- optional [New York Times Books API](https://developer.nytimes.com/docs/books-product/1/overview);
+- [Guardian Books](https://www.theguardian.com/books), using its daily books RSS feed;
+- [NPR Book of the Day](https://www.npr.org/podcasts/510364/book-of-the-day),
+  using the official podcast feed;
+- [AP Books & Literature](https://apnews.com/hub/books-and-literature), using
+  the current article links published on the AP books hub.
 
 Google Books remains available for future metadata enrichment through its
 [official API](https://developers.google.com/books/docs/v1/using), but it is

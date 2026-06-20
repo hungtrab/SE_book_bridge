@@ -17,6 +17,19 @@ type Bulletin = {
   publishedAt?: Date;
 };
 
+export type BulletinCommunitySummary = {
+  id: string;
+  name: string;
+  description: string | null;
+  memberCount: number;
+  ownerId: string;
+  owner: {
+    id: string;
+    displayName: string;
+    avatarUrl: string | null;
+  };
+};
+
 type BulletinSource = {
   key: string;
   label: string;
@@ -29,6 +42,9 @@ const BULLETIN_SOURCES: BulletinSource[] = [
   { key: "projectGutenberg", label: "Project Gutenberg", fetch: fetchProjectGutenbergDaily },
   { key: "internetArchive", label: "Internet Archive", fetch: fetchInternetArchiveTexts },
   { key: "newYorkTimes", label: "NYT Best Sellers", fetch: fetchNewYorkTimesBestSellers },
+  { key: "guardianBooks", label: "Guardian Books", fetch: fetchGuardianBooks },
+  { key: "nprBooks", label: "NPR Book of the Day", fetch: fetchNprBookOfTheDay },
+  { key: "apBooks", label: "AP Books & Literature", fetch: fetchApBooksAndLiterature },
 ];
 
 export async function runDailyBulletinImport() {
@@ -94,7 +110,16 @@ async function queryBulletins() {
     orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }],
     take: 30,
     include: {
-      community: { select: { id: true, name: true } },
+      community: {
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          memberCount: true,
+          ownerId: true,
+          owner: { select: { id: true, displayName: true, avatarUrl: true } },
+        },
+      },
       author: { select: { id: true, displayName: true, avatarUrl: true } },
       likes: { select: { userId: true, reaction: true } },
       comments: {
@@ -309,6 +334,66 @@ async function fetchNewYorkTimesBestSellers(): Promise<Bulletin[]> {
   });
 }
 
+async function fetchGuardianBooks(): Promise<Bulletin[]> {
+  const response = await fetch("https://www.theguardian.com/books/rss", {
+    headers: { "User-Agent": "BookBridge/1.0 (community book discovery; admin@bookbridge.local)" },
+    cache: "no-store",
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+  });
+  if (!response.ok) throw new Error(`Guardian Books returned ${response.status}`);
+  return parseRss(await response.text(), "Guardian Books")
+    .map((item) => ({
+      ...item,
+      summary: item.summary || "Latest Guardian book coverage is available. Open the article to read the full piece and discuss it with the community.",
+    }))
+    .slice(0, MAX_PER_SOURCE);
+}
+
+async function fetchNprBookOfTheDay(): Promise<Bulletin[]> {
+  const response = await fetch("https://feeds.npr.org/510364/podcast.xml", {
+    headers: { "User-Agent": "BookBridge/1.0 (community book discovery; admin@bookbridge.local)" },
+    cache: "no-store",
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+  });
+  if (!response.ok) throw new Error(`NPR Book of the Day returned ${response.status}`);
+  return parseRss(await response.text(), "NPR Book of the Day")
+    .map((item) => ({
+      ...item,
+      summary: item.summary || "NPR has a new Book of the Day episode. Open the episode page to read the show notes and discuss the book pick.",
+    }))
+    .slice(0, MAX_PER_SOURCE);
+}
+
+async function fetchApBooksAndLiterature(): Promise<Bulletin[]> {
+  const response = await fetch("https://apnews.com/hub/books-and-literature", {
+    headers: { "User-Agent": "BookBridge/1.0 (community book discovery; admin@bookbridge.local)" },
+    cache: "no-store",
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+  });
+  if (!response.ok) throw new Error(`AP Books & Literature returned ${response.status}`);
+  const html = await response.text();
+  const items: Bulletin[] = [];
+  const seen = new Set<string>();
+  for (const match of html.matchAll(/data-posted-date-timestamp="(\d+)"[\s\S]{0,2200}?<a class="Link" aria-label="([^"]+)" href="(https:\/\/apnews\.com\/article\/[^"]+)"/g)) {
+    const publishedAt = new Date(Number.parseInt(match[1], 10));
+    const title = decodeXml(match[2]);
+    const sourceUrl = match[3];
+    const externalId = sourceUrl.split("/article/").pop();
+    if (!externalId || seen.has(externalId)) continue;
+    seen.add(externalId);
+    items.push({
+      sourceName: "AP Books & Literature",
+      externalId,
+      sourceUrl,
+      title,
+      summary: `${title} is the latest AP Books & Literature coverage. Open the article to read the report and discuss it with the community.`,
+      publishedAt: Number.isNaN(publishedAt.getTime()) ? undefined : publishedAt,
+    });
+    if (items.length >= MAX_PER_SOURCE) break;
+  }
+  return items;
+}
+
 export function parseRss(xml: string, sourceName: string): Bulletin[] {
   return [...xml.matchAll(/<item\b[^>]*>([\s\S]*?)<\/item>/gi)].slice(0, MAX_PER_SOURCE).flatMap((match) => {
     const item = match[1];
@@ -378,7 +463,7 @@ function textValue(value: unknown) {
 
 function clip(value: string, max: number) {
   if (value.length <= max) return value;
-  return `${value.slice(0, max - 1).trimEnd()}…`;
+  return `${value.slice(0, max - 1).trimEnd()}...`;
 }
 
 function sourceCounts(results: Array<PromiseSettledResult<Bulletin[]>>) {

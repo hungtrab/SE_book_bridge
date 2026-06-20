@@ -25,6 +25,9 @@ const SOURCE_THEME: Record<string, { bg: string; text: string; icon: string }> =
   "Library of Congress — Bookmarked": { bg: "from-amber-500 to-orange-600", text: "text-amber-50", icon: "🏛️" },
   "Library of Congress — Bibliomania": { bg: "from-amber-500 to-orange-600", text: "text-amber-50", icon: "📖" },
   "The New York Times Best Sellers": { bg: "from-gray-800 to-gray-900", text: "text-gray-50",  icon: "🗞️" },
+  "Guardian Books": { bg: "from-indigo-500 to-violet-600", text: "text-indigo-50", icon: "GB" },
+  "NPR Book of the Day": { bg: "from-cyan-500 to-sky-600", text: "text-cyan-50", icon: "NPR" },
+  "AP Books & Literature": { bg: "from-amber-600 to-red-600", text: "text-orange-50", icon: "AP" },
 };
 
 function sourceTheme(name: string | null) {

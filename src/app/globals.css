@@ -258,6 +258,112 @@ select:-webkit-autofill {
     font-size: 0.875rem;
   }
 
+  .community-card {
+    border: 1px solid rgba(148, 163, 184, 0.28);
+    border-radius: 1rem;
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08), 0 10px 30px rgba(15, 23, 42, 0.05);
+  }
+
+  .community-cover {
+    overflow: hidden;
+    border: 1px solid rgba(148, 163, 184, 0.28);
+    border-radius: 1.25rem;
+    background: #fff;
+    box-shadow: 0 10px 35px rgba(15, 23, 42, 0.08);
+  }
+
+  .community-cover-art {
+    min-height: 190px;
+    background:
+      radial-gradient(circle at 20% 30%, rgba(255,255,255,.6), transparent 26%),
+      linear-gradient(135deg, #2563eb, #7c3aed 55%, #ec4899);
+  }
+
+  .community-avatar {
+    display: inline-flex;
+    width: 2.6rem;
+    height: 2.6rem;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #2563eb, #7c3aed);
+    color: #fff;
+    font-weight: 800;
+  }
+
+  .community-avatar-sm {
+    width: 2rem;
+    height: 2rem;
+    font-size: .75rem;
+  }
+
+  .community-composer-trigger {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    gap: .75rem;
+    border: 1px solid rgba(148, 163, 184, 0.28);
+    border-radius: 1rem;
+    background: #fff;
+    padding: .8rem 1rem;
+    color: #6b7280;
+    text-align: left;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+  }
+
+  .community-composer-trigger span:last-child {
+    flex: 1;
+    border-radius: 999px;
+    background: #f3f4f6;
+    padding: .7rem 1rem;
+  }
+
+  .community-action {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: center;
+    gap: .45rem;
+    border-radius: .5rem;
+    padding: .55rem;
+    font-size: .9rem;
+    font-weight: 700;
+    color: #4b5563;
+  }
+
+  .community-action:hover {
+    background: #f3f4f6;
+  }
+
+  .reaction-picker {
+    position: absolute;
+    bottom: 2.7rem;
+    left: 0;
+    z-index: 30;
+    display: flex;
+    gap: .2rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 999px;
+    background: #fff;
+    padding: .35rem;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, .2);
+  }
+
+  .reaction-picker button {
+    font-size: 1.65rem;
+    transition: transform 120ms ease;
+  }
+
+  .reaction-picker button:hover {
+    transform: translateY(-5px) scale(1.25);
+  }
+
+  .reaction-picker-comment {
+    bottom: 1.4rem;
+  }
+
   /* ---- Like / heart pop ---- */
   .like-pill {
     display: inline-flex;

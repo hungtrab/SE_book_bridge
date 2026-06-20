@@ -28,6 +28,7 @@ export const CommunityModeratorGrantSchema = z.object({
 export const CommunityPostCreateSchema = z.object({
   title: z.string().trim().min(1).max(200),
   body: z.string().trim().min(1).max(5000),
+  imageUrl: z.string().url().max(1000).optional(),
   isPinned: z.boolean().optional().default(false),
 });
 
@@ -37,6 +38,11 @@ export const JoinByCodeSchema = z.object({
 
 export const CommunityPostCommentCreateSchema = z.object({
   body: z.string().trim().min(1).max(2000),
+  parentId: z.string().trim().min(1).optional(),
+});
+
+export const ReactionSchema = z.object({
+  reaction: z.enum(["LIKE", "LOVE", "CARE", "HAHA", "WOW", "SAD", "ANGRY"]),
 });
 
 function generateInviteCode(): string {
@@ -100,11 +106,23 @@ export async function getCommunity(id: string, userId?: string) {
         include: {
           author: { select: { id: true, displayName: true, avatarUrl: true } },
           comments: {
-            take: 5,
+            where: { parentId: null },
+            take: 10,
             orderBy: { createdAt: "asc" },
-            include: { author: { select: { id: true, displayName: true, avatarUrl: true } } },
+            include: {
+              author: { select: { id: true, displayName: true, avatarUrl: true } },
+              reactions: { select: { userId: true, reaction: true } },
+              replies: {
+                take: 5,
+                orderBy: { createdAt: "asc" },
+                include: {
+                  author: { select: { id: true, displayName: true, avatarUrl: true } },
+                  reactions: { select: { userId: true, reaction: true } },
+                },
+              },
+            },
           },
-          ...(userId ? { likes: { where: { userId }, select: { userId: true } } } : {}),
+          likes: { select: { userId: true, reaction: true } },
         },
       },
     },
@@ -336,6 +354,7 @@ export async function createCommunityPost(
         authorId: actor.id,
         title: data.title,
         body: data.body,
+        imageUrl: data.imageUrl,
         isPinned: data.isPinned,
       },
       include: { author: { select: { id: true, displayName: true, avatarUrl: true } } },
@@ -419,7 +438,13 @@ export async function grantCommunityModeratorById(actor: User, communityId: stri
   });
 }
 
-export async function likePost(actor: User, communityId: string, postId: string) {
+export async function reactToPost(
+  actor: User,
+  communityId: string,
+  postId: string,
+  input: z.infer<typeof ReactionSchema>,
+) {
+  const data = ReactionSchema.parse(input);
   return prisma.$transaction(async (tx) => {
     const post = await tx.communityPost.findUnique({ where: { id: postId } });
     if (!post || post.communityId !== communityId) throw new NotFoundError("Post not found");
@@ -428,22 +453,28 @@ export async function likePost(actor: User, communityId: string, postId: string)
       where: { userId_postId: { userId: actor.id, postId } },
     });
 
-    if (existing) {
+    if (existing?.reaction === data.reaction) {
       await tx.communityPostLike.delete({ where: { userId_postId: { userId: actor.id, postId } } });
       await tx.communityPost.update({ where: { id: postId }, data: { likeCount: { decrement: 1 } } });
       await tx.communityMembership.updateMany({
         where: { userId: actor.id, communityId },
         data: { communityPoints: { decrement: 2 } },
       });
-      return { liked: false, likeCount: post.likeCount - 1 };
+      return { reacted: false, reaction: null, likeCount: Math.max(0, post.likeCount - 1) };
     }
 
-    await tx.communityPostLike.create({ data: { userId: actor.id, postId } });
-    await tx.communityPost.update({ where: { id: postId }, data: { likeCount: { increment: 1 } } });
-    await tx.communityMembership.updateMany({
-      where: { userId: actor.id, communityId },
-      data: { communityPoints: { increment: 2 } },
+    await tx.communityPostLike.upsert({
+      where: { userId_postId: { userId: actor.id, postId } },
+      create: { userId: actor.id, postId, reaction: data.reaction },
+      update: { reaction: data.reaction },
     });
+    if (!existing) {
+      await tx.communityPost.update({ where: { id: postId }, data: { likeCount: { increment: 1 } } });
+      await tx.communityMembership.updateMany({
+        where: { userId: actor.id, communityId },
+        data: { communityPoints: { increment: 2 } },
+      });
+    }
 
     if (post.authorId !== actor.id) {
       await dispatchNotifications(tx, {
@@ -455,7 +486,7 @@ export async function likePost(actor: User, communityId: string, postId: string)
       });
     }
 
-    return { liked: true, likeCount: post.likeCount + 1 };
+    return { reacted: true, reaction: data.reaction, likeCount: post.likeCount + (existing ? 0 : 1) };
   });
 }
 
@@ -477,10 +508,22 @@ export async function createComment(
     if (!membership && community.ownerId !== actor.id && actor.role !== "ADMIN") {
       throw new ForbiddenError("You must be a member to comment");
     }
+    if (data.parentId) {
+      const parent = await tx.communityPostComment.findUnique({
+        where: { id: data.parentId },
+        select: { postId: true, parentId: true },
+      });
+      if (!parent || parent.postId !== postId) throw new NotFoundError("Parent comment not found");
+      if (parent.parentId) throw new ConflictError("Replies can only be nested one level");
+    }
 
     const comment = await tx.communityPostComment.create({
-      data: { postId, authorId: actor.id, body: data.body },
-      include: { author: { select: { id: true, displayName: true, avatarUrl: true } } },
+      data: { postId, authorId: actor.id, body: data.body, parentId: data.parentId },
+      include: {
+        author: { select: { id: true, displayName: true, avatarUrl: true } },
+        reactions: { select: { userId: true, reaction: true } },
+        replies: true,
+      },
     });
     await tx.communityPost.update({ where: { id: postId }, data: { commentCount: { increment: 1 } } });
     await tx.communityMembership.updateMany({
@@ -501,6 +544,42 @@ export async function createComment(
     }
 
     return comment;
+  });
+}
+
+export async function reactToComment(
+  actor: User,
+  communityId: string,
+  postId: string,
+  commentId: string,
+  input: z.infer<typeof ReactionSchema>,
+) {
+  const data = ReactionSchema.parse(input);
+  return prisma.$transaction(async (tx) => {
+    const comment = await tx.communityPostComment.findUnique({
+      where: { id: commentId },
+      select: { postId: true },
+    });
+    if (!comment || comment.postId !== postId) throw new NotFoundError("Comment not found");
+    const membership = await tx.communityMembership.findUnique({
+      where: { userId_communityId: { userId: actor.id, communityId } },
+    });
+    if (!membership && actor.role !== "ADMIN") throw new ForbiddenError("Join the community to react");
+    const existing = await tx.communityCommentReaction.findUnique({
+      where: { userId_commentId: { userId: actor.id, commentId } },
+    });
+    if (existing?.reaction === data.reaction) {
+      await tx.communityCommentReaction.delete({
+        where: { userId_commentId: { userId: actor.id, commentId } },
+      });
+      return { reacted: false, reaction: null };
+    }
+    await tx.communityCommentReaction.upsert({
+      where: { userId_commentId: { userId: actor.id, commentId } },
+      create: { userId: actor.id, commentId, reaction: data.reaction },
+      update: { reaction: data.reaction },
+    });
+    return { reacted: true, reaction: data.reaction };
   });
 }
 

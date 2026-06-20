@@ -7,6 +7,7 @@ import { ReputationBadge } from "@/components/reputation/ReputationBadge";
 import { getCurrentUser } from "@/server/lib/auth-context";
 import { getListing } from "@/server/listings/service";
 import { relatedListings } from "@/server/search/service";
+import { genreLabel, humanizeEnum } from "@/lib/labels";
 
 export default async function ListingDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -48,10 +49,10 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
       )}
 
       <section className="grid gap-3 rounded border p-4 sm:grid-cols-2">
-        <Info label="Status" value={listing.status} />
-        <Info label="Type" value={listing.transactionType} />
-        <Info label="Condition" value={listing.condition} />
-        <Info label="Genre" value={listing.genre} />
+        <Info label="Status" value={humanizeEnum(listing.status)} />
+        <Info label="Type" value={humanizeEnum(listing.transactionType)} />
+        <Info label="Condition" value={humanizeEnum(listing.condition)} />
+        <Info label="Genre" value={genreLabel(listing.genre)} />
         <Info label="ISBN" value={listing.isbn ?? "N/A"} />
         <Info label="Publisher" value={listing.publisher ?? "N/A"} />
         <Info label="Publication year" value={listing.publicationYear?.toString() ?? "N/A"} />

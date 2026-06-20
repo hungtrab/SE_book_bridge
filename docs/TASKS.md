@@ -182,7 +182,7 @@ Dùng pattern **domain events** (`emit("txn.completed", { ... })`); các module 
 **Phần khó**: notification dispatcher — phải subscribe events từ TẤT CẢ các module khác và quyết định ai cần biết gì. Dùng pattern map (`event.kind -> recipients[]`). Đây là chỗ duy nhất chạm tới database của 5 người còn lại (chỉ READ).
 
 **Ops**:
-- `docker-compose.yml`, `.github/workflows/ci.yml`, `Dockerfile` for production deploy.
+- `.github/workflows/ci.yml` and Vercel configuration for production deploy.
 - Migration discipline: ai sửa schema phải tạo migration; không ai được `prisma db push` lên branch shared.
 
 ---

@@ -2,14 +2,17 @@ import { NextRequest } from "next/server";
 
 import { requireUser } from "@/server/lib/auth-context";
 import { withErrorHandling } from "@/server/lib/errors";
-import { ReactionSchema, reactToPost } from "@/server/communities/service";
+import { ReactionSchema, reactToComment } from "@/server/communities/service";
 
-export const POST = withErrorHandling(async (req: NextRequest, ctx: { params: Promise<{ id: string; postId: string }> }) => {
+export const POST = withErrorHandling(async (
+  req: NextRequest,
+  ctx: { params: Promise<{ id: string; postId: string; commentId: string }> },
+) => {
   const user = await requireUser();
-  const { id, postId } = await ctx.params;
+  const { id, postId, commentId } = await ctx.params;
   const parsed = ReactionSchema.safeParse(await req.json().catch(() => ({})));
   if (!parsed.success) {
     return Response.json({ error: "Invalid reaction", details: parsed.error.format() }, { status: 400 });
   }
-  return Response.json(await reactToPost(user, id, postId, parsed.data));
+  return Response.json(await reactToComment(user, id, postId, commentId, parsed.data));
 });

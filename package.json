@@ -12,8 +12,10 @@
     "test:watch": "vitest",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
+    "db:deploy": "prisma migrate deploy",
     "db:reset": "prisma migrate reset --force",
     "db:seed": "prisma db seed",
+    "bulletins:import": "tsx scripts/import-book-bulletins.ts",
     "db:seed:search-benchmark": "tsx prisma/seed-search-benchmark.ts",
     "db:studio": "prisma studio"
   },

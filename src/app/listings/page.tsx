@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { LISTING_GENRES } from "@/lib/listing-genres";
+import { genreLabel, humanizeEnum } from "@/lib/labels";
 import { ListingQuerySchema, searchListings } from "@/server/listings/service";
 
 export default async function ListingsPage({
@@ -35,7 +36,7 @@ export default async function ListingsPage({
         <input name="q" placeholder="Search title, author, ISBN" className="rounded border px-2 py-1 sm:col-span-2" defaultValue={single(params?.q) ?? ""} />
         <select name="genre" className="rounded border px-2 py-1" defaultValue={single(params?.genre) ?? ""}>
           <option value="">Any genre</option>
-          {LISTING_GENRES.map((genre) => <option key={genre} value={genre}>{genre}</option>)}
+          {LISTING_GENRES.map((genre) => <option key={genre} value={genre}>{genreLabel(genre)}</option>)}
         </select>
         <select name="type" className="rounded border px-2 py-1" defaultValue={single(params?.type) ?? ""}>
           <option value="">Any type</option>
@@ -68,9 +69,9 @@ export default async function ListingsPage({
                     : l.transactionType === "EXCHANGE"
                     ? "bg-violet-100 text-violet-700"
                     : "bg-emerald-100 text-emerald-700"
-                }`}>{l.transactionType}</span>
-                <span className="badge-soft rounded-full px-2 py-1">{l.condition}</span>
-                <span className="badge-soft rounded-full px-2 py-1">{l.genre}</span>
+                }`}>{humanizeEnum(l.transactionType)}</span>
+                <span className="badge-soft rounded-full px-2 py-1">{humanizeEnum(l.condition)}</span>
+                <span className="badge-soft rounded-full px-2 py-1">{genreLabel(l.genre)}</span>
               </p>
               <p className="mt-2 text-sm font-semibold">
                 {l.transactionType === "SELL"

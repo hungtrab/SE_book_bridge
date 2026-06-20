@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { LISTING_GENRES } from "@/lib/listing-genres";
+import { genreLabel, humanizeEnum } from "@/lib/labels";
 
 type ListingFormInitial = {
   id?: string;
@@ -174,7 +175,7 @@ export function ListingForm({ mode, initial, communities = [] }: ListingFormProp
             onChange={(e) => update("genre", e.target.value)}
           >
             <option value="">Choose genre</option>
-            {LISTING_GENRES.map((genre) => <option key={genre} value={genre}>{genre}</option>)}
+            {LISTING_GENRES.map((genre) => <option key={genre} value={genre}>{genreLabel(genre)}</option>)}
           </select>
         </label>
       </div>
@@ -199,7 +200,7 @@ export function ListingForm({ mode, initial, communities = [] }: ListingFormProp
             value={form.condition}
             onChange={(e) => update("condition", e.target.value)}
           >
-            {CONDITIONS.map((condition) => <option key={condition}>{condition}</option>)}
+            {CONDITIONS.map((condition) => <option key={condition} value={condition}>{humanizeEnum(condition)}</option>)}
           </select>
         </label>
         <label className="block">
@@ -209,7 +210,7 @@ export function ListingForm({ mode, initial, communities = [] }: ListingFormProp
             value={form.transactionType}
             onChange={(e) => update("transactionType", e.target.value)}
           >
-            {TYPES.map((type) => <option key={type}>{type}</option>)}
+            {TYPES.map((type) => <option key={type} value={type}>{humanizeEnum(type)}</option>)}
           </select>
         </label>
       </div>

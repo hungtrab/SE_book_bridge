@@ -93,6 +93,7 @@ model User {
   communityPosts   CommunityPost[]
   postLikes        CommunityPostLike[]
   postComments     CommunityPostComment[]
+  commentReactions CommunityCommentReaction[]
 
   @@index([reputationTier])
   @@index([locationDistrict])
@@ -502,13 +503,13 @@ enum CommunityRole {
 }
 
 model CommunityMembership {
-  userId           String
-  user             User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  communityId      String
-  community        Community     @relation(fields: [communityId], references: [id], onDelete: Cascade)
-  role             CommunityRole @default(MEMBER)
-  communityPoints  Int           @default(0)
-  joinedAt         DateTime      @default(now())
+  userId          String
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  communityId     String
+  community       Community     @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  role            CommunityRole @default(MEMBER)
+  communityPoints Int           @default(0)
+  joinedAt        DateTime      @default(now())
 
   @@id([userId, communityId])
   @@index([communityId])
@@ -516,30 +517,54 @@ model CommunityMembership {
 }
 
 model CommunityPost {
-  id           String    @id @default(cuid())
+  id           String            @id @default(cuid())
   communityId  String
-  community    Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  community    Community         @relation(fields: [communityId], references: [id], onDelete: Cascade)
   authorId     String
-  author       User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  author       User              @relation(fields: [authorId], references: [id], onDelete: Cascade)
   title        String
   body         String
-  isPinned     Boolean   @default(false)
-  likeCount    Int       @default(0)
-  commentCount Int       @default(0)
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  imageUrl     String?
+  kind         CommunityPostKind @default(MEMBER)
+  sourceName   String?
+  sourceUrl    String?
+  externalId   String?
+  publishedAt  DateTime?
+  isPinned     Boolean           @default(false)
+  likeCount    Int               @default(0)
+  commentCount Int               @default(0)
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
 
   likes    CommunityPostLike[]
   comments CommunityPostComment[]
 
+  @@unique([sourceName, externalId])
   @@index([communityId, createdAt])
   @@index([authorId])
+  @@index([kind, publishedAt])
+}
+
+enum CommunityPostKind {
+  MEMBER
+  BULLETIN
+}
+
+enum ReactionType {
+  LIKE
+  LOVE
+  CARE
+  HAHA
+  WOW
+  SAD
+  ANGRY
 }
 
 model CommunityPostLike {
   userId    String
   postId    String
-  createdAt DateTime @default(now())
+  reaction  ReactionType @default(LIKE)
+  createdAt DateTime     @default(now())
 
   user User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   post CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
@@ -552,15 +577,33 @@ model CommunityPostComment {
   id        String   @id @default(cuid())
   postId    String
   authorId  String
+  parentId  String?
   body      String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  post   CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
-  author User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  post      CommunityPost              @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author    User                       @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  parent    CommunityPostComment?      @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies   CommunityPostComment[]     @relation("CommentReplies")
+  reactions CommunityCommentReaction[]
 
   @@index([postId, createdAt])
   @@index([authorId])
+  @@index([parentId, createdAt])
+}
+
+model CommunityCommentReaction {
+  userId    String
+  commentId String
+  reaction  ReactionType
+  createdAt DateTime     @default(now())
+
+  user    User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comment CommunityPostComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@id([userId, commentId])
+  @@index([commentId])
 }
 
 enum NotificationKind {

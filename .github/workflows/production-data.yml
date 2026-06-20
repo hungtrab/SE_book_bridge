@@ -1,0 +1,44 @@
+name: production-data
+
+on:
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: "Choose the production data operation"
+        required: true
+        type: choice
+        options:
+          - migrate
+          - migrate-and-seed
+          - import-bulletins
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    environment: production
+    concurrency:
+      group: production-database
+      cancel-in-progress: false
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      SEED_ALLOW_PRODUCTION: ${{ inputs.operation == 'migrate-and-seed' && 'YES_I_UNDERSTAND' || '' }}
+      BULLETIN_COMMUNITY_NAME: Book News & Discoveries
+      BULLETIN_AUTHOR_EMAIL: admin@bookbridge.local
+      NYT_BOOKS_API_KEY: ${{ secrets.NYT_BOOKS_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run db:generate
+      - name: Apply migrations
+        if: inputs.operation != 'import-bulletins'
+        run: npm run db:deploy
+      - name: Seed deterministic demo data
+        if: inputs.operation == 'migrate-and-seed'
+        run: npm run db:seed
+      - name: Import attributed book bulletins
+        if: inputs.operation == 'import-bulletins'
+        run: npm run bulletins:import

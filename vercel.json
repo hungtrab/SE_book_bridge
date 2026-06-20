@@ -15,6 +15,10 @@
     {
       "path": "/api/cron/reputation",
       "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/api/cron/book-bulletins",
+      "schedule": "15 0 * * *"
     }
   ]
 }

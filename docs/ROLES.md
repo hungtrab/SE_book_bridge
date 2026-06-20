@@ -698,8 +698,8 @@ prisma/schema.prisma → Community, CommunityMembership, Notification
 
 # DevOps
 .github/workflows/ci.yml
-docker-compose.yml
-Dockerfile (production deploy — bạn viết)
+Vercel project configuration
+Hosted PostgreSQL integration
 docs/DEPLOYMENT.md
 prisma/seed.ts
 ```
@@ -712,7 +712,7 @@ prisma/seed.ts
 | Node.js EventEmitter vs message queue | https://nodejs.org/api/events.html | 30 phút |
 | Server-Sent Events (chung với #4) | https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events | 1 h |
 | Vercel Cron Jobs | https://vercel.com/docs/cron-jobs | 30 phút |
-| GitHub Actions cho Next.js + Postgres | https://docs.github.com/en/actions/use-cases-and-examples/using-containerized-services/about-service-containers | 1 h |
+| GitHub Actions cho Next.js | https://docs.github.com/en/actions | 1 h |
 | Prisma migration discipline | https://www.prisma.io/docs/orm/prisma-migrate/getting-started + best practices | 1 h |
 | Email template design (MJML hoặc plain HTML) | https://mjml.io/getting-started | 30 phút |
 | OWASP CSV injection (cho grant export) | https://owasp.org/www-community/attacks/CSV_Injection | 30 phút |
@@ -727,7 +727,7 @@ prisma/seed.ts
 | 4 | Implement Community CRUD + UI `/communities/[id]`. Phối hợp #2: listing có dropdown chọn community. |
 | 5 | Implement SSE stream `/api/notifications/stream`. Test real-time push 2 tab. |
 | 6 | Email digest: immediate vs daily. Cron job daily-digest gom notifications của 24h trước. |
-| 7 | Admin dashboard: aggregate metrics (active_users, txn_completed, books_circulated). Grant report CSV với date range. Production Dockerfile + deploy guide. |
+| 7 | Admin dashboard: aggregate metrics (active_users, txn_completed, books_circulated). Grant report CSV với date range. Vercel production deploy guide. |
 | 8 | Báo cáo + slide phần Community/Notifications/Ops (3 slide). |
 
 ### Câu hỏi nghiên cứu

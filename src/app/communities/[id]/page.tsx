@@ -6,9 +6,10 @@ import { CommunityActions } from "@/components/communities/CommunityActions";
 import { CommunitySidebarPanels } from "@/components/communities/CommunitySidebarPanels";
 import { CommunityPostForm } from "@/components/communities/CommunityPostForm";
 import { InviteCodePanel } from "@/components/communities/InviteCodePanel";
+import { ListingPostAttachment } from "@/components/communities/ListingPostAttachment";
 import { PostActions, type ReactionName } from "@/components/communities/PostActions";
 import { getCurrentUser } from "@/server/lib/auth-context";
-import { getCommunity } from "@/server/communities/service";
+import { getCommunity, listShareableListings } from "@/server/communities/service";
 import { NotFoundError } from "@/server/lib/errors";
 
 export default async function CommunityDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -26,6 +27,9 @@ export default async function CommunityDetailPage({ params }: { params: Promise<
   const isMember = Boolean(community.myMembership);
   const isMod = isOwner || isAdmin || community.myMembership?.role === "MODERATOR";
   const canView = !community.isPrivate || isMember || isAdmin;
+  const shareableListings = user && isMember
+    ? await listShareableListings(user.id, community.id)
+    : [];
 
   return (
     <div className="mx-auto max-w-5xl space-y-5">
@@ -53,7 +57,13 @@ export default async function CommunityDetailPage({ params }: { params: Promise<
       ) : (
         <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_300px]">
           <main className="min-w-0 space-y-4">
-            {isMember && <CommunityPostForm communityId={community.id} displayName={user?.displayName} />}
+            {isMember && (
+              <CommunityPostForm
+                communityId={community.id}
+                displayName={user?.displayName}
+                listings={shareableListings}
+              />
+            )}
             {community.posts.length === 0 ? (
               <div className="community-card p-8 text-center text-gray-500">No posts yet. Start the conversation.</div>
             ) : community.posts.map((post) => (
@@ -84,6 +94,7 @@ export default async function CommunityDetailPage({ params }: { params: Promise<
                 </div>
 
                 {post.imageUrl && <img src={post.imageUrl} alt={post.title} className="max-h-[640px] w-full bg-slate-100 object-contain" />}
+                {post.listing && <ListingPostAttachment listing={post.listing} />}
 
                 <div className="px-4 pb-4 pt-2">
                   <PostActions

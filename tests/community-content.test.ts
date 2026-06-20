@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { genreLabel, humanizeEnum, transactionStatusLabel } from "../src/lib/labels";
-import { ReactionSchema } from "../src/server/communities/service";
+import { CommunityPostCreateSchema, ReactionSchema } from "../src/server/communities/service";
 import { parseRss } from "../src/server/bulletins/service";
 
 describe("human-readable labels", () => {
@@ -16,6 +16,19 @@ describe("community reactions", () => {
   it("accepts supported Facebook-style reactions only", () => {
     expect(ReactionSchema.parse({ reaction: "LOVE" })).toEqual({ reaction: "LOVE" });
     expect(ReactionSchema.safeParse({ reaction: "FIRE" }).success).toBe(false);
+  });
+});
+
+describe("community listing posts", () => {
+  it("accepts an optional listing attachment", () => {
+    expect(CommunityPostCreateSchema.parse({
+      title: "For sale: Clean Architecture",
+      body: "A detailed description of the available book.",
+      listingId: "listing-123",
+    })).toMatchObject({
+      listingId: "listing-123",
+      isPinned: false,
+    });
   });
 });
 

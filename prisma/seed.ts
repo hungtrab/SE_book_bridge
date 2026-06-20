@@ -244,7 +244,7 @@ async function main() {
   await seedFeedItems(listings);
   await seedTransactions(users, listings);
   await seedReports(users, listings);
-  await seedCommunityPosts(users, communities);
+  await seedCommunityPosts(users, communities, listings);
   await seedNotifications(users, communities);
 
   console.log("seeded:", {
@@ -386,8 +386,10 @@ async function seedMemberships(
     [users.alice.id, "HUST", "MEMBER"],
     [users.bob.id, "HUST", "MEMBER"],
     [users.duy.id, "HUST", "MEMBER"],
+    [users.nam.id, "HUST", "MEMBER"],
     [users.clara.id, "FTU Readers", "MEMBER"],
     [users.bob.id, "FTU Readers", "MEMBER"],
+    [users.mai.id, "FTU Readers", "MEMBER"],
     [users.alice.id, "Non-fiction Vietnam", "MEMBER"],
     [users.bob.id, "Non-fiction Vietnam", "MEMBER"],
     [users.clara.id, "Software Textbooks", "MEMBER"],
@@ -688,8 +690,10 @@ async function seedReports(
 async function seedCommunityPosts(
   users: Awaited<ReturnType<typeof seedUsers>>,
   communities: Awaited<ReturnType<typeof seedCommunities>>,
+  listings: Awaited<ReturnType<typeof seedListings>>,
 ) {
   const byName = new Map(communities.map((c) => [c.name, c]));
+  const listingsByTitle = new Map(listings.map((listing) => [listing.title, listing]));
 
   const postsData: Array<{
     communityName: string;
@@ -698,6 +702,7 @@ async function seedCommunityPosts(
     body: string;
     isPinned: boolean;
     imageUrl?: string;
+    listingTitle?: string;
   }> = [
     {
       communityName: "HUST",
@@ -759,15 +764,57 @@ async function seedCommunityPosts(
       body: "This feed publishes short source-attributed updates from trusted book APIs and official editorial feeds. Open the original source, then discuss the story here.",
       isPinned: true,
     },
+    {
+      communityName: "Software Textbooks",
+      authorId: users.minh.id,
+      title: "For sale: Artificial Intelligence: A Modern Approach",
+      body: "I am selling my AI textbook because I finished the course. The corners are worn, but every chapter and diagram is complete. It is a useful reference for search, agents, and machine-learning foundations.",
+      isPinned: false,
+      listingTitle: "Artificial Intelligence: A Modern Approach",
+    },
+    {
+      communityName: "HUST",
+      authorId: users.nam.id,
+      title: "For sale: Operating System Concepts",
+      body: "Selling my Operating System Concepts textbook for another student to use next semester. The book is in good condition and works well for operating-systems coursework.",
+      isPinned: false,
+      listingTitle: "Operating System Concepts",
+    },
+    {
+      communityName: "FTU Readers",
+      authorId: users.mai.id,
+      title: "For sale: The Psychology of Money",
+      body: "I have an unread copy available for 45,000 VND. It is a practical book about financial behavior and long-term decision-making. Happy to meet near FTU for the handoff.",
+      isPinned: false,
+      listingTitle: "The Psychology of Money",
+    },
+    {
+      communityName: "Non-fiction Vietnam",
+      authorId: users.minh.id,
+      title: "For sale: The Gene",
+      body: "Passing on my copy of The Gene after finishing it. It has a few useful sticky tabs but no damaged pages. A good choice for readers interested in science and medical history.",
+      isPinned: false,
+      listingTitle: "The Gene",
+    },
+    {
+      communityName: "Book News & Discoveries",
+      authorId: users.mai.id,
+      title: "Open to exchange: Tomorrow, and Tomorrow, and Tomorrow",
+      body: "I recently finished this novel and would like it to find another reader. I am especially interested in exchanging it for contemporary fiction or a memoir.",
+      isPinned: false,
+      listingTitle: "Tomorrow, and Tomorrow, and Tomorrow",
+    },
   );
 
   const createdPosts = [];
   for (const p of postsData) {
     const community = byName.get(p.communityName)!;
+    const listing = p.listingTitle ? listingsByTitle.get(p.listingTitle) : undefined;
     const post = await prisma.communityPost.create({
       data: {
         communityId: community.id,
         authorId: p.authorId,
+        listingId: listing?.id,
         title: p.title,
         body: p.body,
         imageUrl: "imageUrl" in p ? p.imageUrl : undefined,

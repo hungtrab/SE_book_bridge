@@ -29,6 +29,7 @@ export const CommunityPostCreateSchema = z.object({
   title: z.string().trim().min(1).max(200),
   body: z.string().trim().min(1).max(5000),
   imageUrl: z.string().url().max(1000).optional(),
+  listingId: z.string().trim().min(1).optional(),
   isPinned: z.boolean().optional().default(false),
 });
 
@@ -106,6 +107,12 @@ export async function getCommunity(id: string, userId?: string) {
         take: 20,
         include: {
           author: { select: { id: true, displayName: true, avatarUrl: true } },
+          listing: {
+            include: {
+              photos: { take: 1, orderBy: { position: "asc" } },
+              owner: { select: { id: true, displayName: true } },
+            },
+          },
           comments: {
             where: { parentId: null },
             take: 10,
@@ -349,16 +356,41 @@ export async function createCommunityPost(
     if (data.isPinned) {
       assertCommunityMod(actor, community, membership);
     }
+    if (data.listingId) {
+      const listing = await tx.listing.findUnique({
+        where: { id: data.listingId },
+        select: { ownerId: true, communityId: true, status: true },
+      });
+      if (!listing) throw new NotFoundError("Listing not found");
+      if (listing.ownerId !== actor.id) {
+        throw new ForbiddenError("You can only attach your own listing");
+      }
+      if (listing.status !== "ACTIVE") {
+        throw new ConflictError("Only active listings can be attached to a post");
+      }
+      if (listing.communityId && listing.communityId !== communityId) {
+        throw new ForbiddenError("This listing belongs to another community");
+      }
+    }
     const post = await tx.communityPost.create({
       data: {
         communityId,
         authorId: actor.id,
+        listingId: data.listingId,
         title: data.title,
         body: data.body,
         imageUrl: data.imageUrl,
         isPinned: data.isPinned,
       },
-      include: { author: { select: { id: true, displayName: true, avatarUrl: true } } },
+      include: {
+        author: { select: { id: true, displayName: true, avatarUrl: true } },
+        listing: {
+          include: {
+            photos: { take: 1, orderBy: { position: "asc" } },
+            owner: { select: { id: true, displayName: true } },
+          },
+        },
+      },
     });
     // Award community points to the author for posting
     await tx.communityMembership.updateMany({
@@ -380,6 +412,27 @@ export async function createCommunityPost(
       recipientIds: memberIds.map((m) => m.userId),
     });
     return post;
+  });
+}
+
+export async function listShareableListings(userId: string, communityId: string) {
+  return prisma.listing.findMany({
+    where: {
+      ownerId: userId,
+      status: "ACTIVE",
+      OR: [{ communityId }, { communityId: null }],
+    },
+    select: {
+      id: true,
+      title: true,
+      author: true,
+      condition: true,
+      transactionType: true,
+      askingPriceVnd: true,
+      photos: { take: 1, orderBy: { position: "asc" } },
+    },
+    orderBy: { createdAt: "desc" },
+    take: 50,
   });
 }
 

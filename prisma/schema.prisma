@@ -192,10 +192,11 @@ model Listing {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  photos       ListingPhoto[]
-  transactions Transaction[]
-  feedItems    FeedItem[]
-  reports      Report[]
+  photos         ListingPhoto[]
+  transactions   Transaction[]
+  feedItems      FeedItem[]
+  reports        Report[]
+  communityPosts CommunityPost[]
 
   @@index([ownerId])
   @@index([status])
@@ -522,6 +523,8 @@ model CommunityPost {
   community    Community         @relation(fields: [communityId], references: [id], onDelete: Cascade)
   authorId     String
   author       User              @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  listingId    String?
+  listing      Listing?          @relation(fields: [listingId], references: [id], onDelete: SetNull)
   title        String
   body         String
   imageUrl     String?
@@ -542,6 +545,7 @@ model CommunityPost {
   @@unique([sourceName, externalId])
   @@index([communityId, createdAt])
   @@index([authorId])
+  @@index([listingId])
   @@index([kind, publishedAt])
 }
 

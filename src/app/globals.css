@@ -502,6 +502,40 @@ select:-webkit-autofill {
   }
 }
 
+/* Alchemist RPG artifact */
+.typewriter-cursor {
+  animation: typewriter-blink 0.8s step-end infinite;
+  color: var(--game-accent, #c9a84c);
+  font-weight: 100;
+}
+
+@keyframes typewriter-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.victory-glow {
+  animation: victory-pulse 3s ease-in-out infinite;
+}
+
+@keyframes victory-pulse {
+  0%, 100% { filter: drop-shadow(0 0 20px rgba(201, 168, 76, 0.3)); }
+  50% { filter: drop-shadow(0 0 40px rgba(201, 168, 76, 0.7)); }
+}
+
+.game-over-text {
+  animation: game-over-flicker 3s ease-in-out infinite;
+}
+
+@keyframes game-over-flicker {
+  0%, 100% { opacity: 1; }
+  92% { opacity: 1; }
+  93% { opacity: 0.3; }
+  94% { opacity: 1; }
+  96% { opacity: 0.5; }
+  97% { opacity: 1; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

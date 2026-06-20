@@ -13,7 +13,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="vi">
       <body>
         <NavBar />
-        <main className="page-enter mx-auto max-w-6xl px-4 py-8 sm:px-6">{children}</main>
+        <main className="page-enter mx-auto max-w-[90rem] px-4 py-8 sm:px-6">{children}</main>
       </body>
     </html>
   );

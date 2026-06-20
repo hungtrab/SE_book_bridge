@@ -37,10 +37,10 @@ export default async function CommunitiesPage({ searchParams }: {
   ]);
 
   const bulletinCommunity = bulletins[0]?.community as BulletinCommunitySummary | undefined;
-  const previewCommunities = communities.slice(0, 5);
+  const visibleCommunityCount = Math.min(communities.length, 5);
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6">
+    <div className="mx-auto max-w-[82rem] space-y-5">
       <header className="space-y-2">
         <p className="text-sm font-semibold uppercase tracking-widest text-violet-600">BookBridge Community</p>
         <h1 className="text-3xl font-black tracking-tight text-gray-900">Discover, discuss, and share books</h1>
@@ -49,8 +49,8 @@ export default async function CommunitiesPage({ searchParams }: {
         </p>
       </header>
 
-      <div className="grid gap-6 xl:grid-cols-[360px_minmax(0,1fr)]">
-        <aside className="space-y-4 xl:sticky xl:top-24 self-start">
+      <div className="grid items-start gap-5 lg:grid-cols-[300px_minmax(0,820px)] lg:justify-center xl:grid-cols-[320px_minmax(0,840px)]">
+        <aside className="community-sidebar-scroll space-y-4 lg:sticky lg:top-[4.75rem] lg:max-h-[calc(100vh-5.5rem)] lg:overflow-y-auto lg:pr-2">
           {bulletinCommunity && (
             <details className="community-card group overflow-hidden">
               <summary className="flex cursor-pointer list-none items-start justify-between gap-3 p-4">
@@ -107,7 +107,7 @@ export default async function CommunitiesPage({ searchParams }: {
                 <h2 className="text-lg font-black text-gray-900">Subcommunities</h2>
               </div>
               <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-1 text-xs font-semibold text-slate-500">
-                {previewCommunities.length} of {communities.length}
+                {visibleCommunityCount} visible / {communities.length}
               </span>
             </summary>
             <div className="border-t border-slate-100 p-4">
@@ -129,8 +129,8 @@ export default async function CommunitiesPage({ searchParams }: {
                 </div>
               </form>
 
-              <div className="mt-4 space-y-3">
-                {previewCommunities.map((community) => {
+              <div className="community-list-scroll mt-4 max-h-[25rem] space-y-3 overflow-y-auto pr-2">
+                {communities.map((community) => {
                   const initial = avatarText(community.name);
                   return (
                     <Link

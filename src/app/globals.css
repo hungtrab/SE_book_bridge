@@ -79,6 +79,14 @@ select:-webkit-autofill {
     backdrop-filter: blur(18px);
   }
 
+  .nav-scroll {
+    scrollbar-width: none;
+  }
+
+  .nav-scroll::-webkit-scrollbar {
+    display: none;
+  }
+
   .card-surface {
     border: 1px solid var(--card-border);
     background: var(--card);
@@ -263,6 +271,29 @@ select:-webkit-autofill {
     border-radius: 1rem;
     background: #fff;
     box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08), 0 10px 30px rgba(15, 23, 42, 0.05);
+  }
+
+  .community-sidebar-scroll,
+  .community-list-scroll {
+    scrollbar-color: #94a3b8 transparent;
+    scrollbar-width: thin;
+    overscroll-behavior: contain;
+  }
+
+  .community-sidebar-scroll::-webkit-scrollbar,
+  .community-list-scroll::-webkit-scrollbar {
+    width: 7px;
+  }
+
+  .community-sidebar-scroll::-webkit-scrollbar-thumb,
+  .community-list-scroll::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: #94a3b8;
+  }
+
+  .community-sidebar-scroll::-webkit-scrollbar-track,
+  .community-list-scroll::-webkit-scrollbar-track {
+    background: transparent;
   }
 
   .community-cover {

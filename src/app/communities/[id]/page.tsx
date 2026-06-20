@@ -1,242 +1,145 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { CommentSection } from "@/components/communities/CommentSection";
 import { CommunityActions } from "@/components/communities/CommunityActions";
 import { CommunityModeratorForm } from "@/components/communities/CommunityModeratorForm";
 import { CommunityPostForm } from "@/components/communities/CommunityPostForm";
 import { InviteCodePanel } from "@/components/communities/InviteCodePanel";
 import { ListingDeleteButton } from "@/components/communities/ListingDeleteButton";
-import { PostActions } from "@/components/communities/PostActions";
 import { MemberActions } from "@/components/communities/MemberActions";
-import { CommentSection } from "@/components/communities/CommentSection";
+import { PostActions, type ReactionName } from "@/components/communities/PostActions";
 import { getCurrentUser } from "@/server/lib/auth-context";
 import { getCommunity } from "@/server/communities/service";
 
 export default async function CommunityDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const user = await getCurrentUser();
-
-  let community;
-  try {
-    community = await getCommunity(id, user?.id);
-  } catch {
-    notFound();
-  }
-
+  const community = await getCommunity(id, user?.id).catch(() => notFound());
   const isOwner = Boolean(user && community.ownerId === user.id);
-  const isAdmin = Boolean(user && user.role === "ADMIN");
-  const myRole = community.myMembership?.role ?? null;
-  const isMod = isOwner || isAdmin || myRole === "MODERATOR";
+  const isAdmin = user?.role === "ADMIN";
   const isMember = Boolean(community.myMembership);
-  const canViewContent = !community.isPrivate || isMember || isAdmin;
-
-  const rankOf = (m: (typeof community.memberships)[number]) =>
-    m.userId === community.ownerId ? 0 : m.role === "MODERATOR" ? 1 : 2;
-  const sortedMembers = [...community.memberships].sort((a, b) => {
-    const r = rankOf(a) - rankOf(b);
-    if (r !== 0) return r;
-    return a.user.displayName.localeCompare(b.user.displayName);
-  });
+  const isMod = isOwner || isAdmin || community.myMembership?.role === "MODERATOR";
+  const canView = !community.isPrivate || isMember || isAdmin;
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <h1 className="text-3xl font-bold">{community.name}</h1>
-            {community.isPrivate && (
-              <span className="rounded bg-gray-200 px-2 py-0.5 text-xs font-medium text-gray-700">Private</span>
-            )}
+    <div className="mx-auto max-w-5xl space-y-5">
+      <section className="community-cover">
+        <div className="community-cover-art" />
+        <div className="space-y-2 px-5 pb-5">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <h1 className="text-3xl font-black">{community.name}</h1>
+              <p className="text-sm text-gray-600">{community.scope} · {community.memberCount} members {community.isPrivate ? "· Private group" : "· Public group"}</p>
+              <p className="mt-2 max-w-2xl text-gray-700">{community.description ?? "A BookBridge reading community."}</p>
+            </div>
+            {user && <CommunityActions id={community.id} joined={isMember} isOwner={isOwner} isMod={isMod} isPrivate={community.isPrivate} canDelete={isOwner || isAdmin} />}
           </div>
-          <p className="text-sm text-gray-600">{community.scope} · {community.memberCount} members</p>
-          <p className="text-gray-600">{community.description ?? "No description"}</p>
-          <p className="text-sm">Owner: {community.owner.displayName}</p>
-          {isMember && myRole && (
-            <p className="text-xs font-medium text-blue-600">Your role: {myRole}</p>
-          )}
         </div>
-        {user && (
-          <CommunityActions
-            id={community.id}
-            joined={isMember}
-            isOwner={isOwner}
-            isMod={isMod}
-            isPrivate={community.isPrivate}
-            canDelete={isOwner || isAdmin}
-          />
-        )}
-      </div>
+      </section>
 
-      {/* Invite code panel — mod/owner only */}
-      {isMod && community.inviteCode && (
-        <InviteCodePanel communityId={community.id} inviteCode={community.inviteCode} />
-      )}
+      {isMod && community.inviteCode && <InviteCodePanel communityId={community.id} inviteCode={community.inviteCode} />}
 
-      {!canViewContent ? (
-        <div className="rounded border border-dashed p-8 text-center text-gray-500">
-          <p className="font-medium">This is a private community.</p>
-          <p className="text-sm">Join with an invite code to see the content.</p>
+      {!canView ? (
+        <div className="community-card p-10 text-center">
+          <h2 className="text-xl font-bold">This community is private</h2>
+          <p className="mt-2 text-gray-500">Use an invite code to join and see posts, discussions, and listings.</p>
         </div>
       ) : (
-        <>
-          {/* Posts */}
-          <section className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold">Posts</h2>
-              {isMember && <CommunityPostForm communityId={community.id} />}
-            </div>
+        <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_300px]">
+          <main className="min-w-0 space-y-4">
+            {isMember && <CommunityPostForm communityId={community.id} displayName={user?.displayName} />}
             {community.posts.length === 0 ? (
-              <p className="text-sm text-gray-500">No posts yet.</p>
-            ) : (
-              <div>
-                {community.posts.map((post, i) => {
-                  const initials = (post.author.displayName?.[0] ?? "?").toUpperCase();
-                  return (
-                    <div
-                      key={post.id}
-                      style={{ animationDelay: `${Math.min(i * 60, 300)}ms` }}
-                      className={`fade-in-up mb-4 overflow-hidden rounded-2xl border shadow-sm transition-shadow duration-200 hover:shadow-md ${
-                        post.isPinned ? "border-blue-200 bg-blue-50/60" : "border-gray-200 bg-white"
-                      }`}
-                    >
-                      {/* Header */}
-                      <div className="flex items-start justify-between gap-2 px-4 pt-3">
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-violet-500 font-semibold text-white shadow-sm">
-                            {initials}
-                          </div>
-                          <div className="leading-tight">
-                            <p className="font-bold text-gray-900">
-                              {post.author.displayName}
-                              {post.isPinned && (
-                                <span className="ml-2 text-xs font-normal text-blue-600">[Pinned]</span>
-                              )}
-                            </p>
-                            <p className="text-sm text-gray-500">
-                              · {new Date(post.createdAt).toLocaleDateString()}
-                            </p>
-                          </div>
-                        </div>
-                        <PostActions
-                          communityId={community.id}
-                          postId={post.id}
-                          isPinned={post.isPinned}
-                          likeCount={post.likeCount}
-                          likedByMe={(post.likes?.length ?? 0) > 0}
-                          canPin={isMod}
-                          canDelete={isMod || user?.id === post.authorId}
-                          canLike={isMember}
-                        />
-                      </div>
-
-                      {/* Content */}
-                      <div className="px-4 pb-3 pt-2">
-                        <h3 className="text-base font-semibold">{post.title}</h3>
-                        <p className="mt-1 whitespace-pre-wrap text-sm text-gray-700">{post.body}</p>
-                      </div>
-
-                      {/* Stats bar */}
-                      <div className="border-t border-gray-100 px-4 py-2 text-xs text-gray-500">
-                        ♥ {post.likeCount} · {post.commentCount} comments
-                      </div>
-
-                      <CommentSection
-                        communityId={community.id}
-                        postId={post.id}
-                        initialComments={post.comments}
-                        commentCount={post.commentCount}
-                        canComment={isMember}
-                        currentUserId={user?.id}
-                        isMod={isMod}
-                      />
+              <div className="community-card p-8 text-center text-gray-500">No posts yet. Start the conversation.</div>
+            ) : community.posts.map((post) => (
+              <article key={post.id} id={`post-${post.id}`} className="community-card overflow-visible">
+                <header className="flex items-start justify-between gap-3 p-4 pb-2">
+                  <div className="flex gap-3">
+                    <span className="community-avatar">{post.author.displayName.charAt(0).toUpperCase()}</span>
+                    <div>
+                      <p className="font-bold">{post.author.displayName}</p>
+                      <p className="text-xs text-gray-500">
+                        {new Date(post.publishedAt ?? post.createdAt).toLocaleString()} · {post.kind === "BULLETIN" ? "Book bulletin" : "Community post"}
+                        {post.isPinned ? " · Pinned" : ""}
+                      </p>
                     </div>
-                  );
-                })}
-              </div>
-            )}
-          </section>
-
-          {/* Active listings */}
-          <details open className="group rounded-2xl border border-gray-200 bg-white">
-            <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-4 py-3 text-xl font-semibold">
-              <span className="flex items-center gap-2">
-                <span className="inline-block transition-transform group-open:rotate-90">›</span>
-                Active listings
-                <span className="text-sm font-normal text-gray-500">({community.listings.length})</span>
-              </span>
-              {isMember && (
-                <Link
-                  href={`/listings/new?communityId=${community.id}`}
-                  className="btn-primary btn-xs"
-                >
-                  + Add listing
-                </Link>
-              )}
-            </summary>
-            <div className="border-t border-gray-100 px-4 py-3">
-              {community.listings.length === 0 ? (
-                <p className="text-sm text-gray-500">No active listings.</p>
-              ) : (
-                <div className="grid gap-3 sm:grid-cols-2">
-                  {community.listings.map((listing) => {
-                    const canDelete = isMod || listing.ownerId === user?.id;
-                    return (
-                      <div key={listing.id} className="relative">
-                        <Link href={`/listings/${listing.id}`} className="block rounded border p-3">
-                          {listing.photos[0] && (
-                            <img src={listing.photos[0].url} alt="" className="mb-2 h-32 w-full rounded object-cover" />
-                          )}
-                          <h3 className="font-semibold">{listing.title}</h3>
-                          <p className="text-sm">{listing.author}</p>
-                        </Link>
-                        {canDelete && (
-                          <ListingDeleteButton listingId={listing.id} communityId={community.id} />
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          </details>
-
-          {/* Members */}
-          <details open className="group rounded-2xl border border-gray-200 bg-white">
-            <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-3 text-xl font-semibold">
-              <span className="inline-block transition-transform group-open:rotate-90">›</span>
-              Members
-              <span className="text-sm font-normal text-gray-500">({community.memberships.length})</span>
-            </summary>
-            <div className="border-t border-gray-100 px-4 py-3">
-              {isMod && <CommunityModeratorForm communityId={community.id} />}
-              <div className="mt-3 space-y-1">
-              {sortedMembers.map((m) => (
-                <div key={m.userId} className="flex items-center justify-between rounded border px-3 py-2">
-                  <Link href={`/profile/${m.userId}`} className="text-sm font-medium hover:underline">
-                    {m.user.displayName}
-                  </Link>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-gray-500">{m.communityPoints} pts</span>
-                    <span className={`rounded px-2 py-0.5 text-xs font-medium ${
-                      m.userId === community.ownerId
-                        ? "bg-yellow-100 text-yellow-700"
-                        : m.role === "MODERATOR"
-                        ? "bg-blue-100 text-blue-700"
-                        : "bg-gray-100 text-gray-600"
-                    }`}>
-                      {m.userId === community.ownerId ? "Owner" : m.role}
-                    </span>
-                    {isMod && m.userId !== community.ownerId && m.userId !== user?.id && (
-                      <MemberActions communityId={community.id} userId={m.userId} currentRole={m.role} />
-                    )}
                   </div>
+                  <span className="text-xl text-gray-400">•••</span>
+                </header>
+
+                <div className="space-y-2 px-4 pb-3">
+                  <h2 className="text-lg font-bold">{post.title}</h2>
+                  <p className="whitespace-pre-wrap leading-6 text-gray-800">{post.body}</p>
+                  {post.sourceUrl && (
+                    <a href={post.sourceUrl} target="_blank" rel="noreferrer" className="block rounded-xl border bg-gray-50 p-3 text-sm hover:bg-gray-100">
+                      <span className="font-bold text-blue-600">{post.sourceName ?? "Original source"}</span>
+                      <span className="ml-2 text-gray-500">Read the full story ↗</span>
+                    </a>
+                  )}
                 </div>
-              ))}
+
+                {post.imageUrl && <img src={post.imageUrl} alt={post.title} className="max-h-[640px] w-full bg-slate-100 object-contain" />}
+
+                <div className="px-4 pb-4 pt-2">
+                  <PostActions
+                    communityId={community.id}
+                    postId={post.id}
+                    isPinned={post.isPinned}
+                    reactions={post.likes as Array<{ userId: string; reaction: ReactionName }>}
+                    currentUserId={user?.id}
+                    canPin={isMod}
+                    canDelete={isMod || user?.id === post.authorId}
+                    canReact={isMember}
+                  />
+                  <CommentSection
+                    communityId={community.id}
+                    postId={post.id}
+                    initialComments={post.comments as never}
+                    commentCount={post.commentCount}
+                    canComment={isMember}
+                    currentUserId={user?.id}
+                    isMod={isMod}
+                  />
+                </div>
+              </article>
+            ))}
+          </main>
+
+          <aside className="space-y-4 lg:sticky lg:top-24">
+            <section className="community-card p-4">
+              <div className="flex items-center justify-between">
+                <h2 className="font-bold">Books in this group</h2>
+                {isMember && <Link href={`/listings/new?communityId=${community.id}`} className="text-sm font-semibold text-blue-600">Add book</Link>}
               </div>
-            </div>
-          </details>
-        </>
+              <div className="mt-3 space-y-3">
+                {community.listings.slice(0, 6).map((listing) => (
+                  <div key={listing.id} className="relative flex gap-2">
+                    {listing.photos[0] && <img src={listing.photos[0].url} alt={listing.title} className="h-14 w-14 rounded-lg object-cover" />}
+                    <Link href={`/listings/${listing.id}`} className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-semibold">{listing.title}</p>
+                      <p className="truncate text-xs text-gray-500">{listing.author}</p>
+                    </Link>
+                    {(isMod || listing.ownerId === user?.id) && <ListingDeleteButton listingId={listing.id} communityId={community.id} />}
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <section className="community-card p-4">
+              <h2 className="font-bold">Members</h2>
+              {isMod && <div className="mt-3"><CommunityModeratorForm communityId={community.id} /></div>}
+              <div className="mt-3 space-y-2">
+                {community.memberships.slice(0, 12).map((membership) => (
+                  <div key={membership.userId} className="flex items-center justify-between gap-2">
+                    <Link href={`/profile/${membership.userId}`} className="truncate text-sm font-semibold">{membership.user.displayName}</Link>
+                    <span className="text-xs text-gray-500">{membership.userId === community.ownerId ? "Owner" : membership.role}</span>
+                    {isMod && membership.userId !== community.ownerId && membership.userId !== user?.id && <MemberActions communityId={community.id} userId={membership.userId} currentRole={membership.role} />}
+                  </div>
+                ))}
+              </div>
+            </section>
+          </aside>
+        </div>
       )}
     </div>
   );

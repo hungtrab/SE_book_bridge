@@ -18,6 +18,12 @@ const DEMO_EMAILS = [
   "duy@bookbridge.local",
   "mod@bookbridge.local",
   "admin@bookbridge.local",
+  "mai@bookbridge.local",
+  "nam@bookbridge.local",
+  "linh@bookbridge.local",
+  "quang@bookbridge.local",
+  "yen@bookbridge.local",
+  "minh@bookbridge.local",
 ];
 
 const COMMUNITIES = [
@@ -26,6 +32,9 @@ const COMMUNITIES = [
   { name: "Cau Giay Book Swap", scope: "LOCATION" as const, description: "District-level sharing around Cau Giay." },
   { name: "Non-fiction Vietnam", scope: "GENRE" as const, description: "History, economics, memoirs and essays." },
   { name: "Software Textbooks", scope: "GENRE" as const, description: "CS, software engineering and programming books." },
+  { name: "Book News & Discoveries", scope: "GENRE" as const, description: "Daily source-attributed book news, trending titles and reading discoveries." },
+  { name: "Vietnamese Literature", scope: "GENRE" as const, description: "Vietnamese novels, poetry, essays and literary discussion." },
+  { name: "Language Learners", scope: "GENRE" as const, description: "Books and study groups for English, Vietnamese, Japanese and other languages." },
 ];
 
 const LISTINGS = [
@@ -137,9 +146,82 @@ const LISTINGS = [
     description: "Fiction paperback, good for casual exchange in the district.",
     transactionType: "EXCHANGE" as const,
   },
+  {
+    owner: "mai@bookbridge.local", community: "Vietnamese Literature", title: "The Mountains Sing", author: "Nguyen Phan Que Mai",
+    isbn: "9781643751351", genre: "fiction", condition: "LIKE_NEW" as const,
+    description: "A multigenerational Vietnamese family story in excellent condition.", transactionType: "EXCHANGE" as const,
+  },
+  {
+    owner: "nam@bookbridge.local", community: "Software Textbooks", title: "The Pragmatic Programmer", author: "David Thomas and Andrew Hunt",
+    isbn: "9780135957059", genre: "software", condition: "GOOD" as const,
+    description: "Twentieth anniversary edition with light pencil notes in two chapters.", transactionType: "SELL" as const, askingPriceVnd: 50000,
+  },
+  {
+    owner: "linh@bookbridge.local", community: "Language Learners", title: "English Grammar in Use", author: "Raymond Murphy",
+    isbn: "9781108457651", genre: "language", condition: "GOOD" as const,
+    description: "Intermediate grammar reference with most exercises left blank.", transactionType: "GIFT" as const,
+  },
+  {
+    owner: "quang@bookbridge.local", community: "Non-fiction Vietnam", title: "Factfulness", author: "Hans Rosling",
+    isbn: "9781250107817", genre: "non-fiction", condition: "LIKE_NEW" as const,
+    description: "Clean paperback about understanding global trends using data.", transactionType: "EXCHANGE" as const,
+  },
+  {
+    owner: "yen@bookbridge.local", community: "Cau Giay Book Swap", title: "Before the Coffee Gets Cold", author: "Toshikazu Kawaguchi",
+    isbn: "9781335430991", genre: "fiction", condition: "GOOD" as const,
+    description: "Short reflective novel, easy to carry for an in-person swap.", transactionType: "GIFT" as const,
+  },
+  {
+    owner: "minh@bookbridge.local", community: "Software Textbooks", title: "Artificial Intelligence: A Modern Approach", author: "Stuart Russell and Peter Norvig",
+    isbn: "9780134610993", genre: "ai", condition: "FAIR" as const,
+    description: "Large AI textbook with worn corners but complete pages and diagrams.", transactionType: "SELL" as const, askingPriceVnd: 50000,
+  },
+  {
+    owner: "mai@bookbridge.local", community: "FTU Readers", title: "The Psychology of Money", author: "Morgan Housel",
+    isbn: "9780857197689", genre: "psychology", condition: "NEW" as const,
+    description: "Unread copy about behavior, wealth and long-term financial decisions.", transactionType: "SELL" as const, askingPriceVnd: 45000,
+  },
+  {
+    owner: "nam@bookbridge.local", community: "HUST", title: "Concrete Mathematics", author: "Ronald Graham, Donald Knuth and Oren Patashnik",
+    isbn: "9780201558029", genre: "math", condition: "FAIR" as const,
+    description: "A challenging mathematics text for computer science students.", transactionType: "GIFT" as const,
+  },
+  {
+    owner: "linh@bookbridge.local", community: "Vietnamese Literature", title: "The Sorrow of War", author: "Bao Ninh",
+    isbn: "9781573225434", genre: "fiction", condition: "GOOD" as const,
+    description: "English translation in good condition with a protected cover.", transactionType: "EXCHANGE" as const,
+  },
+  {
+    owner: "quang@bookbridge.local", community: "Software Textbooks", title: "Grokking Algorithms", author: "Aditya Bhargava",
+    isbn: "9781617292231", genre: "computer-science", condition: "LIKE_NEW" as const,
+    description: "Friendly illustrated introduction to algorithms and data structures.", transactionType: "GIFT" as const,
+  },
+  {
+    owner: "yen@bookbridge.local", community: "Language Learners", title: "Japanese From Zero! 1", author: "George Trombley",
+    isbn: "9780976998129", genre: "language", condition: "GOOD" as const,
+    description: "Beginner Japanese workbook with only the first unit completed.", transactionType: "EXCHANGE" as const,
+  },
+  {
+    owner: "minh@bookbridge.local", community: "Non-fiction Vietnam", title: "The Gene", author: "Siddhartha Mukherjee",
+    isbn: "9781476733524", genre: "science", condition: "GOOD" as const,
+    description: "A detailed history of genetics with several useful sticky tabs.", transactionType: "SELL" as const, askingPriceVnd: 40000,
+  },
+  {
+    owner: "mai@bookbridge.local", community: "Book News & Discoveries", title: "Tomorrow, and Tomorrow, and Tomorrow", author: "Gabrielle Zevin",
+    isbn: "9780593321201", genre: "fiction", condition: "LIKE_NEW" as const,
+    description: "Contemporary novel about friendship, creativity and game development.", transactionType: "EXCHANGE" as const,
+  },
+  {
+    owner: "nam@bookbridge.local", community: "HUST", title: "Operating System Concepts", author: "Abraham Silberschatz",
+    isbn: "9781119800361", genre: "computer-science", condition: "GOOD" as const,
+    description: "Operating systems textbook suitable for university coursework.", transactionType: "SELL" as const, askingPriceVnd: 50000,
+  },
 ];
 
 async function main() {
+  if (process.env.NODE_ENV === "production" && process.env.SEED_ALLOW_PRODUCTION !== "YES_I_UNDERSTAND") {
+    throw new Error("Production seed blocked. Set SEED_ALLOW_PRODUCTION=YES_I_UNDERSTAND after taking a database backup.");
+  }
   console.log("seeding...");
 
   const passwordHash = await bcrypt.hash(DEMO_PASSWORD, 12);
@@ -147,9 +229,15 @@ async function main() {
   const communities = await seedCommunities(users.mod.id);
   await seedMemberships(users, communities);
   await cleanupKnownDemoRows();
-  await prisma.communityPostComment.deleteMany({ where: { author: { email: { in: DEMO_EMAILS } } } });
-  await prisma.communityPostLike.deleteMany({ where: { user: { email: { in: DEMO_EMAILS } } } });
-  await prisma.communityPost.deleteMany({ where: { author: { email: { in: DEMO_EMAILS } } } });
+  await prisma.communityPostComment.deleteMany({
+    where: { post: { kind: "MEMBER", author: { email: { in: DEMO_EMAILS } } } },
+  });
+  await prisma.communityPostLike.deleteMany({
+    where: { post: { kind: "MEMBER", author: { email: { in: DEMO_EMAILS } } } },
+  });
+  await prisma.communityPost.deleteMany({
+    where: { kind: "MEMBER", author: { email: { in: DEMO_EMAILS } } },
+  });
   const listings = await seedListings(users, communities);
   await seedFollows(users);
   await syncFollowCounters();
@@ -221,7 +309,37 @@ async function seedUsers(passwordHash: string) {
     reputationTier: "champion",
     locationDistrict: "Hoan Kiem",
   });
-  return { alice, bob, clara, duy, mod, admin };
+  const mai = await upsertUser({
+    email: "mai@bookbridge.local", displayName: "Mai Hoang", passwordHash,
+    reputationScore: 28, reputationTier: "active", locationDistrict: "Thanh Xuan",
+    preferredGenres: ["fiction", "psychology"],
+  });
+  const nam = await upsertUser({
+    email: "nam@bookbridge.local", displayName: "Nam Pham", passwordHash,
+    reputationScore: 47, reputationTier: "active", locationDistrict: "Hai Ba Trung",
+    preferredGenres: ["software", "math"],
+  });
+  const linh = await upsertUser({
+    email: "linh@bookbridge.local", displayName: "Linh Do", passwordHash,
+    reputationScore: 71, reputationTier: "trusted", locationDistrict: "Ba Dinh",
+    preferredGenres: ["language", "fiction"],
+  });
+  const quang = await upsertUser({
+    email: "quang@bookbridge.local", displayName: "Quang Vu", passwordHash,
+    reputationScore: 18, reputationTier: "new", locationDistrict: "Dong Da",
+    preferredGenres: ["science", "computer-science"],
+  });
+  const yen = await upsertUser({
+    email: "yen@bookbridge.local", displayName: "Yen Bui", passwordHash,
+    reputationScore: 52, reputationTier: "trusted", locationDistrict: "Cau Giay",
+    preferredGenres: ["fiction", "language"],
+  });
+  const minh = await upsertUser({
+    email: "minh@bookbridge.local", displayName: "Minh Nguyen", passwordHash,
+    reputationScore: 84, reputationTier: "champion", locationDistrict: "Hoan Kiem",
+    preferredGenres: ["ai", "science"],
+  });
+  return { alice, bob, clara, duy, mod, admin, mai, nam, linh, quang, yen, minh };
 }
 
 async function upsertUser(data: Prisma.UserUncheckedCreateInput) {
@@ -276,6 +394,18 @@ async function seedMemberships(
     [users.alice.id, "Software Textbooks", "MEMBER"],
     [users.duy.id, "Cau Giay Book Swap", "MEMBER"],
     [users.bob.id, "Cau Giay Book Swap", "MEMBER"],
+    [users.admin.id, "Book News & Discoveries", "MODERATOR"],
+    [users.mai.id, "Book News & Discoveries", "MEMBER"],
+    [users.minh.id, "Book News & Discoveries", "MEMBER"],
+    [users.mai.id, "Vietnamese Literature", "MEMBER"],
+    [users.linh.id, "Vietnamese Literature", "MEMBER"],
+    [users.linh.id, "Language Learners", "MODERATOR"],
+    [users.yen.id, "Language Learners", "MEMBER"],
+    [users.nam.id, "Software Textbooks", "MEMBER"],
+    [users.minh.id, "Software Textbooks", "MEMBER"],
+    [users.quang.id, "Software Textbooks", "MEMBER"],
+    [users.quang.id, "Non-fiction Vietnam", "MEMBER"],
+    [users.yen.id, "Cau Giay Book Swap", "MEMBER"],
   ] as const;
   for (const [userId, communityName, role] of memberships) {
     const community = byName.get(communityName)!;
@@ -343,6 +473,13 @@ async function seedFollows(users: Awaited<ReturnType<typeof seedUsers>>) {
       { followerId: users.alice.id, followeeId: users.clara.id },
       { followerId: users.clara.id, followeeId: users.bob.id },
       { followerId: users.bob.id, followeeId: users.duy.id },
+      { followerId: users.mai.id, followeeId: users.linh.id },
+      { followerId: users.mai.id, followeeId: users.clara.id },
+      { followerId: users.nam.id, followeeId: users.minh.id },
+      { followerId: users.linh.id, followeeId: users.mai.id },
+      { followerId: users.quang.id, followeeId: users.nam.id },
+      { followerId: users.yen.id, followeeId: users.mai.id },
+      { followerId: users.minh.id, followeeId: users.quang.id },
     ],
     skipDuplicates: true,
   });
@@ -422,6 +559,113 @@ async function seedTransactions(
       },
     },
   });
+  await prisma.listing.update({ where: { id: cleanCode.id }, data: { status: "RESERVED" } });
+
+  const atomicHabits = listings.find((listing) => listing.title === "Atomic Habits")!;
+  const pragmatic = listings.find((listing) => listing.title === "The Pragmatic Programmer")!;
+  const factfulness = listings.find((listing) => listing.title === "Factfulness")!;
+  const mountains = listings.find((listing) => listing.title === "The Mountains Sing")!;
+
+  const completed = await prisma.transaction.create({
+    data: {
+      listingId: atomicHabits.id,
+      ownerId: users.duy.id,
+      requesterId: users.yen.id,
+      type: "GIFT",
+      status: "COMPLETED",
+      acceptedAt: new Date(Date.now() - 12 * 86400000),
+      shippedAt: new Date(Date.now() - 10 * 86400000),
+      completedAt: new Date(Date.now() - 8 * 86400000),
+      deliveryMethod: "IN_PERSON",
+      events: {
+        create: [
+          { toStatus: "PENDING", byUserId: users.yen.id },
+          { fromStatus: "PENDING", toStatus: "ACCEPTED", byUserId: users.duy.id },
+          { fromStatus: "ACCEPTED", toStatus: "IN_DELIVERY", byUserId: users.duy.id },
+          { fromStatus: "IN_DELIVERY", toStatus: "COMPLETED", byUserId: users.yen.id },
+        ],
+      },
+      ratings: {
+        create: [
+          { fromUserId: users.yen.id, toUserId: users.duy.id, stars: 5, comment: "Friendly handoff and the book matched the description." },
+          { fromUserId: users.duy.id, toUserId: users.yen.id, stars: 5, comment: "Quick communication and arrived on time." },
+        ],
+      },
+    },
+  });
+  await prisma.listing.update({ where: { id: atomicHabits.id }, data: { status: "COMPLETED" } });
+
+  const accepted = await prisma.transaction.create({
+    data: {
+      listingId: pragmatic.id,
+      ownerId: users.nam.id,
+      requesterId: users.quang.id,
+      type: "SELL",
+      agreedPriceVnd: 50000,
+      status: "ACCEPTED",
+      acceptedAt: new Date(Date.now() - 86400000),
+      events: {
+        create: [
+          { toStatus: "PENDING", byUserId: users.quang.id },
+          { fromStatus: "PENDING", toStatus: "ACCEPTED", byUserId: users.nam.id },
+        ],
+      },
+      conversation: {
+        create: {
+          userAId: [users.nam.id, users.quang.id].sort()[0],
+          userBId: [users.nam.id, users.quang.id].sort()[1],
+          messages: {
+            create: [
+              { senderId: users.quang.id, body: "Could we meet near the university library tomorrow?" },
+              { senderId: users.nam.id, body: "Yes, 4 PM works for me. I will bring the book." },
+            ],
+          },
+        },
+      },
+    },
+  });
+  await prisma.listing.update({ where: { id: pragmatic.id }, data: { status: "RESERVED" } });
+
+  await prisma.transaction.create({
+    data: {
+      listingId: mountains.id,
+      ownerId: users.mai.id,
+      requesterId: users.linh.id,
+      type: "EXCHANGE",
+      status: "WAITLISTED",
+      events: {
+        create: [
+          { toStatus: "PENDING", byUserId: users.linh.id },
+          { fromStatus: "PENDING", toStatus: "WAITLISTED", byUserId: users.mai.id, reason: "another_request_accepted" },
+        ],
+      },
+    },
+  });
+
+  await prisma.transaction.create({
+    data: {
+      listingId: factfulness.id,
+      ownerId: users.quang.id,
+      requesterId: users.clara.id,
+      type: "EXCHANGE",
+      status: "DISPUTED",
+      acceptedAt: new Date(Date.now() - 18 * 86400000),
+      shippedAt: new Date(Date.now() - 16 * 86400000),
+      deliveryMethod: "POSTAL",
+      trackingNumber: "VN-DEMO-88421",
+      events: {
+        create: [
+          { toStatus: "PENDING", byUserId: users.clara.id },
+          { fromStatus: "PENDING", toStatus: "ACCEPTED", byUserId: users.quang.id },
+          { fromStatus: "ACCEPTED", toStatus: "IN_DELIVERY", byUserId: users.quang.id },
+          { fromStatus: "IN_DELIVERY", toStatus: "DISPUTED", byUserId: users.clara.id, reason: "parcel_arrived_damaged" },
+        ],
+      },
+    },
+  });
+  await prisma.listing.update({ where: { id: factfulness.id }, data: { status: "RESERVED" } });
+
+  console.log("seed transaction examples:", { completed: completed.id, accepted: accepted.id });
 }
 
 async function seedReports(
@@ -447,7 +691,14 @@ async function seedCommunityPosts(
 ) {
   const byName = new Map(communities.map((c) => [c.name, c]));
 
-  const postsData = [
+  const postsData: Array<{
+    communityName: string;
+    authorId: string;
+    title: string;
+    body: string;
+    isPinned: boolean;
+    imageUrl?: string;
+  }> = [
     {
       communityName: "HUST",
       authorId: users.alice.id,
@@ -485,6 +736,31 @@ async function seedCommunityPosts(
     },
   ];
 
+  postsData.push(
+    {
+      communityName: "Vietnamese Literature",
+      authorId: users.mai.id,
+      title: "Monthly Vietnamese fiction reading circle",
+      body: "For this month, should we read The Sorrow of War or The Mountains Sing? React and explain your choice.",
+      isPinned: true,
+      imageUrl: "https://images.unsplash.com/photo-1495446815901-a7297e633e8d?auto=format&fit=crop&w=1200&q=80",
+    },
+    {
+      communityName: "Language Learners",
+      authorId: users.linh.id,
+      title: "How do you annotate language-learning books?",
+      body: "Share your system for vocabulary notes, review intervals, and keeping workbooks reusable.",
+      isPinned: false,
+    },
+    {
+      communityName: "Book News & Discoveries",
+      authorId: users.admin.id,
+      title: "Welcome to daily book bulletins",
+      body: "This feed publishes short source-attributed updates from trusted book APIs and official editorial feeds. Open the original source, then discuss the story here.",
+      isPinned: true,
+    },
+  );
+
   const createdPosts = [];
   for (const p of postsData) {
     const community = byName.get(p.communityName)!;
@@ -494,6 +770,7 @@ async function seedCommunityPosts(
         authorId: p.authorId,
         title: p.title,
         body: p.body,
+        imageUrl: "imageUrl" in p ? p.imageUrl : undefined,
         isPinned: p.isPinned,
       },
     });
@@ -541,6 +818,32 @@ async function seedCommunityPosts(
     await prisma.communityPost.update({
       where: { id: post.id },
       data: { commentCount: { increment: 1 } },
+    });
+  }
+
+  const parent = await prisma.communityPostComment.findFirst({
+    where: { postId: createdPosts[0].post.id },
+    orderBy: { createdAt: "asc" },
+  });
+  if (parent) {
+    const reply = await prisma.communityPostComment.create({
+      data: {
+        postId: createdPosts[0].post.id,
+        authorId: users.alice.id,
+        parentId: parent.id,
+        body: "That sounds useful. Could you add it as a listing so I can request it?",
+      },
+    });
+    await prisma.communityPost.update({
+      where: { id: createdPosts[0].post.id },
+      data: { commentCount: { increment: 1 } },
+    });
+    await prisma.communityCommentReaction.createMany({
+      data: [
+        { userId: users.alice.id, commentId: parent.id, reaction: "LOVE" },
+        { userId: users.bob.id, commentId: reply.id, reaction: "CARE" },
+      ],
+      skipDuplicates: true,
     });
   }
 }

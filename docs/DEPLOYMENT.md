@@ -40,18 +40,11 @@ recommend the simplest setup for the course demo:
 Book photos are normalised to WebP at max 1024px before storage. Local dev
 serves them from `.uploads`; production should use `UPLOAD_BACKEND=s3`.
 
-## Self-hosting (alternative)
+## Database migrations
 
-Any Linux VM with Docker can run the stack:
-
-```bash
-docker compose up -d            # postgres
-docker build -t bookbridge .    # the Next.js image
-docker run --env-file .env -p 3000:3000 bookbridge
-```
-
-The included multi-stage `Dockerfile` builds the Next.js standalone server.
-Run `npx prisma migrate deploy` as a release step before starting a new image.
+Run `npx prisma migrate deploy` against the hosted production database before
+deploying code that depends on a new migration. Never use `prisma db push`
+against the production database.
 
 `vercel.json` schedules transaction maintenance, reputation decay/anti-gaming,
 daily notification digests, and immediate-email retry on a daily Hobby-safe

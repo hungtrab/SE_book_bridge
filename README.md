@@ -23,12 +23,11 @@ A single language (TypeScript) front-to-back keeps the project approachable for 
 ## Quick start
 
 ```bash
-# 1. Install deps + start a local Postgres
+# 1. Install dependencies
 npm install
-docker compose up -d db          # PostgreSQL on :5432
 
-# 2. Configure environment
-cp .env.example .env             # adjust DATABASE_URL if needed
+# 2. Configure a hosted PostgreSQL database
+cp .env.example .env             # set DATABASE_URL from Neon/Supabase/etc.
 
 # 3. Initialise the schema and seed sample data
 npm run db:migrate
@@ -65,7 +64,6 @@ project/
 ├── tsconfig.json
 ├── next.config.mjs
 ├── tailwind.config.ts
-├── docker-compose.yml                 # local Postgres
 ├── .env.example
 ├── prisma/
 │   ├── schema.prisma                  # 13 entities — see docs/ERD.md
@@ -134,4 +132,5 @@ balanced. **Read [`docs/TASKS.md`](docs/TASKS.md) before opening any PR.**
 * **Just want to see the architecture?** → [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
 * **Want the data model?** → [`prisma/schema.prisma`](prisma/schema.prisma) + [`docs/ERD.md`](docs/ERD.md)
 * **Want the REST API contract?** → [`docs/API.md`](docs/API.md)
+* **Want production migrations, demo seeds, and daily bulletins?** → [`docs/PRODUCTION_DATA.md`](docs/PRODUCTION_DATA.md)
 * **Want to start coding your module?** → [`docs/TASKS.md`](docs/TASKS.md) and the matching `src/server/<your-module>/` folder

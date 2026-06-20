@@ -9,22 +9,7 @@ jobs:
   verify:
     runs-on: ubuntu-latest
 
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_USER: bookbridge
-          POSTGRES_PASSWORD: bookbridge
-          POSTGRES_DB: bookbridge
-        ports: [5432:5432]
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
     env:
-      DATABASE_URL: postgresql://bookbridge:bookbridge@localhost:5432/bookbridge?schema=public
       SESSION_SECRET: ci-only-do-not-use-in-prod-aaaaaaaaaaaa
 
     steps:
@@ -36,7 +21,6 @@ jobs:
 
       - run: npm ci
       - run: npm run db:generate
-      - run: npx prisma migrate deploy
       - run: npm run lint
       - run: npm test
       - run: npm run build

@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { LISTING_GENRES } from "@/lib/listing-genres";
+import { genreLabel, humanizeEnum } from "@/lib/labels";
 import { listCommunities } from "@/server/communities/service";
 import { searchListings, SearchSchema } from "@/server/search/service";
 
@@ -35,12 +36,12 @@ export default async function SearchPage({ searchParams }: { searchParams?: Prom
         <input name="q" defaultValue={single(params?.q) ?? ""} placeholder='Keywords or author:"Harari"' className="rounded border px-2 py-1 md:col-span-2" />
         <select name="genre" defaultValue={single(params?.genre) ?? ""} className="rounded border px-2 py-1">
           <option value="">Any genre</option>
-          {LISTING_GENRES.map((genre) => <option key={genre} value={genre}>{genre}</option>)}
+          {LISTING_GENRES.map((genre) => <option key={genre} value={genre}>{genreLabel(genre)}</option>)}
         </select>
         <input name="author" defaultValue={single(params?.author) ?? ""} placeholder="Author" className="rounded border px-2 py-1" />
         <select name="condition" defaultValue={single(params?.condition) ?? ""} className="rounded border px-2 py-1">
           <option value="">Any condition</option>
-          {["NEW", "LIKE_NEW", "GOOD", "FAIR", "POOR"].map((value) => <option key={value}>{value}</option>)}
+          {["NEW", "LIKE_NEW", "GOOD", "FAIR", "POOR"].map((value) => <option key={value} value={value}>{humanizeEnum(value)}</option>)}
         </select>
         <select name="type" defaultValue={single(params?.type) ?? ""} className="rounded border px-2 py-1">
           <option value="">Any type</option>

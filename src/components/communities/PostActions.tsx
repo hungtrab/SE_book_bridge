@@ -3,23 +3,54 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
+export type ReactionName = "LIKE" | "LOVE" | "CARE" | "HAHA" | "WOW" | "SAD" | "ANGRY";
+
+export const REACTIONS: Array<{ type: ReactionName; emoji: string; label: string }> = [
+  { type: "LIKE", emoji: "👍", label: "Like" },
+  { type: "LOVE", emoji: "❤️", label: "Love" },
+  { type: "CARE", emoji: "🥰", label: "Care" },
+  { type: "HAHA", emoji: "😆", label: "Haha" },
+  { type: "WOW", emoji: "😮", label: "Wow" },
+  { type: "SAD", emoji: "😢", label: "Sad" },
+  { type: "ANGRY", emoji: "😡", label: "Angry" },
+];
+
 interface Props {
   communityId: string;
   postId: string;
   isPinned: boolean;
-  likeCount: number;
-  likedByMe: boolean;
+  reactions: Array<{ userId: string; reaction: ReactionName }>;
+  currentUserId?: string;
   canPin: boolean;
   canDelete: boolean;
-  canLike: boolean;
+  canReact: boolean;
+  onComment?: () => void;
 }
 
-export function PostActions({ communityId, postId, isPinned, likeCount, likedByMe, canPin, canDelete, canLike }: Props) {
+export function PostActions({ communityId, postId, isPinned, reactions, currentUserId, canPin, canDelete, canReact, onComment }: Props) {
   const router = useRouter();
+  const mine = reactions.find((reaction) => reaction.userId === currentUserId)?.reaction ?? null;
+  const [selected, setSelected] = useState<ReactionName | null>(mine);
+  const [count, setCount] = useState(reactions.length);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const [pending, setPending] = useState(false);
-  const [optimisticLikes, setOptimisticLikes] = useState(likeCount);
-  const [optimisticLiked, setOptimisticLiked] = useState(likedByMe);
-  const [popping, setPopping] = useState(false);
+
+  async function react(reaction: ReactionName) {
+    const previous = selected;
+    const next = previous === reaction ? null : reaction;
+    setSelected(next);
+    setCount((value) => Math.max(0, value + (!previous && next ? 1 : previous && !next ? -1 : 0)));
+    setPickerOpen(false);
+    const res = await fetch(`/api/communities/${communityId}/posts/${postId}/likes`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reaction }),
+    });
+    if (!res.ok) {
+      setSelected(previous);
+      setCount(reactions.length);
+    }
+  }
 
   async function togglePin() {
     setPending(true);
@@ -40,61 +71,33 @@ export function PostActions({ communityId, postId, isPinned, likeCount, likedByM
     router.refresh();
   }
 
-  async function toggleLike() {
-    const nextLiked = !optimisticLiked;
-    setOptimisticLiked(nextLiked);
-    setOptimisticLikes((n) => n + (nextLiked ? 1 : -1));
-    if (nextLiked) {
-      setPopping(true);
-      setTimeout(() => setPopping(false), 280);
-    }
-    const res = await fetch(`/api/communities/${communityId}/posts/${postId}/likes`, { method: "POST" });
-    if (!res.ok) {
-      setOptimisticLiked(optimisticLiked);
-      setOptimisticLikes(likeCount);
-    }
-  }
-
+  const selectedMeta = REACTIONS.find((item) => item.type === selected);
   return (
-    <div className="flex shrink-0 items-center gap-1">
-      {canLike && (
-        <button
-          type="button"
-          onClick={toggleLike}
-          className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold transition-all duration-150 active:scale-90 ${
-            optimisticLiked
-              ? "bg-pink-50 text-pink-600 hover:bg-pink-100"
-              : "text-gray-500 hover:bg-gray-100 hover:text-pink-600"
-          }`}
-        >
-          <span className={`text-sm leading-none ${popping ? "like-pop" : ""}`}>
-            {optimisticLiked ? "♥" : "♡"}
-          </span>
-          {optimisticLikes}
-        </button>
-      )}
-      {!canLike && likeCount > 0 && (
-        <span className="flex items-center gap-1 px-2 text-xs text-gray-400">♥ {likeCount}</span>
-      )}
-      {canPin && (
-        <button
-          type="button"
-          disabled={pending}
-          onClick={togglePin}
-          className="rounded-full px-3 py-1 text-xs font-semibold text-blue-600 transition-all duration-150 hover:bg-blue-50 active:scale-90 disabled:opacity-50"
-        >
-          {isPinned ? "Unpin" : "Pin"}
-        </button>
-      )}
-      {canDelete && (
-        <button
-          type="button"
-          disabled={pending}
-          onClick={deletePost}
-          className="rounded-full px-3 py-1 text-xs font-semibold text-red-500 transition-all duration-150 hover:bg-red-50 active:scale-90 disabled:opacity-50"
-        >
-          Delete
-        </button>
+    <div className="space-y-2">
+      <div className="flex items-center justify-between px-1 text-sm text-gray-500">
+        <span>{count > 0 ? `${REACTIONS.filter((item) => reactions.some((reaction) => reaction.reaction === item.type)).slice(0, 3).map((item) => item.emoji).join("")} ${count}` : "Be the first to react"}</span>
+        <span>{isPinned ? "Pinned post" : ""}</span>
+      </div>
+      <div className="grid grid-cols-2 border-y py-1">
+        <div className="relative">
+          {pickerOpen && (
+            <div className="reaction-picker">
+              {REACTIONS.map((reaction) => (
+                <button key={reaction.type} type="button" title={reaction.label} onClick={() => react(reaction.type)}>{reaction.emoji}</button>
+              ))}
+            </div>
+          )}
+          <button type="button" disabled={!canReact} onClick={() => selected ? react(selected) : react("LIKE")} onMouseEnter={() => canReact && setPickerOpen(true)} onFocus={() => canReact && setPickerOpen(true)} className={`community-action ${selected ? "text-blue-600" : ""}`}>
+            <span>{selectedMeta?.emoji ?? "👍"}</span>{selectedMeta?.label ?? "Like"}
+          </button>
+        </div>
+        <button type="button" onClick={onComment} className="community-action">💬 Comment</button>
+      </div>
+      {(canPin || canDelete) && (
+        <div className="flex justify-end gap-1">
+          {canPin && <button type="button" disabled={pending} onClick={togglePin} className="btn-ghost btn-xs">{isPinned ? "Unpin" : "Pin"}</button>}
+          {canDelete && <button type="button" disabled={pending} onClick={deletePost} className="btn-danger-soft btn-xs">Delete</button>}
+        </div>
       )}
     </div>
   );

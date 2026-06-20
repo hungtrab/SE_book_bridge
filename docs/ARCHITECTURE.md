@@ -104,8 +104,8 @@ already-validated input.
 * `vitest` for unit + integration tests.
 * DB-free tests live next to the pure logic (state machine, scoring,
   anti-gaming).
-* DB-backed tests use a transient Postgres started by docker compose
-  (CI uses a service container — see `.github/workflows/ci.yml`).
+* DB-backed tests use a separate hosted PostgreSQL test database configured
+  through `DATABASE_URL`. Unit tests remain database-free.
 * Coverage target ≥ 70 %; `npm test -- --coverage`.
 
 ## Deployment

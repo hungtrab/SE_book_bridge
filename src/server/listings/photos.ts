@@ -17,6 +17,14 @@ const ALLOWED_TYPES = new Map([
 ]);
 
 export async function saveListingPhoto(file: File): Promise<{ url: string }> {
+  return saveUploadedImage(file, "listings");
+}
+
+export async function saveCommunityPostImage(file: File): Promise<{ url: string }> {
+  return saveUploadedImage(file, "community-posts");
+}
+
+async function saveUploadedImage(file: File, folder: "listings" | "community-posts"): Promise<{ url: string }> {
   if (!ALLOWED_TYPES.has(file.type)) {
     throw new BadRequestError("Only JPEG, PNG, and WebP images are allowed");
   }
@@ -25,13 +33,13 @@ export async function saveListingPhoto(file: File): Promise<{ url: string }> {
   }
 
   const filename = `${crypto.randomUUID()}.webp`;
-  const key = `listings/${filename}`;
+  const key = `${folder}/${filename}`;
   const bytes = await resizeToWebp(Buffer.from(await file.arrayBuffer()));
 
   if ((process.env.UPLOAD_BACKEND ?? "local") === "s3") {
     return uploadToS3(key, bytes);
   }
-  return saveLocal(filename, bytes);
+  return saveLocal(folder, filename, bytes);
 }
 
 export async function resizeToWebp(input: Buffer): Promise<Buffer> {
@@ -47,12 +55,12 @@ export async function resizeToWebp(input: Buffer): Promise<Buffer> {
     .toBuffer();
 }
 
-async function saveLocal(filename: string, bytes: Buffer): Promise<{ url: string }> {
+async function saveLocal(folder: string, filename: string, bytes: Buffer): Promise<{ url: string }> {
   const uploadDir = process.env.LOCAL_UPLOAD_DIR ?? ".uploads";
-  const listingDir = path.join(process.cwd(), uploadDir, "listings");
-  await mkdir(listingDir, { recursive: true });
-  await writeFile(path.join(listingDir, filename), bytes);
-  return { url: `/uploads/listings/${filename}` };
+  const targetDir = path.join(process.cwd(), uploadDir, folder);
+  await mkdir(targetDir, { recursive: true });
+  await writeFile(path.join(targetDir, filename), bytes);
+  return { url: `/uploads/${folder}/${filename}` };
 }
 
 async function uploadToS3(key: string, bytes: Buffer): Promise<{ url: string }> {

@@ -1,4 +1,16 @@
 import Link from "next/link";
+import {
+  ArrowLeftRight,
+  Bell,
+  ChevronDown,
+  LayoutDashboard,
+  MessageCircle,
+  MonitorSmartphone,
+  Settings,
+  ShieldCheck,
+  TicketCheck,
+  UserRound,
+} from "lucide-react";
 
 import { LogoutButton } from "@/components/auth/LogoutButton";
 import { getCurrentUser } from "@/server/lib/auth-context";
@@ -23,50 +35,113 @@ export async function NavBar() {
 
   return (
     <header className="nav-glass sticky top-0 z-40 border-b border-[color:var(--card-border)]">
-      <nav className="nav-scroll flex w-full items-center gap-5 overflow-x-auto px-4 py-2.5 text-sm sm:px-6">
-        <div className="flex shrink-0 items-center gap-4">
+      <nav className="flex h-16 w-full items-center gap-3 overflow-visible px-3 text-sm sm:px-5">
+        <div className="flex min-w-0 shrink-0 items-center gap-4">
           <Link href="/" className="group flex items-center gap-2 font-bold tracking-tight">
             <span className="grid size-9 place-items-center rounded-xl bg-blue-600 text-sm font-black text-white shadow-lg shadow-blue-600/25 transition-transform group-hover:-rotate-6 group-hover:scale-105">
               BB
             </span>
-            <span>BookBridge</span>
+            <span className="hidden sm:inline">BookBridge</span>
           </Link>
-          <span className="hidden h-6 w-px bg-slate-200 md:block" aria-hidden="true" />
-          <Link href="/listings" className="link-soft">Listings</Link>
-          <Link href="/search" className="link-soft">Search</Link>
-          <Link href="/explore" className="link-soft">Explore</Link>
-          <Link href="/communities" className="link-soft">Communities</Link>
+          <div className="hidden items-center gap-4 md:flex">
+            <span className="h-6 w-px bg-slate-200" aria-hidden="true" />
+            <Link href="/listings" className="link-soft">Listings</Link>
+            <Link href="/search" className="link-soft">Search</Link>
+            <Link href="/explore" className="link-soft">Explore</Link>
+            <Link href="/communities" className="link-soft">Communities</Link>
+          </div>
         </div>
 
-        <div
-          className={
-            user
-              ? "ml-auto flex shrink-0 items-center gap-3 rounded-xl border border-slate-200/80 bg-white/75 px-3 py-1.5 shadow-sm 2xl:hidden"
-              : "ml-auto flex shrink-0 items-center gap-3 rounded-xl border border-slate-200/80 bg-white/75 px-3 py-1.5 shadow-sm"
-          }
-        >
+        <div className="ml-auto flex shrink-0 items-center gap-2">
           {user ? (
             <>
-              <Link href="/transactions" className="link-soft">My Txns</Link>
-              <Link href="/messages" className="link-soft">Messages</Link>
-              <Link href="/notifications" className="link-soft">
-                Notifications{unread > 0 ? ` (${unread})` : ""}
+              <Link href="/messages" className="nav-icon-button" aria-label="Messages" title="Messages">
+                <MessageCircle size={20} strokeWidth={2.2} />
               </Link>
-              <Link href="/reports" className="link-soft">My Tickets</Link>
-              {canModerate && <Link href="/moderation" className="link-soft">Moderation</Link>}
-              {user.role === "ADMIN" && <Link href="/admin" className="link-soft">Admin</Link>}
-              <Link href="/profile/sessions" className="link-soft">Sessions</Link>
-              <span className="h-6 w-px bg-slate-200" aria-hidden="true" />
               <Link
-                href={`/profile/${user.id}`}
-                className="flex items-center gap-2 rounded-full border border-[color:var(--card-border)] bg-white py-1 pl-1 pr-3 font-semibold transition hover:border-blue-400 hover:text-blue-600"
+                href="/notifications"
+                className="nav-icon-button relative"
+                aria-label={unread > 0 ? `Notifications, ${unread} unread` : "Notifications"}
+                title="Notifications"
               >
-                <span className="grid size-7 place-items-center rounded-full bg-blue-600 text-[11px] font-black text-white">
-                  {initials(user.displayName)}
-                </span>
-                {user.displayName}
+                <Bell size={20} strokeWidth={2.2} />
+                {unread > 0 && (
+                  <span className="absolute -right-1 -top-1 grid min-h-5 min-w-5 place-items-center rounded-full border-2 border-white bg-red-600 px-1 text-[10px] font-black leading-none text-white">
+                    {unread > 99 ? "99+" : unread}
+                  </span>
+                )}
               </Link>
-              <LogoutButton />
+
+              <details className="account-menu group relative">
+                <summary className="flex h-11 cursor-pointer list-none items-center gap-1 rounded-full p-0.5 transition hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-200">
+                  <span className="grid size-10 place-items-center overflow-hidden rounded-full bg-blue-600 text-xs font-black text-white shadow-md shadow-blue-600/20">
+                    {user.avatarUrl ? (
+                      <img src={user.avatarUrl} alt="" className="h-full w-full object-cover" />
+                    ) : (
+                      initials(user.displayName)
+                    )}
+                  </span>
+                  <ChevronDown size={16} className="hidden text-slate-500 transition-transform group-open:rotate-180 sm:block" />
+                  <span className="sr-only">Open account menu</span>
+                </summary>
+
+                <div className="absolute right-0 top-[calc(100%+0.65rem)] w-[min(20rem,calc(100vw-1.5rem))] overflow-hidden rounded-lg border border-slate-200 bg-white p-2 shadow-2xl shadow-slate-900/15">
+                  <Link href={`/profile/${user.id}`} className="flex items-center gap-3 rounded-md p-3 transition hover:bg-slate-100">
+                    <span className="grid size-11 flex-none place-items-center overflow-hidden rounded-full bg-blue-600 text-xs font-black text-white">
+                      {user.avatarUrl ? (
+                        <img src={user.avatarUrl} alt="" className="h-full w-full object-cover" />
+                      ) : (
+                        initials(user.displayName)
+                      )}
+                    </span>
+                    <span className="min-w-0">
+                      <strong className="block truncate text-sm text-slate-900">{user.displayName}</strong>
+                      <span className="block text-xs text-slate-500">
+                        {user.role === "ADMIN" ? "Administrator" : "View your profile"}
+                      </span>
+                    </span>
+                  </Link>
+
+                  <div className="my-2 h-px bg-slate-200" />
+                  <nav aria-label="Account and management" className="space-y-1">
+                    <Link href="/profile/edit" className="account-menu-link">
+                      <Settings size={19} />
+                      <span>Edit profile</span>
+                    </Link>
+                    <Link href="/transactions" className="account-menu-link">
+                      <ArrowLeftRight size={19} />
+                      <span>My transactions</span>
+                    </Link>
+                    <Link href="/reports" className="account-menu-link">
+                      <TicketCheck size={19} />
+                      <span>My tickets</span>
+                    </Link>
+                    {canModerate && (
+                      <Link href="/moderation" className="account-menu-link">
+                        <ShieldCheck size={19} />
+                        <span>Moderation</span>
+                      </Link>
+                    )}
+                    {user.role === "ADMIN" && (
+                      <Link href="/admin" className="account-menu-link">
+                        <LayoutDashboard size={19} />
+                        <span>Admin</span>
+                      </Link>
+                    )}
+                    <Link href="/profile/sessions" className="account-menu-link">
+                      <MonitorSmartphone size={19} />
+                      <span>Sessions</span>
+                    </Link>
+                    <Link href={`/profile/${user.id}`} className="account-menu-link md:hidden">
+                      <UserRound size={19} />
+                      <span>Profile</span>
+                    </Link>
+                  </nav>
+
+                  <div className="my-2 h-px bg-slate-200" />
+                  <LogoutButton className="account-menu-link w-full" />
+                </div>
+              </details>
             </>
           ) : (
             <>
@@ -76,39 +151,6 @@ export async function NavBar() {
           )}
         </div>
       </nav>
-      {user && (
-        <aside className="fixed bottom-0 right-0 top-[4.25rem] z-30 hidden w-[260px] flex-col border-l border-slate-200/80 bg-slate-50/90 p-4 text-sm shadow-[-10px_0_30px_rgba(15,23,42,0.05)] backdrop-blur-xl 2xl:flex">
-          <Link
-            href={`/profile/${user.id}`}
-            className="flex items-center gap-3 border-b border-slate-200 pb-4"
-          >
-            <span className="grid size-10 place-items-center rounded-full bg-blue-600 text-xs font-black text-white shadow-md shadow-blue-600/20">
-              {initials(user.displayName)}
-            </span>
-            <span className="min-w-0">
-              <strong className="block truncate text-gray-900">{user.displayName}</strong>
-              <span className="text-xs text-gray-500">{user.role === "ADMIN" ? "Administrator" : "Member profile"}</span>
-            </span>
-          </Link>
-
-          <nav aria-label="Account and management" className="mt-3 flex flex-col gap-1">
-            <Link href="/transactions" className="right-rail-link">My transactions</Link>
-            <Link href="/messages" className="right-rail-link">Messages</Link>
-            <Link href="/notifications" className="right-rail-link">
-              <span>Notifications</span>
-              {unread > 0 && <span className="rounded-full bg-blue-600 px-2 py-0.5 text-xs font-bold text-white">{unread}</span>}
-            </Link>
-            <Link href="/reports" className="right-rail-link">My tickets</Link>
-            {canModerate && <Link href="/moderation" className="right-rail-link">Moderation</Link>}
-            {user.role === "ADMIN" && <Link href="/admin" className="right-rail-link">Admin</Link>}
-            <Link href="/profile/sessions" className="right-rail-link">Sessions</Link>
-          </nav>
-
-          <div className="mt-auto border-t border-slate-200 pt-3">
-            <LogoutButton />
-          </div>
-        </aside>
-      )}
     </header>
   );
 }

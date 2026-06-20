@@ -79,14 +79,6 @@ select:-webkit-autofill {
     backdrop-filter: blur(18px);
   }
 
-  .nav-scroll {
-    scrollbar-width: none;
-  }
-
-  .nav-scroll::-webkit-scrollbar {
-    display: none;
-  }
-
   .card-surface {
     border: 1px solid var(--card-border);
     background: var(--card);
@@ -132,20 +124,46 @@ select:-webkit-autofill {
     color: var(--brand);
   }
 
-  .right-rail-link {
+  .nav-icon-button {
+    display: grid;
+    width: 2.6rem;
+    height: 2.6rem;
+    flex: none;
+    place-items: center;
+    border-radius: 999px;
+    background: #e2e8f0;
+    color: #0f172a;
+    transition: background-color 140ms ease, color 140ms ease, transform 140ms ease;
+  }
+
+  .nav-icon-button:hover {
+    background: #cbd5e1;
+    color: var(--brand);
+  }
+
+  .nav-icon-button:active {
+    transform: scale(0.95);
+  }
+
+  .account-menu > summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .account-menu-link {
     display: flex;
     min-height: 2.75rem;
     align-items: center;
-    justify-content: space-between;
+    gap: 0.75rem;
     border-radius: 0.5rem;
     padding: 0.65rem 0.75rem;
     color: #475569;
     font-weight: 600;
+    text-align: left;
     transition: background-color 140ms ease, color 140ms ease;
   }
 
-  .right-rail-link:hover {
-    background: #fff;
+  .account-menu-link:hover {
+    background: #f1f5f9;
     color: var(--brand);
   }
 

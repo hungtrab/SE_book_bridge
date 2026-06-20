@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { LogOut } from "lucide-react";
 
-export function LogoutButton() {
+export function LogoutButton({ className = "link-soft" }: { className?: string }) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
 
@@ -19,9 +20,10 @@ export function LogoutButton() {
       type="button"
       onClick={logout}
       disabled={pending}
-      className="link-soft disabled:opacity-50"
+      className={`${className} disabled:opacity-50`}
     >
-      {pending ? "Logging out..." : "Logout"}
+      <LogOut size={19} />
+      <span>{pending ? "Logging out..." : "Logout"}</span>
     </button>
   );
 }

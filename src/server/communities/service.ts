@@ -66,6 +66,7 @@ export async function listCommunities(input: z.infer<typeof CommunityQuerySchema
   const data = CommunityQuerySchema.parse(input);
   return prisma.community.findMany({
     where: {
+      name: { not: process.env.BULLETIN_COMMUNITY_NAME ?? "Book News & Discoveries" },
       ...(data.scope ? { scope: data.scope } : {}),
       ...(data.q
         ? {

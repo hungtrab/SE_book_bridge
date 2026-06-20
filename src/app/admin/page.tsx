@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { BulletinImportButton } from "@/components/admin/BulletinImportButton";
 import { requireRole } from "@/server/lib/auth-context";
 import { getPlatformStats } from "@/server/admin/stats";
 
@@ -23,6 +24,7 @@ export default async function AdminPage() {
         <Stat label="Pending tickets" value={stats.pendingReports} />
         <Stat label="Unread notifications" value={stats.unreadNotifications} />
       </div>
+      <BulletinImportButton />
       <p className="text-xs text-gray-500">Generated {stats.generatedAt.toLocaleString()}</p>
     </div>
   );

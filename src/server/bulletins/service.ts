@@ -3,6 +3,7 @@ import { prisma } from "../lib/prisma";
 const COMMUNITY_NAME = process.env.BULLETIN_COMMUNITY_NAME ?? "Book News & Discoveries";
 const AUTHOR_EMAIL = process.env.BULLETIN_AUTHOR_EMAIL ?? "admin@bookbridge.local";
 const MAX_PER_SOURCE = 8;
+const FETCH_TIMEOUT_MS = 10_000;
 
 type Bulletin = {
   sourceName: string;
@@ -26,12 +27,10 @@ export async function runDailyBulletinImport() {
     ...(nyt.status === "fulfilled" ? nyt.value : []),
   ];
 
-  const [community, author] = await Promise.all([
-    prisma.community.findUnique({ where: { name: COMMUNITY_NAME } }),
-    prisma.user.findUnique({ where: { email: AUTHOR_EMAIL } }),
-  ]);
-  if (!community) throw new Error(`Bulletin community "${COMMUNITY_NAME}" does not exist`);
-  if (!author) throw new Error(`Bulletin author "${AUTHOR_EMAIL}" does not exist`);
+  if (items.length === 0) {
+    throw new Error("All bulletin sources failed or returned no usable entries");
+  }
+  const { community, author } = await ensureBulletinInfrastructure();
 
   let created = 0;
   let skipped = 0;
@@ -72,7 +71,20 @@ export async function runDailyBulletinImport() {
   };
 }
 
-export async function listBulletins() {
+export async function listBulletins(options: { importIfEmpty?: boolean } = {}) {
+  let bulletins = await queryBulletins();
+  if (bulletins.length === 0 && options.importIfEmpty) {
+    try {
+      await runDailyBulletinImport();
+      bulletins = await queryBulletins();
+    } catch (error) {
+      console.error("Automatic bulletin import failed", error);
+    }
+  }
+  return bulletins;
+}
+
+async function queryBulletins() {
   return prisma.communityPost.findMany({
     where: { kind: "BULLETIN" },
     orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }],
@@ -102,10 +114,35 @@ export async function listBulletins() {
   });
 }
 
+async function ensureBulletinInfrastructure() {
+  const preferredAuthor = await prisma.user.findUnique({ where: { email: AUTHOR_EMAIL } });
+  const author = preferredAuthor ?? await prisma.user.findFirst({
+    where: { status: "ACTIVE" },
+    orderBy: [{ role: "desc" }, { createdAt: "asc" }],
+  });
+  if (!author) throw new Error("Create at least one active BookBridge user before importing bulletins");
+
+  const community = await prisma.community.upsert({
+    where: { name: COMMUNITY_NAME },
+    update: {},
+    create: {
+      ownerId: author.id,
+      name: COMMUNITY_NAME,
+      scope: "GENRE",
+      description: "System workspace for source-attributed BookBridge bulletins.",
+      isPrivate: true,
+      memberCount: 1,
+      memberships: { create: { userId: author.id, role: "MODERATOR" } },
+    },
+  });
+  return { community, author };
+}
+
 async function fetchOpenLibraryTrending(): Promise<Bulletin[]> {
   const response = await fetch("https://openlibrary.org/trending/daily.json?limit=12", {
-    headers: { "User-Agent": "BookBridge/1.0 (community book discovery)" },
+    headers: { "User-Agent": "BookBridge/1.0 (community book discovery; admin@bookbridge.local)" },
     cache: "no-store",
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
   });
   if (!response.ok) throw new Error(`Open Library returned ${response.status}`);
   const body = await response.json() as { works?: Array<Record<string, unknown>> };
@@ -134,7 +171,11 @@ async function fetchLibraryOfCongressFeeds(): Promise<Bulletin[]> {
     ["Library of Congress — Bibliomania", "https://blogs.loc.gov/bibliomania/feed/"],
   ] as const;
   const batches = await Promise.all(feeds.map(async ([name, url]) => {
-    const response = await fetch(url, { headers: { "User-Agent": "BookBridge/1.0" }, cache: "no-store" });
+    const response = await fetch(url, {
+      headers: { "User-Agent": "BookBridge/1.0 (admin@bookbridge.local)" },
+      cache: "no-store",
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    });
     if (!response.ok) throw new Error(`${name} returned ${response.status}`);
     return parseRss(await response.text(), name);
   }));
@@ -144,7 +185,10 @@ async function fetchLibraryOfCongressFeeds(): Promise<Bulletin[]> {
 async function fetchNewYorkTimesBestSellers(): Promise<Bulletin[]> {
   const key = process.env.NYT_BOOKS_API_KEY;
   if (!key) return [];
-  const response = await fetch(`https://api.nytimes.com/svc/books/v3/lists/current/hardcover-fiction.json?api-key=${encodeURIComponent(key)}`, { cache: "no-store" });
+  const response = await fetch(`https://api.nytimes.com/svc/books/v3/lists/current/hardcover-fiction.json?api-key=${encodeURIComponent(key)}`, {
+    cache: "no-store",
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+  });
   if (!response.ok) throw new Error(`New York Times Books API returned ${response.status}`);
   const body = await response.json() as { results?: { books?: Array<Record<string, unknown>> } };
   return (body.results?.books ?? []).slice(0, MAX_PER_SOURCE).flatMap((book) => {

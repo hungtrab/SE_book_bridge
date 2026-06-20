@@ -84,6 +84,10 @@ Sources:
 - official Library of Congress
   [Bookmarked](https://blogs.loc.gov/bookmarked/feed/) and
   [Bibliomania](https://blogs.loc.gov/bibliomania/feed/) RSS feeds;
+- [Project Gutenberg](https://www.gutenberg.org/), using its daily ebook RSS
+  feed;
+- [Internet Archive](https://archive.org/), using the public advanced search
+  API for recently archived texts;
 - optional [New York Times Books API](https://developer.nytimes.com/docs/books-product/1/overview).
 
 Google Books remains available for future metadata enrichment through its
@@ -95,9 +99,9 @@ source, publication dates, and outbound links are stored. Full articles are
 not copied. Each source ID has a database uniqueness constraint, making the
 import idempotent.
 
-Imported content appears in the global `/bulletins` feed. Community feeds
-show member-created posts only; external API content is never inserted into a
-community's visible discussion timeline.
+Imported content appears in the global `/bulletins` feed and in the
+BookBridge bulletin community timeline. Named subcommunities still show their
+own member-created posts.
 
 Required Vercel variables:
 

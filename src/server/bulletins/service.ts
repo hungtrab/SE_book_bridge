@@ -2,6 +2,8 @@ import { prisma } from "../lib/prisma";
 
 const COMMUNITY_NAME = process.env.BULLETIN_COMMUNITY_NAME ?? "Book News & Discoveries";
 const AUTHOR_EMAIL = process.env.BULLETIN_AUTHOR_EMAIL ?? "admin@bookbridge.local";
+const AUTHOR_DISPLAY_NAME = "BookBridge Bulletin Desk";
+const DISABLED_PASSWORD_HASH = "system-account-disabled";
 const MAX_PER_SOURCE = 8;
 const FETCH_TIMEOUT_MS = 10_000;
 
@@ -15,17 +17,23 @@ type Bulletin = {
   publishedAt?: Date;
 };
 
+type BulletinSource = {
+  key: string;
+  label: string;
+  fetch: () => Promise<Bulletin[]>;
+};
+
+const BULLETIN_SOURCES: BulletinSource[] = [
+  { key: "openLibrary", label: "Open Library", fetch: fetchOpenLibraryTrending },
+  { key: "libraryOfCongress", label: "Library of Congress", fetch: fetchLibraryOfCongressFeeds },
+  { key: "projectGutenberg", label: "Project Gutenberg", fetch: fetchProjectGutenbergDaily },
+  { key: "internetArchive", label: "Internet Archive", fetch: fetchInternetArchiveTexts },
+  { key: "newYorkTimes", label: "NYT Best Sellers", fetch: fetchNewYorkTimesBestSellers },
+];
+
 export async function runDailyBulletinImport() {
-  const [openLibrary, libraryOfCongress, nyt] = await Promise.allSettled([
-    fetchOpenLibraryTrending(),
-    fetchLibraryOfCongressFeeds(),
-    fetchNewYorkTimesBestSellers(),
-  ]);
-  const items = [
-    ...(openLibrary.status === "fulfilled" ? openLibrary.value : []),
-    ...(libraryOfCongress.status === "fulfilled" ? libraryOfCongress.value : []),
-    ...(nyt.status === "fulfilled" ? nyt.value : []),
-  ];
+  const results = await Promise.allSettled(BULLETIN_SOURCES.map((source) => source.fetch()));
+  const items = results.flatMap((result) => result.status === "fulfilled" ? result.value : []);
 
   if (items.length === 0) {
     throw new Error("All bulletin sources failed or returned no usable entries");
@@ -63,11 +71,7 @@ export async function runDailyBulletinImport() {
     fetched: items.length,
     created,
     skipped,
-    sources: {
-      openLibrary: resultCount(openLibrary),
-      libraryOfCongress: resultCount(libraryOfCongress),
-      newYorkTimes: resultCount(nyt),
-    },
+    sources: sourceCounts(results),
   };
 }
 
@@ -115,27 +119,62 @@ async function queryBulletins() {
 }
 
 async function ensureBulletinInfrastructure() {
-  const preferredAuthor = await prisma.user.findUnique({ where: { email: AUTHOR_EMAIL } });
-  const author = preferredAuthor ?? await prisma.user.findFirst({
-    where: { status: "ACTIVE" },
-    orderBy: [{ role: "desc" }, { createdAt: "asc" }],
-  });
-  if (!author) throw new Error("Create at least one active BookBridge user before importing bulletins");
+  return prisma.$transaction(async (tx) => {
+    const authorEmail = AUTHOR_EMAIL.toLowerCase();
+    const preferredAuthor = await tx.user.findUnique({ where: { email: authorEmail } });
+    const fallbackAuthor = preferredAuthor ?? await tx.user.findFirst({
+      where: { status: "ACTIVE" },
+      orderBy: [{ role: "desc" }, { createdAt: "asc" }],
+    });
+    const author = fallbackAuthor ?? await tx.user.create({
+      data: {
+        email: authorEmail,
+        passwordHash: DISABLED_PASSWORD_HASH,
+        displayName: AUTHOR_DISPLAY_NAME,
+        bio: "System account used to publish source-attributed BookBridge bulletins.",
+        status: "SUSPENDED",
+        emailVerifiedAt: new Date(),
+      },
+    });
 
-  const community = await prisma.community.upsert({
-    where: { name: COMMUNITY_NAME },
-    update: {},
-    create: {
-      ownerId: author.id,
-      name: COMMUNITY_NAME,
-      scope: "GENRE",
-      description: "System workspace for source-attributed BookBridge bulletins.",
-      isPrivate: true,
-      memberCount: 1,
-      memberships: { create: { userId: author.id, role: "MODERATOR" } },
-    },
+    const community = await tx.community.upsert({
+      where: { name: COMMUNITY_NAME },
+      update: {
+        description: "Main BookBridge space for source-attributed book bulletins and reading discoveries.",
+        isPrivate: false,
+      },
+      create: {
+        ownerId: author.id,
+        name: COMMUNITY_NAME,
+        scope: "GENRE",
+        description: "Main BookBridge space for source-attributed book bulletins and reading discoveries.",
+        isPrivate: false,
+        memberCount: 0,
+      },
+    });
+
+    const membership = await tx.communityMembership.findUnique({
+      where: { userId_communityId: { userId: author.id, communityId: community.id } },
+    });
+    if (membership) {
+      if (membership.role !== "MODERATOR") {
+        await tx.communityMembership.update({
+          where: { userId_communityId: { userId: author.id, communityId: community.id } },
+          data: { role: "MODERATOR" },
+        });
+      }
+    } else {
+      await tx.communityMembership.create({
+        data: { userId: author.id, communityId: community.id, role: "MODERATOR" },
+      });
+      await tx.community.update({
+        where: { id: community.id },
+        data: { memberCount: { increment: 1 } },
+      });
+    }
+
+    return { community, author };
   });
-  return { community, author };
 }
 
 async function fetchOpenLibraryTrending(): Promise<Bulletin[]> {
@@ -182,6 +221,66 @@ async function fetchLibraryOfCongressFeeds(): Promise<Bulletin[]> {
   return batches.flat().slice(0, MAX_PER_SOURCE);
 }
 
+async function fetchProjectGutenbergDaily(): Promise<Bulletin[]> {
+  const response = await fetch("https://www.gutenberg.org/cache/epub/feeds/today.rss", {
+    headers: { "User-Agent": "BookBridge/1.0 (community book discovery; admin@bookbridge.local)" },
+    cache: "no-store",
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+  });
+  if (!response.ok) throw new Error(`Project Gutenberg returned ${response.status}`);
+  return parseRss(await response.text(), "Project Gutenberg")
+    .map((item) => ({
+      ...item,
+      title: item.title.startsWith("New public-domain ebook:")
+        ? item.title
+        : `New public-domain ebook: ${item.title}`,
+      summary: item.summary || "A new or updated public-domain ebook is available from Project Gutenberg. Open the source to inspect the edition, then discuss whether the community should read it.",
+    }))
+    .slice(0, MAX_PER_SOURCE);
+}
+
+async function fetchInternetArchiveTexts(): Promise<Bulletin[]> {
+  const params = new URLSearchParams({
+    q: "mediatype:texts AND collection:internetarchivebooks",
+    rows: String(MAX_PER_SOURCE),
+    page: "1",
+    output: "json",
+  });
+  for (const field of ["identifier", "title", "creator", "date", "description", "publicdate"]) {
+    params.append("fl[]", field);
+  }
+  params.append("sort[]", "publicdate desc");
+
+  const response = await fetch(`https://archive.org/advancedsearch.php?${params.toString()}`, {
+    headers: { "User-Agent": "BookBridge/1.0 (community book discovery; admin@bookbridge.local)" },
+    cache: "no-store",
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+  });
+  if (!response.ok) throw new Error(`Internet Archive returned ${response.status}`);
+  const body = await response.json() as { response?: { docs?: Array<Record<string, unknown>> } };
+  return (body.response?.docs ?? []).flatMap((doc) => {
+    const identifier = text(doc.identifier);
+    const title = text(doc.title);
+    if (!identifier || !title) return [];
+    const creator = textValue(doc.creator);
+    const date = textValue(doc.date);
+    const description = stripHtml(textValue(doc.description) ?? "");
+    const publicDate = new Date(textValue(doc.publicdate) ?? "");
+    const byline = creator ? ` by ${creator}` : "";
+    const dateText = date ? ` (${date.slice(0, 4)})` : "";
+    return [{
+      sourceName: "Internet Archive Texts",
+      externalId: identifier,
+      sourceUrl: `https://archive.org/details/${encodeURIComponent(identifier)}`,
+      title: `Recently archived text: ${title}`,
+      summary: description
+        ? clip(description, 900)
+        : `${title}${byline}${dateText} was recently added to Internet Archive's text collection. Open the record to inspect access options and discuss whether it is useful to BookBridge readers.`,
+      publishedAt: Number.isNaN(publicDate.getTime()) ? undefined : publicDate,
+    }];
+  });
+}
+
 async function fetchNewYorkTimesBestSellers(): Promise<Bulletin[]> {
   const key = process.env.NYT_BOOKS_API_KEY;
   if (!key) return [];
@@ -225,7 +324,7 @@ export function parseRss(xml: string, sourceName: string): Bulletin[] {
       externalId: guid,
       sourceUrl: url,
       title,
-      summary: description || "A new book-related story from the Library of Congress. Open the source and discuss it with the community.",
+      summary: description || "A new book-related story is available from this source. Open the source and discuss it with the community.",
       imageUrl,
       publishedAt: Number.isNaN(publishedAt.getTime()) ? undefined : publishedAt,
     }];
@@ -251,6 +350,9 @@ function stripHtml(value: string) {
 function decodeXml(value: string) {
   return value
     .replace(/<!\[CDATA\[|\]\]>/g, "")
+    .replace(/&#x([0-9a-f]+);/gi, (_, hex: string) => String.fromCodePoint(Number.parseInt(hex, 16)))
+    .replace(/&#(\d+);/g, (_, decimal: string) => String.fromCodePoint(Number.parseInt(decimal, 10)))
+    .replace(/&nbsp;/g, " ")
     .replace(/&amp;/g, "&")
     .replace(/&quot;/g, "\"")
     .replace(/&#039;|&apos;/g, "'")
@@ -267,6 +369,21 @@ function text(value: unknown) {
   return typeof value === "string" && value.trim() ? value.trim() : undefined;
 }
 
-function resultCount(result: PromiseSettledResult<Bulletin[]>) {
-  return result.status === "fulfilled" ? result.value.length : 0;
+function textValue(value: unknown) {
+  if (Array.isArray(value)) {
+    return value.map((item) => text(item)).filter(Boolean).join(", ") || undefined;
+  }
+  return text(value);
+}
+
+function clip(value: string, max: number) {
+  if (value.length <= max) return value;
+  return `${value.slice(0, max - 1).trimEnd()}…`;
+}
+
+function sourceCounts(results: Array<PromiseSettledResult<Bulletin[]>>) {
+  return Object.fromEntries(BULLETIN_SOURCES.map((source, index) => {
+    const result = results[index];
+    return [source.key, result?.status === "fulfilled" ? result.value.length : 0];
+  }));
 }

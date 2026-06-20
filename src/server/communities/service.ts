@@ -102,7 +102,6 @@ export async function getCommunity(id: string, userId?: string) {
         include: { photos: { take: 1, orderBy: { position: "asc" } } },
       },
       posts: {
-        where: { kind: "MEMBER" },
         orderBy: [{ isPinned: "desc" }, { createdAt: "desc" }],
         take: 20,
         include: {

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 
 export function CommunityActions({
   id,
@@ -37,7 +38,6 @@ export function CommunityActions({
   }
 
   async function handleDelete() {
-    if (!confirmDelete) { setConfirmDelete(true); return; }
     setPending(true);
     setError(null);
     const res = await fetch(`/api/communities/${id}`, { method: "DELETE" });
@@ -83,18 +83,14 @@ export function CommunityActions({
         <button
           type="button"
           disabled={pending}
-          onClick={handleDelete}
-          className={confirmDelete ? "btn-danger btn-sm" : "btn-danger-soft btn-sm"}
+          onClick={() => setConfirmDelete(true)}
+          className="btn-danger-soft btn-sm"
         >
-          {confirmDelete ? "Confirm delete?" : "Delete community"}
-        </button>
-      )}
-      {confirmDelete && (
-        <button type="button" onClick={() => setConfirmDelete(false)} className="text-xs text-gray-500 underline">
-          Cancel
+          Delete community
         </button>
       )}
       {error && <p className="text-sm text-red-600">{error}</p>}
+      <ConfirmDialog open={confirmDelete} title="Delete this community?" message="All member posts, comments, memberships, and community-scoped content will be permanently removed." confirmLabel="Delete" dangerous pending={pending} onConfirm={handleDelete} onCancel={() => setConfirmDelete(false)} />
     </div>
   );
 }

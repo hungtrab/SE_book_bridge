@@ -3,6 +3,12 @@
 BookBridge uses one hosted PostgreSQL database. Vercel runs the application,
 but schema migrations and deterministic demo data are separate operations.
 
+Vercel uses the `vercel-build` package script, which runs
+`prisma migrate deploy` before compiling the application. This prevents a
+deployment from serving code that expects columns or tables that have not
+been created yet. The manual production workflow remains available for
+controlled migration and seed operations.
+
 ## What the seed creates
 
 `npm run db:seed` now creates a coherent demonstration network:
@@ -88,6 +94,10 @@ Only titles, short summaries, source attribution, images supplied by the
 source, publication dates, and outbound links are stored. Full articles are
 not copied. Each source ID has a database uniqueness constraint, making the
 import idempotent.
+
+Imported content appears in the global `/bulletins` feed. Community feeds
+show member-created posts only; external API content is never inserted into a
+community's visible discussion timeline.
 
 Required Vercel variables:
 

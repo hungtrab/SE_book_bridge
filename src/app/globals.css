@@ -343,12 +343,29 @@ select:-webkit-autofill {
     left: 0;
     z-index: 30;
     display: flex;
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(6px) scale(.96);
     gap: .2rem;
     border: 1px solid #e5e7eb;
     border-radius: 999px;
     background: #fff;
     padding: .35rem;
     box-shadow: 0 10px 30px rgba(15, 23, 42, .2);
+    transition: opacity 120ms ease, transform 120ms ease, visibility 120ms ease;
+  }
+
+  .reaction-hover-zone {
+    position: relative;
+  }
+
+  .reaction-hover-zone:hover > .reaction-picker,
+  .reaction-hover-zone:focus-within > .reaction-picker {
+    visibility: visible;
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0) scale(1);
   }
 
   .reaction-picker button {

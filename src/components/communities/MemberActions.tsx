@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 
 interface Props {
   communityId: string;
@@ -12,6 +13,7 @@ interface Props {
 export function MemberActions({ communityId, userId, currentRole }: Props) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
+  const [removeOpen, setRemoveOpen] = useState(false);
 
   async function setRole(role: "MEMBER" | "MODERATOR") {
     setPending(true);
@@ -25,10 +27,10 @@ export function MemberActions({ communityId, userId, currentRole }: Props) {
   }
 
   async function removeMember() {
-    if (!confirm("Remove this member from the community?")) return;
     setPending(true);
     await fetch(`/api/communities/${communityId}/members/${userId}`, { method: "DELETE" });
     setPending(false);
+    setRemoveOpen(false);
     router.refresh();
   }
 
@@ -56,11 +58,12 @@ export function MemberActions({ communityId, userId, currentRole }: Props) {
       <button
         type="button"
         disabled={pending}
-        onClick={removeMember}
+        onClick={() => setRemoveOpen(true)}
         className="btn-danger-soft btn-xs"
       >
         Remove
       </button>
+      <ConfirmDialog open={removeOpen} title="Remove this member?" message="They will lose access to private community content and member-only actions." confirmLabel="Remove" dangerous pending={pending} onConfirm={removeMember} onCancel={() => setRemoveOpen(false)} />
     </div>
   );
 }

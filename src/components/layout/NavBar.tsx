@@ -21,6 +21,7 @@ export async function NavBar() {
         <Link href="/search" className="link-soft">Search</Link>
         <Link href="/explore" className="link-soft">Explore</Link>
         <Link href="/communities" className="link-soft">Communities</Link>
+        <Link href="/bulletins" className="link-soft">Book Bulletins</Link>
         <span className="ml-auto flex shrink-0 items-center gap-3">
           {user ? (
             <>

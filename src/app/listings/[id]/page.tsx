@@ -4,15 +4,20 @@ import { ListingDeleteButton } from "@/components/listings/ListingDeleteButton";
 import { RequestListingButton } from "@/components/transactions/RequestListingButton";
 import { ReportButton } from "@/components/moderation/ReportButton";
 import { ReputationBadge } from "@/components/reputation/ReputationBadge";
+import { FollowButton } from "@/components/social/FollowButton";
 import { getCurrentUser } from "@/server/lib/auth-context";
 import { getListing } from "@/server/listings/service";
 import { relatedListings } from "@/server/search/service";
+import { getFollowState } from "@/server/social/follow";
 import { genreLabel, humanizeEnum } from "@/lib/labels";
 
 export default async function ListingDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const [listing, user, related] = await Promise.all([getListing(id), getCurrentUser(), relatedListings(id)]);
   const isOwner = user?.id === listing.ownerId;
+  const followState = user && !isOwner
+    ? await getFollowState(user.id, listing.ownerId)
+    : null;
 
   return (
     <div className="space-y-6">
@@ -27,6 +32,19 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
             </Link>{" "}
             <ReputationBadge score={listing.owner.reputationScore} />
           </p>
+          {followState && (
+            <div className="mt-3 flex items-center gap-3">
+              <FollowButton
+                userId={listing.ownerId}
+                initial={followState.following}
+                initialCount={followState.followerCount}
+                compact
+              />
+              <span className="text-xs text-gray-500">
+                Get real-time alerts when {listing.owner.displayName} lists another book.
+              </span>
+            </div>
+          )}
         </div>
         {user && !isOwner && listing.status === "ACTIVE" && <RequestListingButton listingId={listing.id} />}
         {user && !isOwner && <ReportButton targetType="LISTING" targetId={listing.id} />}

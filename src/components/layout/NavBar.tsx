@@ -1,7 +1,6 @@
 import Link from "next/link";
 import {
   ArrowLeftRight,
-  Bell,
   ChevronDown,
   LayoutDashboard,
   MessageCircle,
@@ -13,6 +12,7 @@ import {
 } from "lucide-react";
 
 import { LogoutButton } from "@/components/auth/LogoutButton";
+import { LiveNotificationBell } from "@/components/notifications/LiveNotificationBell";
 import { getCurrentUser } from "@/server/lib/auth-context";
 import { hasModerationAccess } from "@/server/moderation/queue";
 import { unreadNotificationCount } from "@/server/notifications/service";
@@ -58,19 +58,7 @@ export async function NavBar() {
               <Link href="/messages" className="nav-icon-button" aria-label="Messages" title="Messages">
                 <MessageCircle size={20} strokeWidth={2.2} />
               </Link>
-              <Link
-                href="/notifications"
-                className="nav-icon-button relative"
-                aria-label={unread > 0 ? `Notifications, ${unread} unread` : "Notifications"}
-                title="Notifications"
-              >
-                <Bell size={20} strokeWidth={2.2} />
-                {unread > 0 && (
-                  <span className="absolute -right-1 -top-1 grid min-h-5 min-w-5 place-items-center rounded-full border-2 border-white bg-red-600 px-1 text-[10px] font-black leading-none text-white">
-                    {unread > 99 ? "99+" : unread}
-                  </span>
-                )}
-              </Link>
+              <LiveNotificationBell initialUnread={unread} />
 
               <details className="account-menu group relative">
                 <summary className="flex h-11 cursor-pointer list-none items-center gap-1 rounded-full p-0.5 transition hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-200">

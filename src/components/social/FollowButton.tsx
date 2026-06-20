@@ -1,8 +1,19 @@
 "use client";
 
 import { useState } from "react";
+import { BellRing, UserCheck, UserPlus } from "lucide-react";
 
-export function FollowButton({ userId, initial, initialCount }: { userId: string; initial: boolean; initialCount: number }) {
+export function FollowButton({
+  userId,
+  initial,
+  initialCount,
+  compact = false,
+}: {
+  userId: string;
+  initial: boolean;
+  initialCount: number;
+  compact?: boolean;
+}) {
   const [following, setFollowing] = useState(initial);
   const [count, setCount] = useState(initialCount);
   const [pending, setPending] = useState(false);
@@ -27,11 +38,23 @@ export function FollowButton({ userId, initial, initialCount }: { userId: string
   }
 
   return (
-    <div className="text-right">
-      <button disabled={pending} type="button" onClick={toggle} className="rounded bg-blue-600 px-3 py-2 text-sm text-white disabled:opacity-50">
-        {pending ? "Saving..." : following ? "Unfollow" : "Follow"}
+    <div className={compact ? "" : "text-right"}>
+      <button
+        disabled={pending}
+        type="button"
+        onClick={toggle}
+        className={following ? "btn-secondary btn-sm" : "btn-primary btn-sm"}
+      >
+        {following ? <UserCheck size={16} /> : <UserPlus size={16} />}
+        {pending ? "Saving..." : following ? "Following" : "Follow seller"}
       </button>
-      <p className="mt-1 text-xs text-gray-500">{count} followers</p>
+      {!compact && <p className="mt-1 text-xs text-gray-500">{count} followers</p>}
+      {following && !compact && (
+        <p className="mt-1 flex items-center justify-end gap-1 text-xs font-medium text-blue-700">
+          <BellRing size={13} />
+          New listing alerts enabled
+        </p>
+      )}
       {error && <p className="text-xs text-red-600">{error}</p>}
     </div>
   );

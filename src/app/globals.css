@@ -71,7 +71,7 @@ select:-webkit-autofill {
 
 @layer components {
   .page-enter {
-    animation: page-enter 420ms ease both;
+    animation: page-enter 420ms ease;
   }
 
   .nav-glass {
@@ -480,7 +480,7 @@ select:-webkit-autofill {
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: none;
   }
 }
 

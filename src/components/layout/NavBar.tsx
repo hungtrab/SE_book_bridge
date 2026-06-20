@@ -23,7 +23,7 @@ export async function NavBar() {
 
   return (
     <header className="nav-glass sticky top-0 z-40 border-b border-[color:var(--card-border)]">
-      <nav className="nav-scroll mx-auto flex max-w-[96rem] items-center gap-5 overflow-x-auto px-4 py-2.5 text-sm sm:px-6">
+      <nav className="nav-scroll flex w-full items-center gap-5 overflow-x-auto px-4 py-2.5 text-sm sm:px-6">
         <div className="flex shrink-0 items-center gap-4">
           <Link href="/" className="group flex items-center gap-2 font-bold tracking-tight">
             <span className="grid size-9 place-items-center rounded-xl bg-blue-600 text-sm font-black text-white shadow-lg shadow-blue-600/25 transition-transform group-hover:-rotate-6 group-hover:scale-105">
@@ -38,7 +38,7 @@ export async function NavBar() {
           <Link href="/communities" className="link-soft">Communities</Link>
         </div>
 
-        <div className="ml-auto flex shrink-0 items-center gap-3 rounded-xl border border-slate-200/80 bg-white/75 px-3 py-1.5 shadow-sm">
+        <div className="ml-auto flex shrink-0 items-center gap-3 rounded-xl border border-slate-200/80 bg-white/75 px-3 py-1.5 shadow-sm 2xl:hidden">
           {user ? (
             <>
               <Link href="/transactions" className="link-soft">My Txns</Link>
@@ -70,6 +70,39 @@ export async function NavBar() {
           )}
         </div>
       </nav>
+      {user && (
+        <aside className="fixed bottom-0 right-0 top-[4.25rem] z-30 hidden w-[260px] flex-col border-l border-slate-200/80 bg-slate-50/90 p-4 text-sm shadow-[-10px_0_30px_rgba(15,23,42,0.05)] backdrop-blur-xl 2xl:flex">
+          <Link
+            href={`/profile/${user.id}`}
+            className="flex items-center gap-3 border-b border-slate-200 pb-4"
+          >
+            <span className="grid size-10 place-items-center rounded-full bg-blue-600 text-xs font-black text-white shadow-md shadow-blue-600/20">
+              {initials(user.displayName)}
+            </span>
+            <span className="min-w-0">
+              <strong className="block truncate text-gray-900">{user.displayName}</strong>
+              <span className="text-xs text-gray-500">{user.role === "ADMIN" ? "Administrator" : "Member profile"}</span>
+            </span>
+          </Link>
+
+          <nav aria-label="Account and management" className="mt-3 flex flex-col gap-1">
+            <Link href="/transactions" className="right-rail-link">My transactions</Link>
+            <Link href="/messages" className="right-rail-link">Messages</Link>
+            <Link href="/notifications" className="right-rail-link">
+              <span>Notifications</span>
+              {unread > 0 && <span className="rounded-full bg-blue-600 px-2 py-0.5 text-xs font-bold text-white">{unread}</span>}
+            </Link>
+            <Link href="/reports" className="right-rail-link">My tickets</Link>
+            {canModerate && <Link href="/moderation" className="right-rail-link">Moderation</Link>}
+            {user.role === "ADMIN" && <Link href="/admin" className="right-rail-link">Admin</Link>}
+            <Link href="/profile/sessions" className="right-rail-link">Sessions</Link>
+          </nav>
+
+          <div className="mt-auto border-t border-slate-200 pt-3">
+            <LogoutButton />
+          </div>
+        </aside>
+      )}
     </header>
   );
 }

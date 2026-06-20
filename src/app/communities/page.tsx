@@ -40,8 +40,8 @@ export default async function CommunitiesPage({ searchParams }: {
   const visibleCommunityCount = Math.min(communities.length, 5);
 
   return (
-    <div className="mx-auto max-w-[82rem] space-y-5">
-      <header className="space-y-2">
+    <div className="space-y-5">
+      <header className="mx-auto max-w-[840px] space-y-2">
         <p className="text-sm font-semibold uppercase tracking-widest text-violet-600">BookBridge Community</p>
         <h1 className="text-3xl font-black tracking-tight text-gray-900">Discover, discuss, and share books</h1>
         <p className="max-w-3xl text-sm text-gray-600">
@@ -49,8 +49,8 @@ export default async function CommunitiesPage({ searchParams }: {
         </p>
       </header>
 
-      <div className="grid items-start gap-5 lg:grid-cols-[300px_minmax(0,820px)] lg:justify-center xl:grid-cols-[320px_minmax(0,840px)]">
-        <aside className="community-sidebar-scroll space-y-4 lg:sticky lg:top-[4.75rem] lg:max-h-[calc(100vh-5.5rem)] lg:overflow-y-auto lg:pr-2">
+      <div className="grid items-start gap-5 lg:grid-cols-[300px_minmax(0,820px)] lg:justify-center xl:grid-cols-[320px_minmax(0,840px)] 2xl:block">
+        <aside className="community-sidebar-scroll space-y-4 lg:sticky lg:top-[4.75rem] lg:max-h-[calc(100vh-5.5rem)] lg:overflow-y-auto lg:pr-2 2xl:fixed 2xl:bottom-0 2xl:left-0 2xl:top-[4.25rem] 2xl:z-30 2xl:w-[340px] 2xl:max-h-none 2xl:border-r 2xl:border-slate-200/80 2xl:bg-slate-50/90 2xl:p-4 2xl:backdrop-blur-xl">
           {bulletinCommunity && (
             <details className="community-card group overflow-hidden">
               <summary className="flex cursor-pointer list-none items-start justify-between gap-3 p-4">
@@ -175,7 +175,7 @@ export default async function CommunitiesPage({ searchParams }: {
           )}
         </aside>
 
-        <main id="bulletins" className="min-w-0 space-y-4">
+        <main id="bulletins" className="min-w-0 space-y-4 2xl:mx-auto 2xl:w-full 2xl:max-w-[840px]">
           <div className="community-card flex flex-wrap items-start justify-between gap-4 p-5">
             <div>
               <p className="text-sm font-semibold text-blue-600">Main feed</p>

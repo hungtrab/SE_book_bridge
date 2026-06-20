@@ -132,6 +132,23 @@ select:-webkit-autofill {
     color: var(--brand);
   }
 
+  .right-rail-link {
+    display: flex;
+    min-height: 2.75rem;
+    align-items: center;
+    justify-content: space-between;
+    border-radius: 0.5rem;
+    padding: 0.65rem 0.75rem;
+    color: #475569;
+    font-weight: 600;
+    transition: background-color 140ms ease, color 140ms ease;
+  }
+
+  .right-rail-link:hover {
+    background: #fff;
+    color: var(--brand);
+  }
+
   .hero-title {
     background: linear-gradient(135deg, var(--fg), #2563eb 48%, #7c3aed);
     -webkit-background-clip: text;

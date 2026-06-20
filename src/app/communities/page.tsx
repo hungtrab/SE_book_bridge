@@ -30,9 +30,11 @@ export default async function CommunitiesPage({ searchParams }: {
   const params = await searchParams;
   const user = await getCurrentUser();
   const isAdmin = user?.role === "ADMIN";
+  const query = params?.q?.trim() || undefined;
+  const scope = params?.scope || undefined;
 
   const [communities, bulletins] = await Promise.all([
-    listCommunities({ q: params?.q, scope: params?.scope }, user?.id),
+    listCommunities({ q: query, scope }, user?.id),
     listBulletins({ importIfEmpty: true }),
   ]);
 

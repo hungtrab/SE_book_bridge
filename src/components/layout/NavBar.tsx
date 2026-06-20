@@ -38,7 +38,13 @@ export async function NavBar() {
           <Link href="/communities" className="link-soft">Communities</Link>
         </div>
 
-        <div className="ml-auto flex shrink-0 items-center gap-3 rounded-xl border border-slate-200/80 bg-white/75 px-3 py-1.5 shadow-sm 2xl:hidden">
+        <div
+          className={
+            user
+              ? "ml-auto flex shrink-0 items-center gap-3 rounded-xl border border-slate-200/80 bg-white/75 px-3 py-1.5 shadow-sm 2xl:hidden"
+              : "ml-auto flex shrink-0 items-center gap-3 rounded-xl border border-slate-200/80 bg-white/75 px-3 py-1.5 shadow-sm"
+          }
+        >
           {user ? (
             <>
               <Link href="/transactions" className="link-soft">My Txns</Link>

@@ -11,11 +11,18 @@ import { MemberActions } from "@/components/communities/MemberActions";
 import { PostActions, type ReactionName } from "@/components/communities/PostActions";
 import { getCurrentUser } from "@/server/lib/auth-context";
 import { getCommunity } from "@/server/communities/service";
+import { NotFoundError } from "@/server/lib/errors";
 
 export default async function CommunityDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const user = await getCurrentUser();
-  const community = await getCommunity(id, user?.id).catch(() => notFound());
+  let community;
+  try {
+    community = await getCommunity(id, user?.id);
+  } catch (error) {
+    if (error instanceof NotFoundError) notFound();
+    throw error;
+  }
   const isOwner = Boolean(user && community.ownerId === user.id);
   const isAdmin = user?.role === "ADMIN";
   const isMember = Boolean(community.myMembership);

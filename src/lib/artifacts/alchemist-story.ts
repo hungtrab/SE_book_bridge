@@ -11,16 +11,17 @@ export const STORY_NODES: Record<string, StoryNode> = {
     backgroundGradient: "linear-gradient(135deg, #0c1445 0%, #1a1a3e 30%, #0f1a3d 50%, #0c1445 70%, #1a1208 100%)",
     backgroundImage: `${R2}/scene_1.png`,
     narration:
-      "Sau hành trình dài xuyên qua sa mạc Sahara, cuối cùng cậu cũng đứng đây — trước quần thể Kim Tự Tháp vĩ đại, ngập trong ánh trăng bạc.\n\n" +
-      "Cậu bé chăn cừu quỳ xuống trên cát. Nước mắt lăn dài trên gò má rám nắng. Một con bọ hung — biểu tượng của Thượng Đế — chầm chậm bò ngang qua chỗ giọt nước mắt vừa rơi xuống cát.\n\n" +
-      "\"Đó là một Dấu Hiệu,\" Nhà Giả Kim từng nói.",
+      "After a long journey across the Sahara Desert, the shepherd boy finally stood before the Great Pyramids of Giza, bathed in silver moonlight.\n\n" +
+      "He knelt on the sand. Tears rolled down his sun-weathered cheeks — not from pain, but from wonder. He had crossed the desert, met the Alchemist, learned the Language of the Wind and the Sun, and now — his dream lay right beneath his feet.\n\n" +
+      "A small scarab beetle — the sacred symbol of God in Egyptian lore — slowly crawled across the sand where his tears had fallen.\n\n" +
+      "\"That is an Omen,\" the Alchemist once said. \"The Universe always speaks to us through Omens.\"",
     hotspots: [
       {
         id: "dig-here",
         x: 35,
         y: 75,
         emoji: "⛏️",
-        label: "Đào cát tại vị trí con bọ hung",
+        label: "Dig where the scarab and tears fell",
         kind: "action",
         nextNodeId: "node-2-robbers",
       },
@@ -29,29 +30,29 @@ export const STORY_NODES: Record<string, StoryNode> = {
         x: 30,
         y: 80,
         emoji: "🪲",
-        label: "Con bọ hung",
+        label: "The Scarab Beetle",
         kind: "inspect",
-        inspectText: "Một con bọ hung nhỏ đang bò chậm rãi trên cát. Trong văn hóa Ai Cập, nó là biểu tượng của sự tái sinh và Thượng Đế.",
+        inspectText: "A small scarab beetle crawling slowly across the sand. In Egyptian culture, it is the symbol of rebirth and the Divine.",
       },
       {
         id: "wander",
         x: 80,
         y: 60,
         emoji: "🚶",
-        label: "Đi vòng quanh Kim Tự Tháp",
+        label: "Wander around the Pyramid instead",
         kind: "action",
         nextNodeId: null,
         effect: { statusOverride: "game_over" },
-        flavorText: "Cậu đi lang thang suốt đêm đến kiệt sức. Khi phớt lờ những Dấu Hiệu của vũ trụ, cậu mãi lạc lối trong sa mạc.",
+        flavorText: "You wandered through the night until exhaustion took you. When you ignore the Omens of the Universe, you are forever lost in the desert.",
       },
       {
         id: "moon",
         x: 60,
         y: 15,
         emoji: "🌙",
-        label: "Mặt trăng",
+        label: "The Moon",
         kind: "inspect",
-        inspectText: "Mặt trăng bạc chiếu sáng những phiến đá cổ đại. Đây là Kim Tự Tháp Giza — nơi giấc mơ đã dẫn cậu đến.",
+        inspectText: "The silver moon illuminates the ancient stones. This is the Great Pyramid of Giza — the place your recurring dream led you to.",
       },
     ],
   },
@@ -64,51 +65,52 @@ export const STORY_NODES: Record<string, StoryNode> = {
     backgroundGradient: "linear-gradient(135deg, #1a1208 0%, #2a1a08 25%, #0a0a0f 50%, #1a0808 75%, #0a0a0f 100%)",
     backgroundImage: `${R2}/scene_2.png`,
     narration:
-      "Cậu hì hục đào suốt đêm. Không thấy gì cả.\n\n" +
-      "Đột nhiên, những bóng đen che khuất ánh trăng. Đó là những tên cướp sa mạc. Chúng tóm lấy cậu, cướp đi túi tiền vàng — món quà cuối cùng của Nhà Giả Kim.\n\n" +
-      "\"Mày đang giấu thứ gì dưới cát?\"",
+      "He dug through the night. His hands blistered, his nails blackened with sand, but he did not stop.\n\n" +
+      "He found nothing.\n\n" +
+      "Suddenly, dark shadows blocked the moonlight. Four, five, six figures. Desert thieves — cold eyes glinting, swords gleaming under the moon.\n\n" +
+      "They seized him, searched him, and took his pouch of gold — the Alchemist's last gift. One pressed a blade to his throat and snarled: \"What are you hiding beneath the sand?\"",
     hotspots: [
       {
         id: "fight",
         x: 20,
         y: 55,
         emoji: "⚔️",
-        label: "Đánh trả bọn cướp",
+        label: "Fight back against the thieves",
         kind: "action",
         nextNodeId: "node-3-truth",
         effect: { healthDelta: -60 },
-        flavorText: "Cậu chiến đấu dũng cảm nhưng bị áp đảo. Xương sườn rạn, máu chảy trên cát.",
+        flavorText: "You fought bravely but were overwhelmed by their numbers. Cracked ribs, blood on sand. You are barely alive.",
       },
       {
         id: "run",
         x: 75,
         y: 65,
         emoji: "🏃",
-        label: "Bỏ chạy vào bóng đêm",
+        label: "Run into the darkness",
         kind: "action",
         nextNodeId: "node-3-truth",
         effect: { healthDelta: -40 },
-        flavorText: "Cậu chạy được vài bước thì bị tóm lại và bị đánh vì tội bỏ trốn.",
+        flavorText: "You managed a few steps before they caught you. They beat you for trying to escape. Painful, but you survived.",
       },
       {
         id: "submit",
         x: 45,
         y: 80,
         emoji: "🤲",
-        label: "Quỳ xuống, không chống cự",
+        label: "Kneel down and do not resist",
         kind: "action",
         nextNodeId: "node-3-truth",
         effect: { healthDelta: -20 },
-        flavorText: "\"Người dũng cảm không phải kẻ không sợ, mà là kẻ biết khi nào nên chịu đựng.\" Chúng đánh cậu, nhưng nhẹ hơn.",
+        flavorText: "\"The brave man is not the one who does not feel afraid, but the one who knows when to endure.\" They beat you, but less harshly because you did not resist.",
       },
       {
         id: "gold-bag",
         x: 50,
         y: 70,
         emoji: "💰",
-        label: "Túi tiền vàng",
+        label: "The Gold Pouch",
         kind: "inspect",
-        inspectText: "Túi tiền vàng — món quà cuối cùng của Nhà Giả Kim trước khi chia tay. Bọn cướp đã giật lấy nó.",
+        inspectText: "The leather pouch of gold coins — the Alchemist's parting gift before you said goodbye. The thieves have already snatched it away.",
       },
     ],
   },
@@ -121,27 +123,27 @@ export const STORY_NODES: Record<string, StoryNode> = {
     backgroundGradient: "linear-gradient(135deg, #1a0505 0%, #0f0505 30%, #1a0808 60%, #0a0505 100%)",
     backgroundImage: `${R2}/scene_3.png`,
     narration:
-      "Tên tướng cướp túm áo cậu xách lên. Lưỡi gươm sắc lạnh kề sát yết hầu.\n\n" +
-      "\"Nói mau! Tại sao mày đào bới ở đây? Mày đang giấu kho báu phải không?\"\n\n" +
-      "Ranh giới giữa sự sống và cái chết chỉ còn trong gang tấc.",
+      "They beat him within an inch of his life. The chief grabbed his collar and lifted him up. A cold scimitar pressed against his throat.\n\n" +
+      "\"Speak! Why were you digging here? You are hiding treasure, aren't you?\"\n\n" +
+      "The line between life and death was razor-thin. The blade was ice-cold against the skin of his neck. He had to choose — lie to save himself, or speak the truth about the dream he had chased across the desert.",
     hotspots: [
       {
         id: "lie",
         x: 25,
         y: 50,
         emoji: "🤐",
-        label: "Nói dối: \"Tôi chỉ đang tìm nước ngầm.\"",
+        label: "Lie: \"I was just looking for groundwater.\"",
         kind: "action",
         nextNodeId: null,
         effect: { statusOverride: "game_over" },
-        flavorText: "Bọn cướp không tin. Lưỡi gươm vung lên. Khi đối diện với cái chết mà vẫn chối bỏ Vận Mệnh, cậu đã thất bại.",
+        flavorText: "The thieves did not believe you. The blade swung upward. When facing death and still denying your Personal Legend, you have failed. The Universe only helps those brave enough to claim their dream.",
       },
       {
         id: "truth",
         x: 70,
         y: 50,
         emoji: "🗣️",
-        label: "Nói sự thật về giấc mơ",
+        label: "Tell the truth about the dream",
         kind: "action",
         nextNodeId: "node-4-revelation",
       },
@@ -150,9 +152,9 @@ export const STORY_NODES: Record<string, StoryNode> = {
         x: 48,
         y: 35,
         emoji: "🗡️",
-        label: "Lưỡi gươm",
+        label: "The Scimitar",
         kind: "inspect",
-        inspectText: "Lưỡi gươm sắc lạnh kề sát yết hầu cậu. Một chuyển động sai — và tất cả sẽ kết thúc.",
+        inspectText: "The cold curved blade pressed against your throat. One wrong move — and everything ends here.",
       },
     ],
   },
@@ -165,16 +167,17 @@ export const STORY_NODES: Record<string, StoryNode> = {
     backgroundGradient: "linear-gradient(135deg, #0c1445 0%, #060618 30%, #0c1445 60%, #0a0a2e 100%)",
     backgroundImage: `${R2}/scene_4.png`,
     narration:
-      "Tên tướng cướp khựng lại, rồi bật cười lớn. Tiếng cười vang vọng trong đêm sa mạc.\n\n" +
-      "\"Mày quả là thằng ngu! Chính tao cũng từng mơ — rằng phải sang Tây Ban Nha, tìm nhà thờ bỏ hoang có cây dâu tằm. Đào rễ cây lên sẽ thấy vàng. Nhưng tao không ngu đến mức vượt sa mạc chỉ vì một giấc mơ!\"\n\n" +
-      "Bọn chúng bỏ đi, để lại cậu nằm trên cát.",
+      "The chief froze. Then he lowered his blade.\n\n" +
+      "And he burst into laughter. The sound echoed across the desert night, bouncing off the ancient stones of the Pyramids, as if the Pharaohs themselves were laughing along.\n\n" +
+      "\"You are a fool!\" he said, tears streaming from laughing so hard. \"I myself once dreamed — twice — that I should travel to Spain, find an abandoned church where a sycamore tree grows in the sacristy. The dream told me to dig beneath the roots and I would find gold. But I am not foolish enough to cross an entire desert just because of a dream!\"\n\n" +
+      "With that, they left — vanishing into the night. Leaving him lying on the sand, beneath a sky full of stars.",
     hotspots: [
       {
         id: "smile",
         x: 50,
         y: 30,
         emoji: "🌟",
-        label: "Mỉm cười nhìn bầu trời đầy sao",
+        label: "Smile at the star-filled sky",
         kind: "action",
         nextNodeId: "node-5-victory",
       },
@@ -183,18 +186,18 @@ export const STORY_NODES: Record<string, StoryNode> = {
         x: 80,
         y: 75,
         emoji: "👣",
-        label: "Dấu chân bọn cướp",
+        label: "The Robbers' Footprints",
         kind: "inspect",
-        inspectText: "Dấu chân chúng dần biến mất trên cát. Tên tướng cướp vô tình đã tiết lộ nơi cất giấu kho báu thật sự — ngay tại nơi cậu bắt đầu chuyến đi.",
+        inspectText: "Their footprints slowly fade into the sand. The chief unknowingly revealed where the true treasure lies — right where the journey began.",
       },
       {
         id: "constellation",
         x: 35,
         y: 15,
         emoji: "✨",
-        label: "Chòm sao",
+        label: "The Constellation",
         kind: "inspect",
-        inspectText: "Những ngôi sao lấp lánh trên bầu trời sa mạc. Cậu nhớ lời Nhà Giả Kim: \"Hãy nhớ rằng, bất cứ nơi đâu trái tim ta ở, đó là nơi ta sẽ tìm thấy kho báu.\"",
+        inspectText: "Stars shimmer across the desert sky. You remember the Alchemist's words: \"Remember that wherever your heart is, there you will find your treasure.\"",
       },
     ],
   },
@@ -208,10 +211,11 @@ export const STORY_NODES: Record<string, StoryNode> = {
     backgroundImage: `${R2}/scene_5.png`,
     isVictory: true,
     narration:
-      "Cậu nằm đó, toàn thân bầm dập nhưng trái tim ngập tràn hạnh phúc.\n\n" +
-      "Kho báu vật chất nằm ngay tại nơi cậu bắt đầu chuyến đi — dưới gốc cây dâu tằm trong nhà thờ cổ ở Tây Ban Nha.\n\n" +
-      "Nhưng nếu không dũng cảm thực hiện cuộc hành trình này, cậu sẽ không bao giờ biết được điều đó. Cậu đã tìm thấy Vận Mệnh của mình.\n\n" +
-      "\"Hãy nhớ rằng, bất cứ nơi đâu trái tim ta ở, đó là nơi ta sẽ tìm thấy kho báu.\"",
+      "He lay there, battered and bruised, yet his heart overflowed with joy.\n\n" +
+      "He laughed — his laughter carried by the desert wind. The Universe truly has a sense of humor.\n\n" +
+      "The material treasure was right where he started — beneath the sycamore roots in the old church in Spain, the very place where he first dreamed his dream.\n\n" +
+      "But had he not been brave enough to make this journey, he would never have known. And more importantly — he would never have become who he is now. He had found his Personal Legend.\n\n" +
+      "\"Remember that wherever your heart is, there you will find your treasure.\"",
     hotspots: [],
   },
 };

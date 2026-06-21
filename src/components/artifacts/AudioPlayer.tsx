@@ -54,20 +54,28 @@ export function AudioPlayer({
     if (charTimerRef.current) clearTimeout(charTimerRef.current);
 
     if (scene.narrator) {
-      const el = new Audio(scene.narrator);
-      el.volume = 0.8;
-      el.muted = muted;
-      narRef.current = el;
-      el.play().catch(() => {});
-    }
+      const narEl = new Audio(scene.narrator);
+      narEl.volume = 0.8;
+      narEl.muted = muted;
+      narRef.current = narEl;
+      narEl.play().catch(() => {});
 
-    if (scene.character) {
+      if (scene.character) {
+        narEl.addEventListener("ended", () => {
+          const charEl = new Audio(scene.character!);
+          charEl.volume = 0.9;
+          charEl.muted = muted;
+          charRef.current = charEl;
+          charEl.play().catch(() => {});
+        }, { once: true });
+      }
+    } else if (scene.character) {
       charTimerRef.current = setTimeout(() => {
-        const el = new Audio(scene.character!);
-        el.volume = 0.9;
-        el.muted = muted;
-        charRef.current = el;
-        el.play().catch(() => {});
+        const charEl = new Audio(scene.character!);
+        charEl.volume = 0.9;
+        charEl.muted = muted;
+        charRef.current = charEl;
+        charEl.play().catch(() => {});
       }, scene.characterDelay ?? 2000);
     }
 

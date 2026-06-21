@@ -11,8 +11,7 @@ import {
 } from "lucide-react";
 
 import { LogoutButton } from "@/components/auth/LogoutButton";
-import { LiveMessagePanel } from "@/components/messaging/LiveMessagePanel";
-import { LiveNotificationBell } from "@/components/notifications/LiveNotificationBell";
+import { NavLiveActions } from "@/components/layout/NavLiveActions";
 import { getCurrentUser } from "@/server/lib/auth-context";
 import { hasModerationAccess } from "@/server/moderation/queue";
 import { unreadNotificationCount } from "@/server/notifications/service";
@@ -55,8 +54,7 @@ export async function NavBar() {
         <div className="ml-auto flex shrink-0 items-center gap-2">
           {user ? (
             <>
-              <LiveMessagePanel currentUserId={user.id} />
-              <LiveNotificationBell initialUnread={unread} />
+              <NavLiveActions currentUserId={user.id} initialUnread={unread} />
 
               <details className="account-menu group relative">
                 <summary className="flex h-11 cursor-pointer list-none items-center gap-1 rounded-full p-0.5 transition hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-200">

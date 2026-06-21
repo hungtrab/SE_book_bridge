@@ -13,20 +13,29 @@ type NotificationRow = {
   createdAt: string;
 };
 
-export function LiveNotificationBell({ initialUnread }: { initialUnread: number }) {
-  const [open, setOpen] = useState(false);
+type LiveNotificationBellProps = {
+  initialUnread: number;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+};
+
+export function LiveNotificationBell({ initialUnread, open, onOpenChange }: LiveNotificationBellProps) {
   const [unread, setUnread] = useState(initialUnread);
   const [items, setItems] = useState<NotificationRow[]>([]);
+  const [error, setError] = useState("");
   const received = useRef(new Set<string>());
 
   useEffect(() => {
     if (!open) return;
+    setError("");
     fetch("/api/notifications")
-      .then((res) => res.json())
-      .then((data) => {
+      .then(async (res) => {
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error ?? "Could not load notifications");
         setItems(data.items ?? []);
         setUnread(data.unreadCount ?? 0);
-      });
+      })
+      .catch((requestError: Error) => setError(requestError.message));
   }, [open]);
 
   useEffect(() => {
@@ -39,23 +48,30 @@ export function LiveNotificationBell({ initialUnread }: { initialUnread: number 
       setItems((current) => current.some((item) => item.id === notification.id) ? current : [notification, ...current]);
       if (!notification.readAt) setUnread((current) => current + 1);
     });
+    source.addEventListener("error", () => setError("Live notification updates are temporarily unavailable."));
     return () => source.close();
   }, []);
 
   async function markRead(id: string) {
     const res = await fetch(`/api/notifications/${id}/read`, { method: "POST" });
-    if (!res.ok) return;
+    if (!res.ok) {
+      const out = await res.json().catch(() => ({}));
+      setError(out.error ?? "Could not update the notification");
+      return;
+    }
     setItems((current) => current.map((item) => item.id === id ? { ...item, readAt: new Date().toISOString() } : item));
     setUnread((current) => Math.max(0, current - 1));
+    setError("");
   }
 
   return (
     <div className="relative">
       <button
         type="button"
-        onClick={() => setOpen((value) => !value)}
+        onClick={() => onOpenChange(!open)}
         className="nav-icon-button relative"
         aria-label={unread > 0 ? `Notifications, ${unread} unread` : "Notifications"}
+        aria-expanded={open}
         title="Notifications"
       >
         <Bell size={20} strokeWidth={2.2} />
@@ -89,6 +105,11 @@ export function LiveNotificationBell({ initialUnread }: { initialUnread: number 
             })}
             {items.length === 0 && <p className="p-6 text-center text-sm text-slate-500">No notifications yet.</p>}
           </div>
+          {error && (
+            <p role="alert" className="border-t border-red-100 bg-red-50 px-4 py-2 text-xs font-semibold text-red-700">
+              {error}
+            </p>
+          )}
         </section>
       )}
     </div>

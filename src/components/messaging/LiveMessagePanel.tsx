@@ -20,28 +20,47 @@ type Message = {
   sender: { id: string; displayName: string };
 };
 
-export function LiveMessagePanel({ currentUserId }: { currentUserId: string }) {
-  const [open, setOpen] = useState(false);
+type LiveMessagePanelProps = {
+  currentUserId: string;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+};
+
+export function LiveMessagePanel({ currentUserId, open, onOpenChange }: LiveMessagePanelProps) {
   const [items, setItems] = useState<Conversation[]>([]);
   const [active, setActive] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [body, setBody] = useState("");
+  const [error, setError] = useState("");
 
   useEffect(() => {
     if (!open) return;
-    fetch("/api/conversations").then((res) => res.json()).then((data) => setItems(data.items ?? []));
+    setError("");
+    fetch("/api/conversations")
+      .then(async (res) => {
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error ?? "Could not load messages");
+        setItems(data.items ?? []);
+      })
+      .catch((requestError: Error) => setError(requestError.message));
   }, [open]);
 
   useEffect(() => {
     if (!active) return;
+    setError("");
     fetch(`/api/conversations/${active.id}/messages`)
-      .then((res) => res.json())
-      .then((data) => setMessages(data.messages ?? []));
+      .then(async (res) => {
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error ?? "Could not load this conversation");
+        setMessages(data.messages ?? []);
+      })
+      .catch((requestError: Error) => setError(requestError.message));
     const source = new EventSource(`/api/conversations/${active.id}/stream`);
     source.addEventListener("message", (event) => {
       const message = JSON.parse((event as MessageEvent).data) as Message;
       setMessages((current) => current.some((item) => item.id === message.id) ? current : [...current, message]);
     });
+    source.addEventListener("error", () => setError("Live message updates are temporarily unavailable."));
     return () => source.close();
   }, [active]);
 
@@ -57,12 +76,22 @@ export function LiveMessagePanel({ currentUserId }: { currentUserId: string }) {
     if (res.ok) {
       setMessages((current) => current.some((item) => item.id === out.id) ? current : [...current, out]);
       setBody("");
+      setError("");
+    } else {
+      setError(out.error ?? "Could not send the message");
     }
   }
 
   return (
     <div className="relative">
-      <button type="button" onClick={() => setOpen((value) => !value)} className="nav-icon-button" aria-label="Messages" title="Messages">
+      <button
+        type="button"
+        onClick={() => onOpenChange(!open)}
+        className="nav-icon-button"
+        aria-label="Messages"
+        aria-expanded={open}
+        title="Messages"
+      >
         <MessageCircle size={20} strokeWidth={2.2} />
       </button>
       {open && (
@@ -111,6 +140,11 @@ export function LiveMessagePanel({ currentUserId }: { currentUserId: string }) {
                 {items.length === 0 && <p className="p-6 text-center text-sm text-slate-500">No conversations yet.</p>}
               </div>
             </>
+          )}
+          {error && (
+            <p role="alert" className="border-t border-red-100 bg-red-50 px-4 py-2 text-xs font-semibold text-red-700">
+              {error}
+            </p>
           )}
         </section>
       )}

@@ -21,6 +21,18 @@ export type Hotspot = {
   inspectText?: string;
 };
 
+export type SceneAudio = {
+  narrator?: string;
+  character?: string;
+  characterDelay?: number;
+};
+
+export type ArtifactAudio = {
+  bgm?: string;
+  bgmVolume?: number;
+  scenes: Record<string, SceneAudio>;
+};
+
 export type StoryNode = {
   id: string;
   ambiance: string;

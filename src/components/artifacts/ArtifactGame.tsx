@@ -3,13 +3,14 @@
 import { useCallback, useReducer, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 
-import type { GameAction, GameState, Hotspot, StoryNode } from "@/lib/artifacts/game-types";
+import type { ArtifactAudio, GameAction, GameState, Hotspot, StoryNode } from "@/lib/artifacts/game-types";
 import { GameNarration } from "./GameNarration";
 import { GameOverScreen } from "./GameOverScreen";
 import { VictoryScreen } from "./VictoryScreen";
 import { HealthBar } from "./HealthBar";
 import { PanoramaViewer } from "./PanoramaViewer";
 import { DesertParticles } from "./DesertParticles";
+import { AudioPlayer } from "./AudioPlayer";
 
 const MAX_HEALTH = 100;
 
@@ -39,10 +40,12 @@ export function ArtifactGame({
   storyNodes,
   initialNodeId,
   accentColor = "#c9a84c",
+  audio,
 }: {
   storyNodes: Record<string, StoryNode>;
   initialNodeId: string;
   accentColor?: string;
+  audio?: ArtifactAudio;
 }) {
   const initialState: GameState = {
     currentNodeId: initialNodeId,
@@ -203,6 +206,7 @@ export function ArtifactGame({
           </div>
           <div className="pointer-events-auto flex items-center gap-3">
             <HealthBar health={state.health} maxHealth={MAX_HEALTH} />
+            <AudioPlayer audio={audio} currentNodeId={state.currentNodeId} gameStatus={state.status} />
             <button
               type="button"
               onClick={toggleFullscreen}

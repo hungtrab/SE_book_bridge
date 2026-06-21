@@ -92,15 +92,15 @@ export function PanoramaViewer({
         }}
       />
 
-      {/* Hotspots — positioned relative to the scene, move with drag */}
+      {/* Hotspots — fixed to viewport */}
       {hotspots.map((hotspot) => (
         <motion.button
           key={hotspot.id}
           type="button"
           className="group absolute z-20 flex flex-col items-center"
           style={{
-            left: `${hotspot.x * (sceneWidth / 100) + offsetX}vw`,
-            top: `${hotspot.y * (sceneHeight / 100) + offsetY}vh`,
+            left: `${hotspot.x}%`,
+            top: `${hotspot.y}%`,
             transform: "translate(-50%, -50%)",
           }}
           onClick={(e) => { e.stopPropagation(); handleHotspot(hotspot); }}
@@ -112,15 +112,19 @@ export function PanoramaViewer({
           whileHover={{ scale: 1.15 }}
           whileTap={{ scale: 0.9 }}
         >
-          <span className={`flex h-12 w-12 items-center justify-center rounded-full text-2xl shadow-lg transition-all sm:h-14 sm:w-14 ${
+          <span className={`flex items-center justify-center rounded-full text-2xl shadow-lg transition-all ${
             hotspot.kind === "action"
-              ? "hotspot-action bg-black/50 ring-2 ring-[#c9a84c]/60"
-              : "hotspot-inspect bg-black/40 ring-1 ring-white/20"
+              ? "hotspot-action h-14 w-14 bg-black/60 ring-2 ring-[#c9a84c]/80 sm:h-16 sm:w-16"
+              : "hotspot-inspect h-10 w-10 bg-black/40 ring-1 ring-white/30 text-lg sm:h-12 sm:w-12"
           }`}>
             {hotspot.emoji}
           </span>
-          <span className="mt-1.5 max-w-[140px] rounded-lg bg-black/70 px-2 py-1 text-center text-[11px] font-medium leading-tight text-white/90 opacity-0 backdrop-blur transition-opacity group-hover:opacity-100 sm:max-w-[180px]">
-            {hotspot.label}
+          <span className={`mt-1.5 rounded-lg px-2 py-1 text-center text-[11px] font-medium leading-tight backdrop-blur transition-opacity group-hover:opacity-100 ${
+            hotspot.kind === "action"
+              ? "max-w-[160px] bg-[#c9a84c]/20 text-[#f5d98e] opacity-80 ring-1 ring-[#c9a84c]/30 sm:max-w-[200px]"
+              : "max-w-[140px] bg-black/70 text-white/70 opacity-0 sm:max-w-[180px]"
+          }`}>
+            {hotspot.kind === "action" ? "▶ " : "🔍 "}{hotspot.label}
           </span>
         </motion.button>
       ))}

@@ -6,6 +6,7 @@ export type ChoiceEffect = {
 };
 
 export type ParticleTheme = "stars" | "sand" | "embers" | "gold";
+export type VictoryEffect = "lamp-dim" | "none";
 
 export type Hotspot = {
   id: string;
@@ -30,6 +31,7 @@ export type StoryNode = {
   backgroundGradient: string;
   backgroundImage?: string;
   isVictory?: boolean;
+  victoryEffect?: VictoryEffect;
 };
 
 export type GameState = {

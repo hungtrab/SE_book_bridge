@@ -2,45 +2,46 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
+import type { VictoryEffect } from "@/lib/artifacts/game-types";
 
 export function VictoryScreen({
   narration,
   health,
   maxHealth,
   onRestart,
+  victoryEffect,
 }: {
   narration: string;
   health: number;
   maxHealth: number;
   onRestart: () => void;
+  victoryEffect?: VictoryEffect;
 }) {
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.8 }}
-      className="flex min-h-[60vh] flex-col items-center justify-center px-4 text-center"
+      className="relative flex min-h-[60vh] flex-col items-center justify-center px-4 text-center"
     >
+      {victoryEffect === "lamp-dim" && <LampDimEffect />}
+
       <motion.div
         initial={{ scale: 0.6, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ delay: 0.3, duration: 0.7, type: "spring" }}
       >
-        <p className="mb-2 text-4xl">✨</p>
+        <p className="mb-2 text-4xl">{victoryEffect === "lamp-dim" ? "🪔" : "✨"}</p>
         <h1
           className="victory-glow text-3xl font-black tracking-wider sm:text-5xl"
           style={{
-            background: "linear-gradient(135deg, #c9a84c, #f5d98e, #c9a84c)",
+            background: `linear-gradient(135deg, var(--game-accent), #f5d98e, var(--game-accent))`,
             WebkitBackgroundClip: "text",
             WebkitTextFillColor: "transparent",
           }}
         >
-          MISSION CLEARED
+          QUEST COMPLETE
         </h1>
-        <p className="mt-2 font-mono text-sm tracking-[0.4em] uppercase"
-          style={{ color: "var(--game-accent)" }}>
-          The Alchemist
-        </p>
       </motion.div>
 
       <motion.div
@@ -77,24 +78,60 @@ export function VictoryScreen({
           type="button"
           onClick={onRestart}
           className="rounded-xl border px-6 py-3 font-mono text-sm font-bold tracking-wider uppercase transition-colors"
-          style={{
-            borderColor: "rgba(201,168,76,0.4)",
-            color: "var(--game-accent)",
-          }}
+          style={{ borderColor: "rgba(201,168,76,0.4)", color: "var(--game-accent)" }}
         >
           🔄 Play Again
         </button>
         <Link
-          href="/explore"
+          href="/artifacts"
           className="rounded-xl border px-6 py-3 font-mono text-sm font-bold tracking-wider uppercase transition-colors"
-          style={{
-            borderColor: "rgba(201,168,76,0.4)",
-            color: "var(--game-accent)",
-          }}
+          style={{ borderColor: "rgba(201,168,76,0.4)", color: "var(--game-accent)" }}
         >
-          📚 Explore Books
+          📚 More Artifacts
         </Link>
       </motion.div>
     </motion.div>
+  );
+}
+
+function LampDimEffect() {
+  return (
+    <div className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center overflow-hidden">
+      {/* Oil lamp glow that dims over time */}
+      <motion.div
+        className="absolute rounded-full"
+        style={{
+          width: "300px",
+          height: "300px",
+          background: "radial-gradient(circle, rgba(255,170,50,0.25) 0%, rgba(255,120,20,0.08) 40%, transparent 70%)",
+        }}
+        initial={{ scale: 1.5, opacity: 1 }}
+        animate={{ scale: 0.3, opacity: 0 }}
+        transition={{ duration: 8, delay: 2, ease: "easeInOut" }}
+      />
+      {/* Flickering warm light */}
+      <motion.div
+        className="absolute rounded-full"
+        style={{
+          width: "100px",
+          height: "100px",
+          background: "radial-gradient(circle, rgba(255,200,80,0.4) 0%, transparent 70%)",
+        }}
+        initial={{ scale: 1, opacity: 0.8 }}
+        animate={{
+          scale: [1, 1.1, 0.9, 1.05, 0.5, 0.2, 0],
+          opacity: [0.8, 0.9, 0.7, 0.6, 0.3, 0.1, 0],
+        }}
+        transition={{ duration: 10, delay: 1, ease: "easeInOut" }}
+      />
+      {/* Final darkness vignette */}
+      <motion.div
+        className="absolute inset-0"
+        style={{ background: "radial-gradient(circle, transparent 20%, rgba(0,0,0,0.8) 80%)" }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 6, delay: 4 }}
+      />
+    </div>
   );
 }

@@ -213,6 +213,7 @@ export const STORY_NODES: Record<string, StoryNode> = {
     backgroundGradient: "linear-gradient(135deg, #1a1208 0%, #0d0a05 40%, #1a1510 70%, #0a0805 100%)",
     backgroundImage: `${R2}/scene_5.png`,
     isVictory: true,
+    victoryEffect: "lamp-dim",
     narration:
       "The hut fell silent. Chi Dau stood in the center, clothes disheveled, breathing hard — but her eyes were steady, resolute.\n\n" +
       "The enforcers limped away toward the communal hall, throwing back hateful glares and muttered threats.\n\n" +

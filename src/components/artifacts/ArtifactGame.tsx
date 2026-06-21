@@ -189,6 +189,7 @@ export function ArtifactGame({
                 health={state.health}
                 maxHealth={MAX_HEALTH}
                 onRestart={handleRestart}
+                victoryEffect={node.victoryEffect}
               />
             </div>
           </motion.div>

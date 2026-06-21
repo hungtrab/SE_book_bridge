@@ -1,6 +1,14 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  serverExternalPackages: ["sharp"],
+  outputFileTracingExcludes: {
+    "*": [
+      ".next/cache/**",
+      "./node_modules/@img/sharp-libvips-linuxmusl-x64/**",
+      "./node_modules/@img/sharp-linuxmusl-x64/**",
+    ],
+  },
   experimental: {
     serverActions: { allowedOrigins: ["localhost:3000"] },
   },

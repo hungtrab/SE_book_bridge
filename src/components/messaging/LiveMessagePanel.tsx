@@ -1,7 +1,7 @@
 "use client";
 
 import { ArrowLeft, MessageCircle, Send } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 type Conversation = {
   id: string;
@@ -11,6 +11,7 @@ type Conversation = {
   userB: { id: string; displayName: string; avatarUrl: string | null };
   transaction: { listing: { title: string } } | null;
   messages: Array<{ body: string }>;
+  _count?: { messages: number };
 };
 
 type Message = {
@@ -22,28 +23,45 @@ type Message = {
 
 type LiveMessagePanelProps = {
   currentUserId: string;
+  initialUnread: number;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 };
 
-export function LiveMessagePanel({ currentUserId, open, onOpenChange }: LiveMessagePanelProps) {
+export function LiveMessagePanel({ currentUserId, initialUnread, open, onOpenChange }: LiveMessagePanelProps) {
   const [items, setItems] = useState<Conversation[]>([]);
+  const [unread, setUnread] = useState(initialUnread);
   const [active, setActive] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [body, setBody] = useState("");
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    if (!open) return;
+  const refreshConversations = useCallback((showErrors: boolean) => {
     setError("");
-    fetch("/api/conversations")
+    return fetch("/api/conversations")
       .then(async (res) => {
         const data = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(data.error ?? "Could not load messages");
-        setItems(data.items ?? []);
+        const rows = (data.items ?? []) as Conversation[];
+        setItems(rows);
+        setUnread(rows.reduce((sum, item) => sum + (item._count?.messages ?? 0), 0));
       })
-      .catch((requestError: Error) => setError(requestError.message));
-  }, [open]);
+      .catch((requestError: Error) => {
+        if (showErrors) setError(requestError.message);
+      });
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    void refreshConversations(true);
+  }, [open, refreshConversations]);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      void refreshConversations(false);
+    }, 15000);
+    return () => window.clearInterval(timer);
+  }, [refreshConversations]);
 
   useEffect(() => {
     if (!active) return;
@@ -53,6 +71,7 @@ export function LiveMessagePanel({ currentUserId, open, onOpenChange }: LiveMess
         const data = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(data.error ?? "Could not load this conversation");
         setMessages(data.messages ?? []);
+        void refreshConversations(false);
       })
       .catch((requestError: Error) => setError(requestError.message));
     const source = new EventSource(`/api/conversations/${active.id}/stream`);
@@ -62,7 +81,7 @@ export function LiveMessagePanel({ currentUserId, open, onOpenChange }: LiveMess
     });
     source.addEventListener("error", () => setError("Live message updates are temporarily unavailable."));
     return () => source.close();
-  }, [active]);
+  }, [active, refreshConversations]);
 
   async function send(event: React.FormEvent) {
     event.preventDefault();
@@ -87,12 +106,13 @@ export function LiveMessagePanel({ currentUserId, open, onOpenChange }: LiveMess
       <button
         type="button"
         onClick={() => onOpenChange(!open)}
-        className="nav-icon-button"
-        aria-label="Messages"
+        className="nav-icon-button relative"
+        aria-label={unread > 0 ? `Messages, ${unread} unread` : "Messages"}
         aria-expanded={open}
         title="Messages"
       >
         <MessageCircle size={20} strokeWidth={2.2} />
+        {unread > 0 && <span className="nav-count-badge">{unread > 99 ? "99+" : unread}</span>}
       </button>
       {open && (
         <section className="nav-live-panel">

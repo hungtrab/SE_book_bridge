@@ -16,8 +16,23 @@ export async function listConversations(userId: string) {
       userB: { select: { id: true, displayName: true, avatarUrl: true } },
       transaction: { select: { id: true, status: true, listing: { select: { id: true, title: true } } } },
       messages: { take: 1, orderBy: { createdAt: "desc" } },
+      _count: {
+        select: {
+          messages: { where: { senderId: { not: userId }, readAt: null } },
+        },
+      },
     },
     orderBy: [{ lastMessageAt: "desc" }, { createdAt: "desc" }],
+  });
+}
+
+export async function unreadMessageCount(userId: string) {
+  return prisma.message.count({
+    where: {
+      senderId: { not: userId },
+      readAt: null,
+      conversation: { OR: [{ userAId: userId }, { userBId: userId }] },
+    },
   });
 }
 

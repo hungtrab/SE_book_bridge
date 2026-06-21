@@ -87,13 +87,16 @@ model User {
   moderationsBy    ModerationAction[] @relation("ModerationsBy")
   moderationsOn    ModerationAction[] @relation("ModerationsOn")
 
-  communitiesOwned Community[]
-  memberships      CommunityMembership[]
-  notifications    Notification[]
-  communityPosts   CommunityPost[]
-  postLikes        CommunityPostLike[]
-  postComments     CommunityPostComment[]
-  commentReactions CommunityCommentReaction[]
+  communitiesOwned     Community[]
+  memberships          CommunityMembership[]
+  notifications        Notification[]
+  communityPosts       CommunityPost[]
+  postLikes            CommunityPostLike[]
+  postComments         CommunityPostComment[]
+  commentReactions     CommunityCommentReaction[]
+  listingEngagements   ListingEngagement[]
+  artifactComments     ArtifactComment[]
+  artifactCommentLikes ArtifactCommentLike[]
 
   @@index([reputationTier])
   @@index([locationDistrict])
@@ -197,6 +200,7 @@ model Listing {
   feedItems      FeedItem[]
   reports        Report[]
   communityPosts CommunityPost[]
+  engagements    ListingEngagement[]
 
   @@index([ownerId])
   @@index([status])
@@ -205,6 +209,25 @@ model Listing {
   @@index([communityId])
   @@index([status, genre, transactionType])
   @@index([status, createdAt])
+}
+
+enum ListingEngagementKind {
+  LIKE
+  WISHLIST
+}
+
+model ListingEngagement {
+  userId    String
+  listingId String
+  kind      ListingEngagementKind
+  createdAt DateTime              @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@id([userId, listingId, kind])
+  @@index([listingId, kind])
+  @@index([userId, kind, createdAt])
 }
 
 model ListingPhoto {
@@ -605,6 +628,35 @@ model CommunityCommentReaction {
 
   user    User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
   comment CommunityPostComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@id([userId, commentId])
+  @@index([commentId])
+}
+
+model ArtifactComment {
+  id           String   @id @default(cuid())
+  artifactSlug String
+  authorId     String
+  body         String
+  likeCount    Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  author User                  @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  likes  ArtifactCommentLike[]
+
+  @@index([artifactSlug, createdAt])
+  @@index([artifactSlug, likeCount, createdAt])
+  @@index([authorId])
+}
+
+model ArtifactCommentLike {
+  userId    String
+  commentId String
+  createdAt DateTime @default(now())
+
+  user    User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comment ArtifactComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
 
   @@id([userId, commentId])
   @@index([commentId])

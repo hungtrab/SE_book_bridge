@@ -244,6 +244,8 @@ async function main() {
   await seedFeedItems(listings);
   await seedTransactions(users, listings);
   await seedReports(users, listings);
+  await seedMarketplaceEngagement(users, listings);
+  await seedArtifactComments(users);
   await seedCommunityPosts(users, communities, listings);
   await seedNotifications(users, communities);
 
@@ -667,6 +669,18 @@ async function seedTransactions(
   });
   await prisma.listing.update({ where: { id: factfulness.id }, data: { status: "RESERVED" } });
 
+  const grammar = listings.find((listing) => listing.title === "English Grammar in Use")!;
+  await prisma.transaction.create({
+    data: {
+      listingId: grammar.id,
+      ownerId: users.linh.id,
+      requesterId: users.admin.id,
+      type: "GIFT",
+      status: "PENDING",
+      events: { create: [{ toStatus: "PENDING", byUserId: users.admin.id, reason: "admin_demo_request" }] },
+    },
+  });
+
   console.log("seed transaction examples:", { completed: completed.id, accepted: accepted.id });
 }
 
@@ -685,6 +699,65 @@ async function seedReports(
       details: "Sample pending report for moderation queue demo.",
     },
   });
+  const adminTicketListing = listings.find((row) => row.title === "Norwegian Wood")!;
+  await prisma.report.create({
+    data: {
+      filerId: users.admin.id,
+      targetType: "LISTING",
+      targetListingId: adminTicketListing.id,
+      targetUserId: adminTicketListing.ownerId,
+      reason: "Admin demo ticket",
+      details: "Mock ticket visible from the administrator account for client demonstrations.",
+    },
+  });
+}
+
+async function seedMarketplaceEngagement(
+  users: Awaited<ReturnType<typeof seedUsers>>,
+  listings: Awaited<ReturnType<typeof seedListings>>,
+) {
+  const sapiens = listings.find((listing) => listing.title === "Sapiens")!;
+  const ddia = listings.find((listing) => listing.title === "Designing Data-Intensive Applications")!;
+  await prisma.listingEngagement.createMany({
+    data: [
+      { userId: users.bob.id, listingId: sapiens.id, kind: "LIKE" },
+      { userId: users.clara.id, listingId: sapiens.id, kind: "LIKE" },
+      { userId: users.admin.id, listingId: sapiens.id, kind: "WISHLIST" },
+      { userId: users.alice.id, listingId: ddia.id, kind: "WISHLIST" },
+      { userId: users.admin.id, listingId: ddia.id, kind: "LIKE" },
+    ],
+    skipDuplicates: true,
+  });
+}
+
+async function seedArtifactComments(users: Awaited<ReturnType<typeof seedUsers>>) {
+  await prisma.artifactComment.deleteMany({
+    where: { author: { email: { in: DEMO_EMAILS } } },
+  });
+  const alchemist = await prisma.artifactComment.create({
+    data: {
+      artifactSlug: "the-alchemist",
+      authorId: users.mai.id,
+      body: "The choice between certainty and the unknown makes the Personal Legend feel earned rather than simply destined.",
+    },
+  });
+  const tatDen = await prisma.artifactComment.create({
+    data: {
+      artifactSlug: "tuc-nuoc-vo-bo",
+      authorId: users.linh.id,
+      body: "The interactive pressure makes the social injustice in the original scene much harder to observe passively.",
+    },
+  });
+  await prisma.artifactCommentLike.createMany({
+    data: [
+      { userId: users.admin.id, commentId: alchemist.id },
+      { userId: users.clara.id, commentId: alchemist.id },
+      { userId: users.admin.id, commentId: tatDen.id },
+    ],
+    skipDuplicates: true,
+  });
+  await prisma.artifactComment.update({ where: { id: alchemist.id }, data: { likeCount: 2 } });
+  await prisma.artifactComment.update({ where: { id: tatDen.id }, data: { likeCount: 1 } });
 }
 
 async function seedCommunityPosts(

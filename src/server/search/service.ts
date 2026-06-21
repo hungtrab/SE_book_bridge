@@ -26,7 +26,7 @@ export type SearchInput = z.infer<typeof SearchSchema>;
 type RankedId = { id: string; rank: number };
 const LIKE_ESCAPE = "\\";
 
-export async function searchListings(input: SearchInput) {
+export async function searchListings(input: SearchInput, viewerId?: string) {
   const data = SearchSchema.parse(input);
   const parsed = parseSearchQuery(data.q ?? "");
   const text = parsed.text;
@@ -86,8 +86,22 @@ export async function searchListings(input: SearchInput) {
     where: { id: { in: page.map((row) => row.id) } },
     include: {
       photos: { take: 1, orderBy: { position: "asc" } },
-      owner: { select: { id: true, displayName: true, reputationScore: true, reputationTier: true, locationDistrict: true } },
+      owner: {
+        select: {
+          id: true,
+          displayName: true,
+          avatarUrl: true,
+          reputationScore: true,
+          reputationTier: true,
+          followerCount: true,
+          locationDistrict: true,
+          followers: viewerId
+            ? { where: { followerId: viewerId }, select: { followerId: true } }
+            : false,
+        },
+      },
       community: { select: { id: true, name: true } },
+      engagements: { select: { kind: true, userId: true } },
     },
   });
   const byId = new Map(listings.map((listing) => [listing.id, listing]));

@@ -1,10 +1,11 @@
 import type { User } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "../lib/prisma";
-import { ForbiddenError, NotFoundError } from "../lib/errors";
+import { BadRequestError, ForbiddenError, NotFoundError } from "../lib/errors";
 import { dispatchNotifications } from "../notifications/dispatcher";
 
 export const MessageSchema = z.object({ body: z.string().trim().min(1).max(2000) });
+export const DirectConversationSchema = z.object({ userId: z.string().min(1) });
 export function isConversationParticipant(userId: string, userAId: string, userBId: string): boolean { return userId === userAId || userId === userBId; }
 
 export async function listConversations(userId: string) {
@@ -17,6 +18,25 @@ export async function listConversations(userId: string) {
       messages: { take: 1, orderBy: { createdAt: "desc" } },
     },
     orderBy: [{ lastMessageAt: "desc" }, { createdAt: "desc" }],
+  });
+}
+
+export async function createDirectConversation(user: User, otherUserId: string) {
+  if (user.id === otherUserId) throw new BadRequestError("You cannot message yourself");
+  const other = await prisma.user.findFirst({
+    where: { id: otherUserId, status: "ACTIVE" },
+    select: { id: true },
+  });
+  if (!other) throw new NotFoundError("User not found");
+  const [userAId, userBId] = [user.id, otherUserId].sort();
+  const existing = await prisma.conversation.findFirst({
+    where: { userAId, userBId, transactionId: null },
+    select: { id: true },
+  });
+  if (existing) return existing;
+  return prisma.conversation.create({
+    data: { userAId, userBId },
+    select: { id: true },
   });
 }
 

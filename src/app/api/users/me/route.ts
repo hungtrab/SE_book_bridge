@@ -10,6 +10,8 @@ export const GET = withErrorHandling(async () => {
     displayName: u.displayName,
     avatarUrl: u.avatarUrl,
     bio: u.bio,
+    preferredGenres: u.preferredGenres,
+    locationDistrict: u.locationDistrict,
     role: u.role,
     reputationScore: u.reputationScore,
     reputationTier: u.reputationTier,

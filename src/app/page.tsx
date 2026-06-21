@@ -72,7 +72,7 @@ export default async function HomePage() {
           <div className="card-surface rounded-2xl p-5">
             <h2 className="text-xl font-semibold">Hi, {user.displayName}.</h2>
             <p className="mt-1 text-[color:var(--muted)]">
-            Browse <Link className="underline" href="/listings">listings</Link>,
+            Browse <Link className="underline" href="/search">books</Link>,
             check your <Link className="underline" href="/transactions">transactions</Link>,
             or visit your <Link className="underline" href={`/profile/${user.id}`}>profile</Link>.
             </p>

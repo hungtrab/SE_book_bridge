@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-export function CommunityCreateForm() {
+export function CommunityCreateForm({ embedded = false }: { embedded?: boolean }) {
   const router = useRouter();
   const [form, setForm] = useState({ name: "", scope: "UNIVERSITY", description: "", isPrivate: false });
   const [error, setError] = useState<string | null>(null);
@@ -29,7 +29,7 @@ export function CommunityCreateForm() {
   }
 
   return (
-    <form onSubmit={submit} className="card-surface space-y-3 rounded-2xl p-4">
+    <form onSubmit={submit} className={embedded ? "space-y-3" : "card-surface space-y-3 rounded-2xl p-4"}>
       <h2 className="font-semibold">Create community</h2>
       <input
         required

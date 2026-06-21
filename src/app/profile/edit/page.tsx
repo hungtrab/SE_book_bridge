@@ -21,6 +21,7 @@ export default function EditProfilePage() {
     locationDistrict: "",
   });
   const [genresText, setGenresText] = useState("");
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: "",
@@ -55,12 +56,25 @@ export default function EditProfilePage() {
     e.preventDefault();
     setPending(true);
     setError(null);
+    let avatarUrl = form.avatarUrl || null;
+    if (avatarFile) {
+      const upload = new FormData();
+      upload.append("avatar", avatarFile);
+      const uploadRes = await fetch("/api/users/me/avatar", { method: "POST", body: upload });
+      const uploadBody = await uploadRes.json().catch(() => ({}));
+      if (!uploadRes.ok) {
+        setPending(false);
+        setError(uploadBody.error ?? "Avatar upload failed");
+        return;
+      }
+      avatarUrl = uploadBody.url;
+    }
     const res = await fetch("/api/users/me", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         ...form,
-        avatarUrl: form.avatarUrl || null,
+        avatarUrl,
         bio: form.bio || null,
         locationDistrict: form.locationDistrict || null,
         preferredGenres: genresText
@@ -128,12 +142,25 @@ export default function EditProfilePage() {
           />
         </label>
         <label className="block">
-          <span className="text-sm">Avatar URL</span>
-          <input
-            className="mt-1 block w-full rounded border px-2 py-1"
-            value={form.avatarUrl ?? ""}
-            onChange={(e) => setForm({ ...form, avatarUrl: e.target.value })}
-          />
+          <span className="text-sm">Profile picture</span>
+          <div className="mt-2 flex items-center gap-4">
+            <span className="grid size-20 place-items-center overflow-hidden rounded-full bg-blue-600 text-lg font-black text-white">
+              {(avatarFile || form.avatarUrl) ? (
+                <img
+                  src={avatarFile ? URL.createObjectURL(avatarFile) : form.avatarUrl ?? ""}
+                  alt=""
+                  className="h-full w-full object-cover"
+                />
+              ) : form.displayName.slice(0, 2).toUpperCase()}
+            </span>
+            <input
+              className="field"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              onChange={(e) => setAvatarFile(e.target.files?.[0] ?? null)}
+            />
+          </div>
+          <span className="mt-1 block text-xs text-gray-500">JPEG, PNG, or WebP up to 5MB.</span>
         </label>
         <label className="block">
           <span className="text-sm">Bio</span>

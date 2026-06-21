@@ -1,15 +1,36 @@
 import Link from "next/link";
 
+import { ListingHorizontalCard } from "@/components/listings/ListingHorizontalCard";
 import { prisma } from "@/server/lib/prisma";
 import { listCommunities } from "@/server/communities/service";
+import { getCurrentUser } from "@/server/lib/auth-context";
 
 export const dynamic = "force-dynamic";
 
 export default async function ExplorePage() {
+  const user = await getCurrentUser();
   const [genres, communities, recent] = await Promise.all([
     prisma.listing.groupBy({ by: ["genre"], where: { status: "ACTIVE" }, _count: true, orderBy: { _count: { genre: "desc" } }, take: 20 }),
     listCommunities({}),
-    prisma.listing.findMany({ where: { status: "ACTIVE" }, include: { photos: { take: 1, orderBy: { position: "asc" } } }, orderBy: { createdAt: "desc" }, take: 8 }),
+    prisma.listing.findMany({
+      where: { status: "ACTIVE" },
+      include: {
+        photos: { take: 1, orderBy: { position: "asc" } },
+        community: { select: { id: true, name: true } },
+        engagements: { select: { kind: true, userId: true } },
+        owner: {
+          select: {
+            id: true, displayName: true, avatarUrl: true, reputationScore: true,
+            reputationTier: true, followerCount: true, locationDistrict: true,
+            followers: user
+              ? { where: { followerId: user.id }, select: { followerId: true } }
+              : false,
+          },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+      take: 6,
+    }),
   ]);
   return (
     <div className="space-y-6">
@@ -32,8 +53,8 @@ export default async function ExplorePage() {
       </section>
       <section>
         <h2 className="mb-2 text-xl font-semibold">Recently listed</h2>
-        <div className="grid gap-3 sm:grid-cols-4">
-          {recent.map((listing) => <Link key={listing.id} href={`/listings/${listing.id}`} className="card-surface interactive-card overflow-hidden rounded-2xl p-3">{listing.photos[0] && <img src={listing.photos[0].url} alt="" className="mb-2 h-32 w-full rounded-xl object-cover" />}<strong>{listing.title}</strong><p className="text-sm text-[color:var(--muted)]">{listing.author}</p></Link>)}
+        <div className="space-y-3">
+          {recent.map((listing) => <ListingHorizontalCard key={listing.id} listing={listing} currentUserId={user?.id} />)}
         </div>
       </section>
     </div>

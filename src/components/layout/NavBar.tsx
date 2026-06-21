@@ -3,7 +3,6 @@ import {
   ArrowLeftRight,
   ChevronDown,
   LayoutDashboard,
-  MessageCircle,
   MonitorSmartphone,
   Settings,
   ShieldCheck,
@@ -12,6 +11,7 @@ import {
 } from "lucide-react";
 
 import { LogoutButton } from "@/components/auth/LogoutButton";
+import { LiveMessagePanel } from "@/components/messaging/LiveMessagePanel";
 import { LiveNotificationBell } from "@/components/notifications/LiveNotificationBell";
 import { getCurrentUser } from "@/server/lib/auth-context";
 import { hasModerationAccess } from "@/server/moderation/queue";
@@ -45,20 +45,17 @@ export async function NavBar() {
           </Link>
           <div className="hidden items-center gap-4 md:flex">
             <span className="h-6 w-px bg-slate-200" aria-hidden="true" />
-            <Link href="/listings" className="link-soft">Listings</Link>
             <Link href="/search" className="link-soft">Search</Link>
-            <Link href="/explore" className="link-soft">Explore</Link>
             <Link href="/communities" className="link-soft">Communities</Link>
             <Link href="/artifacts" className="link-soft">Artifacts</Link>
+            <Link href="/explore" className="link-soft">Explore</Link>
           </div>
         </div>
 
         <div className="ml-auto flex shrink-0 items-center gap-2">
           {user ? (
             <>
-              <Link href="/messages" className="nav-icon-button" aria-label="Messages" title="Messages">
-                <MessageCircle size={20} strokeWidth={2.2} />
-              </Link>
+              <LiveMessagePanel currentUserId={user.id} />
               <LiveNotificationBell initialUnread={unread} />
 
               <details className="account-menu group relative">

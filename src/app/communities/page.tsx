@@ -51,8 +51,35 @@ export default async function CommunitiesPage({ searchParams }: {
         </p>
       </header>
 
-      <div className="grid items-start gap-5 lg:grid-cols-[300px_minmax(0,820px)] lg:justify-center xl:grid-cols-[320px_minmax(0,840px)] 2xl:block">
-        <aside className="community-sidebar-scroll space-y-4 lg:sticky lg:top-[4.75rem] lg:max-h-[calc(100vh-5.5rem)] lg:overflow-y-auto lg:pr-2 2xl:fixed 2xl:bottom-0 2xl:left-0 2xl:top-[4.25rem] 2xl:z-30 2xl:w-[340px] 2xl:max-h-none 2xl:border-r 2xl:border-slate-200/80 2xl:bg-slate-50/90 2xl:p-4 2xl:backdrop-blur-xl">
+      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,840px)_320px] lg:justify-center 2xl:block">
+        <main id="bulletins" className="min-w-0 space-y-4 2xl:mx-auto 2xl:w-full 2xl:max-w-[840px]">
+          <div className="community-card flex flex-wrap items-start justify-between gap-4 p-5">
+            <div>
+              <p className="text-sm font-semibold text-blue-600">Main feed</p>
+              <h2 className="text-2xl font-black text-gray-900">Book bulletins</h2>
+              <p className="mt-1 text-sm text-gray-600">
+                Daily imports from Open Library, Library of Congress, Project Gutenberg, Internet Archive,
+                NYT Best Sellers, Guardian Books, NPR Book of the Day, and AP Books &amp; Literature.
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              {bulletinCommunity && (
+                <Link href={`/communities/${bulletinCommunity.id}`} className="btn-secondary btn-sm">
+                  Open feed community
+                </Link>
+              )}
+              {bulletins.length > 0 && (
+                <span className="rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-bold text-blue-600">
+                  {bulletins.length} stories
+                </span>
+              )}
+            </div>
+          </div>
+
+          <BulletinFeed items={bulletins as never} currentUserId={user?.id} isAdmin={isAdmin} />
+        </main>
+
+        <aside className="community-sidebar-scroll space-y-4 lg:sticky lg:top-[4.75rem] lg:max-h-[calc(100vh-5.5rem)] lg:overflow-y-auto lg:pl-2 2xl:fixed 2xl:bottom-0 2xl:right-0 2xl:top-[4.25rem] 2xl:z-30 2xl:w-[350px] 2xl:max-h-none 2xl:border-l 2xl:border-slate-200/80 2xl:bg-slate-50/90 2xl:p-4 2xl:backdrop-blur-xl">
           {bulletinCommunity && (
             <details className="community-card group overflow-hidden">
               <summary className="flex cursor-pointer list-none items-start justify-between gap-3 p-4">
@@ -170,39 +197,22 @@ export default async function CommunitiesPage({ searchParams }: {
           </details>
 
           {user && (
-            <div className="space-y-4">
-              <CommunityCreateForm />
-              <JoinByCodeForm />
-            </div>
+            <details className="community-card group overflow-hidden">
+              <summary className="flex cursor-pointer list-none items-center justify-between p-4">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-widest text-violet-600">Private spaces</p>
+                  <h2 className="text-lg font-black">Create or join</h2>
+                </div>
+                <span className="text-xl text-slate-400 transition group-open:rotate-45">+</span>
+              </summary>
+              <div className="space-y-5 border-t border-slate-100 p-4">
+                <CommunityCreateForm embedded />
+                <div className="h-px bg-slate-200" />
+                <JoinByCodeForm embedded />
+              </div>
+            </details>
           )}
         </aside>
-
-        <main id="bulletins" className="min-w-0 space-y-4 2xl:mx-auto 2xl:w-full 2xl:max-w-[840px]">
-          <div className="community-card flex flex-wrap items-start justify-between gap-4 p-5">
-            <div>
-              <p className="text-sm font-semibold text-blue-600">Main feed</p>
-              <h2 className="text-2xl font-black text-gray-900">Book bulletins</h2>
-              <p className="mt-1 text-sm text-gray-600">
-                Daily imports from Open Library, Library of Congress, Project Gutenberg, Internet Archive,
-                NYT Best Sellers, Guardian Books, NPR Book of the Day, and AP Books &amp; Literature.
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              {bulletinCommunity && (
-                <Link href={`/communities/${bulletinCommunity.id}`} className="btn-secondary btn-sm">
-                  Open feed community
-                </Link>
-              )}
-              {bulletins.length > 0 && (
-                <span className="rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-bold text-blue-600">
-                  {bulletins.length} stories
-                </span>
-              )}
-            </div>
-          </div>
-
-          <BulletinFeed items={bulletins as never} currentUserId={user?.id} isAdmin={isAdmin} />
-        </main>
       </div>
     </div>
   );

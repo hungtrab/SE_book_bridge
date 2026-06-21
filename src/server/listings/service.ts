@@ -68,10 +68,10 @@ export async function createListing(user: User, input: ListingCreateInput) {
   });
 }
 
-export async function getListing(id: string) {
+export async function getListing(id: string, viewerId?: string) {
   const listing = await prisma.listing.findFirst({
     where: { id, status: { not: "REMOVED" } },
-    include: listingInclude(),
+    include: listingInclude(viewerId),
   });
   if (!listing) throw new NotFoundError("Listing not found");
   return listing;
@@ -270,10 +270,24 @@ async function markListingStatus(listingId: string, status: ListingStatus) {
   return prisma.listing.update({ where: { id: listingId }, data: { status } });
 }
 
-function listingInclude() {
+function listingInclude(viewerId?: string) {
   return {
     photos: { orderBy: { position: "asc" as const } },
-    owner: { select: { id: true, displayName: true, reputationTier: true, reputationScore: true } },
+    owner: {
+      select: {
+        id: true,
+        displayName: true,
+        avatarUrl: true,
+        reputationTier: true,
+        reputationScore: true,
+        followerCount: true,
+        locationDistrict: true,
+        followers: viewerId
+          ? { where: { followerId: viewerId }, select: { followerId: true } }
+          : false,
+      },
+    },
     community: { select: { id: true, name: true } },
+    engagements: { select: { kind: true, userId: true } },
   };
 }

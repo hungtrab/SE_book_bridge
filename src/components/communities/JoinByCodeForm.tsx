@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-export function JoinByCodeForm() {
+export function JoinByCodeForm({ embedded = false }: { embedded?: boolean }) {
   const router = useRouter();
   const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -29,7 +29,7 @@ export function JoinByCodeForm() {
   }
 
   return (
-    <form onSubmit={submit} className="card-surface space-y-3 rounded-2xl p-4">
+    <form onSubmit={submit} className={embedded ? "space-y-3" : "card-surface space-y-3 rounded-2xl p-4"}>
       <h2 className="font-semibold">Join by invite code</h2>
       <div className="flex gap-2">
         <input

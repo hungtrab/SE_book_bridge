@@ -24,7 +24,11 @@ export async function saveCommunityPostImage(file: File): Promise<{ url: string 
   return saveUploadedImage(file, "community-posts");
 }
 
-async function saveUploadedImage(file: File, folder: "listings" | "community-posts"): Promise<{ url: string }> {
+export async function saveAvatarImage(file: File): Promise<{ url: string }> {
+  return saveUploadedImage(file, "avatars");
+}
+
+async function saveUploadedImage(file: File, folder: "listings" | "community-posts" | "avatars"): Promise<{ url: string }> {
   if (!ALLOWED_TYPES.has(file.type)) {
     throw new BadRequestError("Only JPEG, PNG, and WebP images are allowed");
   }

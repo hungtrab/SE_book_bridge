@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useReducer, useRef, useState } from "react";
+import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 
 import type { ArtifactAudio, GameAction, GameState, Hotspot, StoryNode } from "@/lib/artifacts/game-types";
@@ -23,13 +23,15 @@ function createReducer(storyNodes: Record<string, StoryNode>, startNodeId: strin
         return {
           currentNodeId: action.nextNodeId,
           health: newHealth,
-          status: targetNode?.isVictory ? "victory" : "playing",
+          status: "playing",
           choiceHistory: [...state.choiceHistory, action.choiceId],
           lastFlavorText: action.flavorText ?? null,
         };
       }
       case "GAME_OVER":
         return { ...state, status: "game_over", lastFlavorText: action.flavorText };
+      case "VICTORY":
+        return { ...state, status: "victory" };
       case "RESTART":
         return { currentNodeId: startNodeId, health: MAX_HEALTH, status: "playing", choiceHistory: [], lastFlavorText: null };
     }
@@ -66,6 +68,13 @@ export function ArtifactGame({
   const node = storyNodes[state.currentNodeId];
 
   const handleNarrationComplete = useCallback(() => setTypingDone(true), []);
+
+  useEffect(() => {
+    if (typingDone && node?.isVictory && state.status === "playing") {
+      const timer = setTimeout(() => dispatch({ type: "VICTORY" }), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [typingDone, node?.isVictory, state.status]);
 
   function handleHotspot(hotspot: Hotspot) {
     if (transitioning || hotspot.kind === "inspect") return;

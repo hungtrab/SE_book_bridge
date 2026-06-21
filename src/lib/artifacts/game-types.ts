@@ -57,4 +57,5 @@ export type GameState = {
 export type GameAction =
   | { type: "CHOOSE"; choiceId: string; nextNodeId: string; effect?: ChoiceEffect; flavorText?: string }
   | { type: "GAME_OVER"; flavorText: string }
+  | { type: "VICTORY" }
   | { type: "RESTART" };

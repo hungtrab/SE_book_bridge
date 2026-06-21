@@ -49,6 +49,7 @@ export async function NavBar() {
             <Link href="/search" className="link-soft">Search</Link>
             <Link href="/explore" className="link-soft">Explore</Link>
             <Link href="/communities" className="link-soft">Communities</Link>
+            <Link href="/artifacts/the-alchemist" className="link-soft">Artifacts</Link>
           </div>
         </div>
 

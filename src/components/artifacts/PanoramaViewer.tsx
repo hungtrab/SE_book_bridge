@@ -21,31 +21,38 @@ export function PanoramaViewer({
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [offsetX, setOffsetX] = useState(0);
+  const [offsetY, setOffsetY] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
-  const dragStartRef = useRef({ x: 0, startOffset: 0 });
+  const dragStartRef = useRef({ x: 0, y: 0, startOffsetX: 0, startOffsetY: 0 });
   const [inspectText, setInspectText] = useState<string | null>(null);
   const [inspectLabel, setInspectLabel] = useState<string | null>(null);
 
-  const maxOffset = sceneWidth - 100;
+  const sceneHeight = 180;
+  const maxOffsetX = sceneWidth - 100;
+  const maxOffsetY = sceneHeight - 100;
 
-  const clamp = useCallback((val: number) => Math.max(-maxOffset, Math.min(0, val)), [maxOffset]);
+  const clampX = useCallback((val: number) => Math.max(-maxOffsetX, Math.min(0, val)), [maxOffsetX]);
+  const clampY = useCallback((val: number) => Math.max(-maxOffsetY, Math.min(0, val)), [maxOffsetY]);
 
   useEffect(() => {
-    setOffsetX(clamp(-maxOffset / 2));
-  }, [sceneWidth, clamp, maxOffset]);
+    setOffsetX(clampX(-maxOffsetX / 2));
+    setOffsetY(clampY(-maxOffsetY / 2));
+  }, [sceneWidth, clampX, clampY, maxOffsetX, maxOffsetY]);
 
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
     if (disabled) return;
     setIsDragging(true);
-    dragStartRef.current = { x: e.clientX, startOffset: offsetX };
+    dragStartRef.current = { x: e.clientX, y: e.clientY, startOffsetX: offsetX, startOffsetY: offsetY };
     (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
-  }, [disabled, offsetX]);
+  }, [disabled, offsetX, offsetY]);
 
   const handlePointerMove = useCallback((e: React.PointerEvent) => {
     if (!isDragging) return;
-    const delta = e.clientX - dragStartRef.current.x;
-    setOffsetX(clamp(dragStartRef.current.startOffset + delta * 0.5));
-  }, [isDragging, clamp]);
+    const dx = e.clientX - dragStartRef.current.x;
+    const dy = e.clientY - dragStartRef.current.y;
+    setOffsetX(clampX(dragStartRef.current.startOffsetX + dx * 0.5));
+    setOffsetY(clampY(dragStartRef.current.startOffsetY + dy * 0.5));
+  }, [isDragging, clampX, clampY]);
 
   const handlePointerUp = useCallback(() => {
     setIsDragging(false);
@@ -72,27 +79,28 @@ export function PanoramaViewer({
       onPointerUp={handlePointerUp}
       onPointerCancel={handlePointerUp}
     >
-      {/* Panorama background */}
+      {/* Panorama background — wider AND taller than viewport */}
       <div
-        className="absolute inset-y-0 transition-transform duration-75"
+        className="absolute transition-transform duration-75"
         style={{
           width: `${sceneWidth}vw`,
-          transform: `translateX(${offsetX}vw)`,
+          height: `${sceneHeight}vh`,
+          transform: `translate(${offsetX}vw, ${offsetY}vh)`,
           background: backgroundImage
             ? `url(${backgroundImage}) center/cover no-repeat`
             : backgroundGradient,
         }}
       />
 
-      {/* Hotspots */}
+      {/* Hotspots — positioned relative to the scene, move with drag */}
       {hotspots.map((hotspot) => (
         <motion.button
           key={hotspot.id}
           type="button"
           className="group absolute z-20 flex flex-col items-center"
           style={{
-            left: `${hotspot.x + (offsetX / sceneWidth) * 100 + 50}%`,
-            top: `${hotspot.y}%`,
+            left: `${hotspot.x * (sceneWidth / 100) + offsetX}vw`,
+            top: `${hotspot.y * (sceneHeight / 100) + offsetY}vh`,
             transform: "translate(-50%, -50%)",
           }}
           onClick={(e) => { e.stopPropagation(); handleHotspot(hotspot); }}
@@ -129,7 +137,7 @@ export function PanoramaViewer({
           >
             {inspectLabel && (
               <p className="mb-2 font-mono text-xs tracking-wider" style={{ color: "#c9a84c" }}>
-                🔍 {inspectLabel}
+                {inspectLabel}
               </p>
             )}
             <p className="font-serif text-sm leading-relaxed text-white/85 sm:text-base">
@@ -149,7 +157,7 @@ export function PanoramaViewer({
       {/* Drag hint */}
       <div className="pointer-events-none absolute bottom-4 left-1/2 z-10 -translate-x-1/2">
         <p className="rounded-full bg-black/40 px-3 py-1 text-[10px] text-white/30 backdrop-blur">
-          ← Drag to look around →
+          Drag to look around
         </p>
       </div>
     </div>

@@ -1,5 +1,7 @@
 import type { StoryNode } from "./game-types";
 
+const R2 = "https://pub-7cade8eb643747dca43395d8b4505070.r2.dev/artifacts/alchemist";
+
 export const STORY_NODES: Record<string, StoryNode> = {
   "node-1-pyramids": {
     id: "node-1-pyramids",
@@ -7,6 +9,7 @@ export const STORY_NODES: Record<string, StoryNode> = {
     particleTheme: "stars",
     sceneWidth: 250,
     backgroundGradient: "linear-gradient(135deg, #0c1445 0%, #1a1a3e 30%, #0f1a3d 50%, #0c1445 70%, #1a1208 100%)",
+    backgroundImage: `${R2}/scene_1.png`,
     narration:
       "Sau hành trình dài xuyên qua sa mạc Sahara, cuối cùng cậu cũng đứng đây — trước quần thể Kim Tự Tháp vĩ đại, ngập trong ánh trăng bạc.\n\n" +
       "Cậu bé chăn cừu quỳ xuống trên cát. Nước mắt lăn dài trên gò má rám nắng. Một con bọ hung — biểu tượng của Thượng Đế — chầm chậm bò ngang qua chỗ giọt nước mắt vừa rơi xuống cát.\n\n" +
@@ -59,6 +62,7 @@ export const STORY_NODES: Record<string, StoryNode> = {
     particleTheme: "sand",
     sceneWidth: 250,
     backgroundGradient: "linear-gradient(135deg, #1a1208 0%, #2a1a08 25%, #0a0a0f 50%, #1a0808 75%, #0a0a0f 100%)",
+    backgroundImage: `${R2}/scene_2.png`,
     narration:
       "Cậu hì hục đào suốt đêm. Không thấy gì cả.\n\n" +
       "Đột nhiên, những bóng đen che khuất ánh trăng. Đó là những tên cướp sa mạc. Chúng tóm lấy cậu, cướp đi túi tiền vàng — món quà cuối cùng của Nhà Giả Kim.\n\n" +
@@ -115,6 +119,7 @@ export const STORY_NODES: Record<string, StoryNode> = {
     particleTheme: "embers",
     sceneWidth: 200,
     backgroundGradient: "linear-gradient(135deg, #1a0505 0%, #0f0505 30%, #1a0808 60%, #0a0505 100%)",
+    backgroundImage: `${R2}/scene_3.png`,
     narration:
       "Tên tướng cướp túm áo cậu xách lên. Lưỡi gươm sắc lạnh kề sát yết hầu.\n\n" +
       "\"Nói mau! Tại sao mày đào bới ở đây? Mày đang giấu kho báu phải không?\"\n\n" +
@@ -158,6 +163,7 @@ export const STORY_NODES: Record<string, StoryNode> = {
     particleTheme: "stars",
     sceneWidth: 250,
     backgroundGradient: "linear-gradient(135deg, #0c1445 0%, #060618 30%, #0c1445 60%, #0a0a2e 100%)",
+    backgroundImage: `${R2}/scene_4.png`,
     narration:
       "Tên tướng cướp khựng lại, rồi bật cười lớn. Tiếng cười vang vọng trong đêm sa mạc.\n\n" +
       "\"Mày quả là thằng ngu! Chính tao cũng từng mơ — rằng phải sang Tây Ban Nha, tìm nhà thờ bỏ hoang có cây dâu tằm. Đào rễ cây lên sẽ thấy vàng. Nhưng tao không ngu đến mức vượt sa mạc chỉ vì một giấc mơ!\"\n\n" +
@@ -199,6 +205,7 @@ export const STORY_NODES: Record<string, StoryNode> = {
     particleTheme: "gold",
     sceneWidth: 200,
     backgroundGradient: "radial-gradient(ellipse at 50% 40%, #1a1408 0%, #0a0a0f 70%)",
+    backgroundImage: `${R2}/scene_5.png`,
     isVictory: true,
     narration:
       "Cậu nằm đó, toàn thân bầm dập nhưng trái tim ngập tràn hạnh phúc.\n\n" +

@@ -558,6 +558,32 @@ select:-webkit-autofill {
   border-radius: 0;
 }
 
+@keyframes particle-none {
+  0%, 100% { transform: translate(0, 0); opacity: 0.2; }
+  25% { transform: translate(3px, -2px); opacity: 0.7; }
+  50% { transform: translate(-1px, 2px); opacity: 0.4; }
+  75% { transform: translate(2px, 1px); opacity: 0.8; }
+}
+
+@keyframes particle-right {
+  0% { transform: translateX(-20px); opacity: 0; }
+  20% { opacity: 0.3; }
+  80% { opacity: 0.2; }
+  100% { transform: translateX(100vw); opacity: 0; }
+}
+
+@keyframes particle-up {
+  0% { transform: translateY(20px); opacity: 0; }
+  20% { opacity: 0.5; }
+  80% { opacity: 0.3; }
+  100% { transform: translateY(-100vh); opacity: 0; }
+}
+
+@keyframes particle-twinkle {
+  0%, 100% { opacity: 0.15; }
+  50% { opacity: 0.8; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

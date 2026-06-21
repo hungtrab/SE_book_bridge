@@ -6,6 +6,7 @@ export type ChoiceEffect = {
 };
 
 export type ParticleTheme = "stars" | "sand" | "embers" | "gold";
+export type VictoryEffect = "lamp-dim" | "none";
 
 export type Hotspot = {
   id: string;
@@ -20,6 +21,18 @@ export type Hotspot = {
   inspectText?: string;
 };
 
+export type SceneAudio = {
+  narrator?: string;
+  character?: string;
+  characterDelay?: number;
+};
+
+export type ArtifactAudio = {
+  bgm?: string;
+  bgmVolume?: number;
+  scenes: Record<string, SceneAudio>;
+};
+
 export type StoryNode = {
   id: string;
   ambiance: string;
@@ -30,6 +43,7 @@ export type StoryNode = {
   backgroundGradient: string;
   backgroundImage?: string;
   isVictory?: boolean;
+  victoryEffect?: VictoryEffect;
 };
 
 export type GameState = {
@@ -43,4 +57,5 @@ export type GameState = {
 export type GameAction =
   | { type: "CHOOSE"; choiceId: string; nextNodeId: string; effect?: ChoiceEffect; flavorText?: string }
   | { type: "GAME_OVER"; flavorText: string }
+  | { type: "VICTORY" }
   | { type: "RESTART" };

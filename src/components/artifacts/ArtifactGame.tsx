@@ -1,49 +1,63 @@
 "use client";
 
-import { useCallback, useReducer, useRef, useState } from "react";
+import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 
-import type { GameAction, GameState, Hotspot } from "@/lib/artifacts/game-types";
-import { INITIAL_NODE_ID, STORY_NODES } from "@/lib/artifacts/alchemist-story";
+import type { ArtifactAudio, GameAction, GameState, Hotspot, StoryNode } from "@/lib/artifacts/game-types";
 import { GameNarration } from "./GameNarration";
 import { GameOverScreen } from "./GameOverScreen";
 import { VictoryScreen } from "./VictoryScreen";
 import { HealthBar } from "./HealthBar";
 import { PanoramaViewer } from "./PanoramaViewer";
 import { DesertParticles } from "./DesertParticles";
+import { AudioPlayer } from "./AudioPlayer";
 
 const MAX_HEALTH = 100;
 
-const INITIAL_STATE: GameState = {
-  currentNodeId: INITIAL_NODE_ID,
-  health: MAX_HEALTH,
-  status: "playing",
-  choiceHistory: [],
-  lastFlavorText: null,
-};
-
-function gameReducer(state: GameState, action: GameAction): GameState {
-  switch (action.type) {
-    case "CHOOSE": {
-      const newHealth = Math.max(0, state.health + (action.effect?.healthDelta ?? 0));
-      const targetNode = STORY_NODES[action.nextNodeId];
-      return {
-        currentNodeId: action.nextNodeId,
-        health: newHealth,
-        status: targetNode?.isVictory ? "victory" : "playing",
-        choiceHistory: [...state.choiceHistory, action.choiceId],
-        lastFlavorText: action.flavorText ?? null,
-      };
+function createReducer(storyNodes: Record<string, StoryNode>, startNodeId: string) {
+  return function gameReducer(state: GameState, action: GameAction): GameState {
+    switch (action.type) {
+      case "CHOOSE": {
+        const newHealth = Math.max(0, state.health + (action.effect?.healthDelta ?? 0));
+        const targetNode = storyNodes[action.nextNodeId];
+        return {
+          currentNodeId: action.nextNodeId,
+          health: newHealth,
+          status: "playing",
+          choiceHistory: [...state.choiceHistory, action.choiceId],
+          lastFlavorText: action.flavorText ?? null,
+        };
+      }
+      case "GAME_OVER":
+        return { ...state, status: "game_over", lastFlavorText: action.flavorText };
+      case "VICTORY":
+        return { ...state, status: "victory" };
+      case "RESTART":
+        return { currentNodeId: startNodeId, health: MAX_HEALTH, status: "playing", choiceHistory: [], lastFlavorText: null };
     }
-    case "GAME_OVER":
-      return { ...state, status: "game_over", lastFlavorText: action.flavorText };
-    case "RESTART":
-      return INITIAL_STATE;
-  }
+  };
 }
 
-export function AlchemistGame() {
-  const [state, dispatch] = useReducer(gameReducer, INITIAL_STATE);
+export function ArtifactGame({
+  storyNodes,
+  initialNodeId,
+  accentColor = "#c9a84c",
+  audio,
+}: {
+  storyNodes: Record<string, StoryNode>;
+  initialNodeId: string;
+  accentColor?: string;
+  audio?: ArtifactAudio;
+}) {
+  const initialState: GameState = {
+    currentNodeId: initialNodeId,
+    health: MAX_HEALTH,
+    status: "playing",
+    choiceHistory: [],
+    lastFlavorText: null,
+  };
+
+  const [state, dispatch] = useReducer(createReducer(storyNodes, initialNodeId), initialState);
   const [typingDone, setTypingDone] = useState(false);
   const [transitioning, setTransitioning] = useState(false);
   const [flavorText, setFlavorText] = useState<string | null>(null);
@@ -51,9 +65,16 @@ export function AlchemistGame() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const gameRef = useRef<HTMLDivElement>(null);
 
-  const node = STORY_NODES[state.currentNodeId];
+  const node = storyNodes[state.currentNodeId];
 
   const handleNarrationComplete = useCallback(() => setTypingDone(true), []);
+
+  useEffect(() => {
+    if (typingDone && node?.isVictory && state.status === "playing") {
+      const timer = setTimeout(() => dispatch({ type: "VICTORY" }), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [typingDone, node?.isVictory, state.status]);
 
   function handleHotspot(hotspot: Hotspot) {
     if (transitioning || hotspot.kind === "inspect") return;
@@ -109,13 +130,12 @@ export function AlchemistGame() {
       style={{
         "--game-bg": "#0a0a0f",
         "--game-text": "#e2e0d8",
-        "--game-accent": "#c9a84c",
+        "--game-accent": accentColor,
         "--game-muted": "#6b6860",
         height: isFullscreen ? "100vh" : "calc(100vh - 6rem)",
         background: "#0a0a0f",
       } as React.CSSProperties}
     >
-      {/* Panorama scene */}
       <AnimatePresence mode="wait">
         {state.status === "playing" && node && !flavorText && (
           <motion.div
@@ -172,7 +192,7 @@ export function AlchemistGame() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            style={{ background: "radial-gradient(ellipse at 50% 30%, #1a1408 0%, #0a0a0f 70%)" }}
+            style={{ background: `radial-gradient(ellipse at 50% 30%, ${accentColor}15 0%, #0a0a0f 70%)` }}
           >
             <DesertParticles theme="gold" />
             <div className="relative z-10">
@@ -181,13 +201,13 @@ export function AlchemistGame() {
                 health={state.health}
                 maxHealth={MAX_HEALTH}
                 onRestart={handleRestart}
+                victoryEffect={node.victoryEffect}
               />
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Top bar — ambiance + health + fullscreen */}
       {state.status === "playing" && node && (
         <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex items-center justify-between bg-gradient-to-b from-black/60 to-transparent px-4 py-3 sm:px-6">
           <div className="font-mono text-xs tracking-wider" style={{ color: "var(--game-accent)" }}>
@@ -195,6 +215,7 @@ export function AlchemistGame() {
           </div>
           <div className="pointer-events-auto flex items-center gap-3">
             <HealthBar health={state.health} maxHealth={MAX_HEALTH} />
+            <AudioPlayer audio={audio} currentNodeId={state.currentNodeId} gameStatus={state.status} />
             <button
               type="button"
               onClick={toggleFullscreen}
@@ -206,7 +227,6 @@ export function AlchemistGame() {
         </div>
       )}
 
-      {/* Narration panel — collapsible overlay at bottom */}
       {state.status === "playing" && node && !flavorText && (
         <div className="absolute inset-x-0 bottom-0 z-20">
           <button

@@ -3,11 +3,18 @@ import { requireUser } from "@/server/lib/auth-context";
 import { getMessages } from "@/server/messaging/service";
 import { messageStream } from "@/server/messaging/sse";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   const user = await requireUser();
   const { id } = await ctx.params;
   await getMessages(user, id);
   return new Response(messageStream(user, id, req.signal), {
-    headers: { "Content-Type": "text/event-stream", "Cache-Control": "no-cache, no-transform", Connection: "keep-alive" },
+    headers: {
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache, no-transform",
+      Connection: "keep-alive",
+      "X-Accel-Buffering": "no",
+    },
   });
 }

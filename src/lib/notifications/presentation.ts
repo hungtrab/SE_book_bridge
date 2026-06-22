@@ -9,7 +9,7 @@ export type NotificationPresentation = {
 export function presentNotification(kind: string, payload: unknown): NotificationPresentation {
   const data = isObject(payload) ? payload : {};
   const event = stringValue(data.kind) ?? stringValue(data.event);
-  const title = stringValue(data.title);
+  const title = stringValue(data.title) ?? stringValue(data.postTitle);
 
   if (kind === "TRANSACTION_STATUS_CHANGED") {
     if (event === "transaction.requested") {
@@ -111,7 +111,7 @@ export function presentNotification(kind: string, payload: unknown): Notificatio
       title: "New comment on your post",
       body: title ? `Someone commented on "${title}".` : "Someone commented on one of your community posts.",
       href: stringValue(data.postId) && stringValue(data.communityId)
-        ? `/communities/${data.communityId}#post-${data.postId}`
+        ? `/communities/${data.communityId}#${stringValue(data.commentId) ? `comment-${data.commentId}` : `post-${data.postId}`}`
         : undefined,
     };
   }

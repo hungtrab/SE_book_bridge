@@ -85,7 +85,9 @@ export function NotificationList({ initial }: { initial: NotificationRow[] }) {
         <article key={item.id} className={`rounded border p-3 ${item.readAt ? "opacity-60" : "border-blue-400"}`}>
           <div className="flex items-start justify-between gap-3">
             <div className="space-y-1">
-              <NotificationText item={item} />
+              <NotificationText item={item} onOpen={() => {
+                if (!item.readAt) void markRead(item.id);
+              }} />
               <p className="text-xs text-gray-500">{new Date(item.createdAt).toLocaleString()}</p>
             </div>
             {!item.readAt && (
@@ -100,7 +102,7 @@ export function NotificationList({ initial }: { initial: NotificationRow[] }) {
   );
 }
 
-function NotificationText({ item }: { item: NotificationRow }) {
+function NotificationText({ item, onOpen }: { item: NotificationRow; onOpen: () => void }) {
   const notification = presentNotification(item.kind, item.payload);
   const content = (
     <>
@@ -109,7 +111,7 @@ function NotificationText({ item }: { item: NotificationRow }) {
     </>
   );
   return notification.href
-    ? <Link href={notification.href} className="block hover:text-blue-600">{content}</Link>
+    ? <Link href={notification.href} onClick={onOpen} className="block hover:text-blue-600">{content}</Link>
     : content;
 }
 

@@ -62,6 +62,7 @@ export type DomainEvent =
   | {
       kind: "community.post_liked";
       actorId: string;
+      communityId: string;
       postId: string;
       postTitle: string;
       authorId: string;

@@ -540,6 +540,7 @@ export async function reactToPost(
       await dispatchNotifications(tx, {
         kind: "community.post_liked",
         actorId: actor.id,
+        communityId,
         postId,
         postTitle: post.title,
         authorId: post.authorId,

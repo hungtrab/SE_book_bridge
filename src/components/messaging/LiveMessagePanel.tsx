@@ -38,6 +38,7 @@ function moveConversationToTop(conversations: Conversation[], conversationId: st
     ...conversation,
     lastMessageAt: message.createdAt,
     messages: [{ body: message.body, createdAt: message.createdAt }],
+    _count: { messages: 0 },
   };
   return [updated, ...conversations.slice(0, index), ...conversations.slice(index + 1)];
 }
@@ -163,15 +164,30 @@ export function LiveMessagePanel({ currentUserId, initialUnread, open, onOpenCha
               <div className="max-h-[28rem] overflow-y-auto p-2">
                 {items.map((conversation) => {
                   const other = otherUser(conversation, currentUserId);
+                  const unreadCount = conversation._count?.messages ?? 0;
                   return (
-                    <button key={conversation.id} type="button" onClick={() => setActive(conversation)} className="flex w-full items-center gap-3 rounded-md p-3 text-left hover:bg-slate-100">
+                    <button
+                      key={conversation.id}
+                      type="button"
+                      onClick={() => setActive(conversation)}
+                      className={`flex w-full items-center gap-3 rounded-md p-3 text-left hover:bg-slate-100 ${
+                        unreadCount > 0 ? "bg-blue-50 font-bold" : ""
+                      }`}
+                    >
                       <span className="grid size-10 flex-none place-items-center overflow-hidden rounded-full bg-blue-600 text-xs font-black text-white">
                         {other.avatarUrl ? <img src={other.avatarUrl} alt="" className="h-full w-full object-cover" /> : other.displayName.slice(0, 2).toUpperCase()}
                       </span>
                       <span className="min-w-0">
                         <strong className="block truncate text-sm">{other.displayName}</strong>
-                        <span className="block truncate text-xs text-slate-500">{conversation.messages[0]?.body ?? "Open conversation"}</span>
+                        <span className={`block truncate text-xs ${unreadCount > 0 ? "text-slate-900" : "text-slate-500"}`}>
+                          {conversation.messages[0]?.body ?? "Open conversation"}
+                        </span>
                       </span>
+                      {unreadCount > 0 && (
+                        <span className="ml-auto grid size-5 flex-none place-items-center rounded-full bg-blue-600 text-[11px] font-black text-white">
+                          {unreadCount > 9 ? "9+" : unreadCount}
+                        </span>
+                      )}
                     </button>
                   );
                 })}

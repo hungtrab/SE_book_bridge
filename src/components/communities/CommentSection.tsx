@@ -133,7 +133,7 @@ function CommentBubble({ comment, currentUserId, canDelete, canReact, onReply, o
 }) {
   const mine = (comment.reactions ?? []).find((reaction) => reaction.userId === currentUserId)?.reaction;
   return (
-    <div className="my-2 flex items-start gap-2">
+    <div id={`comment-${comment.id}`} className="my-2 flex scroll-mt-24 items-start gap-2">
       <span className="community-avatar community-avatar-sm">{comment.author.displayName.charAt(0).toUpperCase()}</span>
       <div className="min-w-0">
         <div className="relative rounded-2xl bg-gray-100 px-3 py-2">

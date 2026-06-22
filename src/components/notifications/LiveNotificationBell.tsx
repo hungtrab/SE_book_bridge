@@ -1,6 +1,7 @@
 "use client";
 
 import { Bell, Check } from "lucide-react";
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
 import { presentNotification } from "@/lib/notifications/presentation";
@@ -64,6 +65,19 @@ export function LiveNotificationBell({ initialUnread, open, onOpenChange }: Live
     setError("");
   }
 
+  function markReadInState(id: string) {
+    setItems((current) => current.map((item) => item.id === id ? { ...item, readAt: new Date().toISOString() } : item));
+    setUnread((current) => Math.max(0, current - 1));
+  }
+
+  function handleNotificationClick(item: NotificationRow) {
+    if (!item.readAt) {
+      markReadInState(item.id);
+      void fetch(`/api/notifications/${item.id}/read`, { method: "POST" });
+    }
+    onOpenChange(false);
+  }
+
   return (
     <div className="relative">
       <button
@@ -86,14 +100,27 @@ export function LiveNotificationBell({ initialUnread, open, onOpenChange }: Live
           <div className="max-h-[32rem] overflow-y-auto p-2">
             {items.map((item) => {
               const view = presentNotification(item.kind, item.payload);
+              const content = (
+                <>
+                  <h3 className="text-sm font-bold">{view.title}</h3>
+                  <p className="mt-0.5 text-xs leading-5 text-slate-600">{view.body}</p>
+                  <p className="mt-1 text-[11px] text-slate-400">{new Date(item.createdAt).toLocaleString()}</p>
+                </>
+              );
               return (
                 <article key={item.id} className={`rounded-md p-3 ${item.readAt ? "opacity-60" : "bg-blue-50"}`}>
                   <div className="flex items-start gap-2">
-                    <div className="min-w-0 flex-1">
-                      <h3 className="text-sm font-bold">{view.title}</h3>
-                      <p className="mt-0.5 text-xs leading-5 text-slate-600">{view.body}</p>
-                      <p className="mt-1 text-[11px] text-slate-400">{new Date(item.createdAt).toLocaleString()}</p>
-                    </div>
+                    {view.href ? (
+                      <Link
+                        href={view.href}
+                        onClick={() => handleNotificationClick(item)}
+                        className="min-w-0 flex-1 rounded-sm hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        {content}
+                      </Link>
+                    ) : (
+                      <div className="min-w-0 flex-1">{content}</div>
+                    )}
                     {!item.readAt && (
                       <button type="button" onClick={() => markRead(item.id)} className="nav-panel-icon" title="Mark read" aria-label="Mark notification read">
                         <Check size={15} />

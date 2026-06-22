@@ -16,7 +16,6 @@ export const SearchSchema = z.object({
   maxPrice: z.coerce.number().int().min(0).optional(),
   communityId: z.string().trim().min(1).optional(),
   district: z.string().trim().min(1).max(120).optional(),
-  distanceKm: z.coerce.number().int().min(1).max(50).optional(),
   cursor: z.string().optional(),
   pageSize: z.coerce.number().int().min(1).max(50).default(20),
 });
@@ -36,8 +35,6 @@ export async function searchListings(input: SearchInput, viewerId?: string) {
   const condition = validCondition(data.condition ?? parsed.filters.condition);
   const transactionType = validType(data.transactionType ?? parsed.filters.type);
   const communityId = data.communityId ?? parsed.filters.community;
-  const district = data.district ?? parsed.filters.district;
-  const districts = district ? districtsWithinRadius(district, data.distanceKm ?? 0) : [];
   const offset = decodeCursor(data.cursor);
   const textPattern = text ? likePattern(text) : null;
   const isbnPattern = text ? likePattern(text.replace(/[-\s]/g, "").toUpperCase()) : null;
@@ -60,7 +57,6 @@ export async function searchListings(input: SearchInput, viewerId?: string) {
   if (transactionType) filters.push(Prisma.sql`l."transactionType" = ${transactionType}::"TransactionType"`);
   if (data.maxPrice !== undefined) filters.push(Prisma.sql`COALESCE(l."askingPriceVnd", 0) <= ${data.maxPrice}`);
   if (communityId) filters.push(Prisma.sql`(l."communityId" = ${communityId} OR c."name" ILIKE ${likePattern(communityId)} ESCAPE ${LIKE_ESCAPE})`);
-  if (districts.length > 0) filters.push(Prisma.sql`u."locationDistrict" IN (${Prisma.join(districts)})`);
 
   const rank = textPattern
     ? Prisma.sql`(
@@ -111,7 +107,7 @@ export async function searchListings(input: SearchInput, viewerId?: string) {
       return listing ? [{ ...listing, relevance: Number(row.rank) }] : [];
     }),
     nextCursor: ranked.length > data.pageSize ? encodeCursor(offset + data.pageSize) : null,
-    parsedQuery: { text, filters: { genre, author, isbn, condition, transactionType, communityId, district } },
+    parsedQuery: { text, filters: { genre, author, isbn, condition, transactionType, communityId } },
   };
 }
 

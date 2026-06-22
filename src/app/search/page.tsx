@@ -25,8 +25,6 @@ export default async function SearchPage({
     transactionType: single(params?.type),
     maxPrice: single(params?.maxPrice),
     communityId: single(params?.communityId),
-    district: single(params?.district),
-    distanceKm: single(params?.distanceKm),
     cursor: single(params?.cursor),
     pageSize: 20,
   };
@@ -35,7 +33,7 @@ export default async function SearchPage({
     searchListings(parsed.success ? parsed.data : { pageSize: 20 }, user?.id),
     listCommunities({}),
   ]);
-  const advancedOpen = ["author", "condition", "type", "maxPrice", "communityId", "district", "distanceKm"]
+  const advancedOpen = ["author", "condition", "type", "maxPrice", "communityId"]
     .some((key) => Boolean(single(params?.[key])));
 
   return (
@@ -76,7 +74,7 @@ export default async function SearchPage({
         <details className="border-t border-slate-200" open={advancedOpen}>
           <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-3 text-sm font-bold text-slate-600 hover:bg-slate-50">
             <SlidersHorizontal size={16} /> Advanced search
-            <span className="ml-auto text-xs font-medium text-slate-400">Author, condition, price, community, and distance</span>
+            <span className="ml-auto text-xs font-medium text-slate-400">Author, condition, price, and community</span>
           </summary>
           <div className="grid gap-3 border-t border-slate-100 bg-slate-50/70 p-4 sm:grid-cols-2 lg:grid-cols-4">
             <input name="author" defaultValue={single(params?.author) ?? ""} placeholder="Author" className="field" />
@@ -93,8 +91,6 @@ export default async function SearchPage({
               <option value="">Any community</option>
               {communities.map((community) => <option key={community.id} value={community.id}>{community.name}</option>)}
             </select>
-            <input name="district" defaultValue={single(params?.district) ?? ""} placeholder="District, e.g. Cau Giay" className="field" />
-            <input name="distanceKm" type="number" min="1" max="50" defaultValue={single(params?.distanceKm) ?? ""} placeholder="Radius in km" className="field" />
             <button className="btn-secondary">Apply advanced filters</button>
           </div>
         </details>

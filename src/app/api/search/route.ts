@@ -15,7 +15,6 @@ export const GET = withErrorHandling(async (req: NextRequest) => {
     maxPrice: params.get("maxPrice") || undefined,
     communityId: params.get("communityId") || undefined,
     district: params.get("district") || undefined,
-    distanceKm: params.get("distanceKm") || undefined,
     cursor: params.get("cursor") || undefined,
     pageSize: params.get("pageSize") || undefined,
   });

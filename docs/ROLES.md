@@ -909,4 +909,4 @@ Quy tắc: ai bị hỏi câu của người khác, **chuyển micro lịch sự
 - [ ] Slide 30 trang đã review chéo
 - [ ] Báo cáo 30 trang đã review chéo
 - [ ] Mỗi người đã practice phần demo của mình ≥ 2 lần
-- [ ] Backup: video record full demo (phòng khi WiFi hỏng tại buổi defense)
+- [ ] Backup: video record full demo (phòng khi WiFi hỏng tại buổi defense).

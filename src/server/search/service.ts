@@ -57,11 +57,21 @@ export async function searchListings(input: SearchInput, viewerId?: string) {
   const offset = decodeCursor(data.cursor);                          // giải mã con trỏ -> offset số
   const textPattern = text ? likePattern(text) : null;              // mẫu ILIKE "%abc%" (đã escape)
   const isbnPattern = text ? likePattern(text.replace(/[-\s]/g, "").toUpperCase()) : null;
+  const textTermPatterns = searchTerms(text).map(likePattern);
 
   // --- Dựng các điều kiện WHERE động. Luôn có điều kiện "chỉ tin ACTIVE".
   const filters: Prisma.Sql[] = [Prisma.sql`l."status" = 'ACTIVE'::"ListingStatus"`];
   if (textPattern) {
     // Có từ khoá -> khớp ở nhiều cột (title/author/description/isbn/genre/tên cộng đồng).
+    const tokenFallback = textTermPatterns.length > 0
+      ? Prisma.sql`OR ${Prisma.join(textTermPatterns.map((pattern) => Prisma.sql`(
+        l."title" ILIKE ${pattern} ESCAPE ${LIKE_ESCAPE}
+        OR l."author" ILIKE ${pattern} ESCAPE ${LIKE_ESCAPE}
+        OR l."description" ILIKE ${pattern} ESCAPE ${LIKE_ESCAPE}
+        OR l."genre" ILIKE ${pattern} ESCAPE ${LIKE_ESCAPE}
+        OR c."name" ILIKE ${pattern} ESCAPE ${LIKE_ESCAPE}
+      )`), " OR ")}`
+      : Prisma.empty;
     filters.push(Prisma.sql`(
       l."title" ILIKE ${textPattern} ESCAPE ${LIKE_ESCAPE}
       OR l."author" ILIKE ${textPattern} ESCAPE ${LIKE_ESCAPE}
@@ -69,6 +79,7 @@ export async function searchListings(input: SearchInput, viewerId?: string) {
       OR l."isbn" ILIKE ${isbnPattern} ESCAPE ${LIKE_ESCAPE}
       OR l."genre" ILIKE ${textPattern} ESCAPE ${LIKE_ESCAPE}
       OR c."name" ILIKE ${textPattern} ESCAPE ${LIKE_ESCAPE}
+      ${tokenFallback}
     )`);
   }
   // Mỗi filter chỉ thêm vào WHERE khi người dùng có truyền (giao nhau bằng AND).
@@ -90,6 +101,7 @@ export async function searchListings(input: SearchInput, viewerId?: string) {
         + CASE WHEN l."genre" ILIKE ${textPattern} ESCAPE ${LIKE_ESCAPE} THEN 3 ELSE 0 END
         + CASE WHEN c."name" ILIKE ${textPattern} ESCAPE ${LIKE_ESCAPE} THEN 3 ELSE 0 END
         + CASE WHEN l."description" ILIKE ${textPattern} ESCAPE ${LIKE_ESCAPE} THEN 2 ELSE 0 END
+        + ${tokenRank(textTermPatterns)}
       )::real`
     : Prisma.sql`0::real`;
   // Chạy SQL: lấy id + điểm, sắp theo điểm giảm dần rồi mới nhất. LIMIT lấy DƯ 1
@@ -197,6 +209,26 @@ function validType(value?: string) {
  */
 export function likePattern(value: string) {
   return `%${value.replace(/[\\%_]/g, (char) => `\\${char}`)}%`;
+}
+
+const SEARCH_STOP_WORDS = new Set(["a", "an", "and", "of", "the"]);
+
+export function searchTerms(value: string) {
+  return value
+    .split(/\s+/)
+    .map((term) => term.trim())
+    .filter((term) => term.length > 2 && !SEARCH_STOP_WORDS.has(term.toLowerCase()));
+}
+
+function tokenRank(patterns: string[]) {
+  if (patterns.length === 0) return Prisma.sql`0`;
+  return Prisma.join(patterns.map((pattern) => Prisma.sql`(
+    CASE WHEN l."title" ILIKE ${pattern} ESCAPE ${LIKE_ESCAPE} THEN 4 ELSE 0 END
+    + CASE WHEN l."author" ILIKE ${pattern} ESCAPE ${LIKE_ESCAPE} THEN 2 ELSE 0 END
+    + CASE WHEN l."genre" ILIKE ${pattern} ESCAPE ${LIKE_ESCAPE} THEN 1 ELSE 0 END
+    + CASE WHEN c."name" ILIKE ${pattern} ESCAPE ${LIKE_ESCAPE} THEN 1 ELSE 0 END
+    + CASE WHEN l."description" ILIKE ${pattern} ESCAPE ${LIKE_ESCAPE} THEN 1 ELSE 0 END
+  )`), " + ");
 }
 
 // Cursor phân trang = offset được mã hoá base64url (giấu con số, gọn trên URL).

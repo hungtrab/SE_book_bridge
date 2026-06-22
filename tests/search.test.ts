@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { districtsWithinRadius, haversineKm } from "@/server/search/districts";
 import { parseSearchQuery } from "@/server/search/query-parser";
-import { likePattern } from "@/server/search/service";
+import { likePattern, searchTerms } from "@/server/search/service";
 
 describe("search query parser", () => {
   it("extracts qualified filters and keeps free text", () => {
@@ -33,5 +33,9 @@ describe("district radius", () => {
 describe("search SQL helpers", () => {
   it("escapes LIKE wildcard characters from user input", () => {
     expect(likePattern("100% clean_code\\book")).toBe("%100\\% clean\\_code\\\\book%");
+  });
+
+  it("keeps meaningful artifact title terms for fallback matching", () => {
+    expect(searchTerms("The Alchemist")).toEqual(["Alchemist"]);
   });
 });

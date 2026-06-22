@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { REACTIONS, type ReactionName } from "./PostActions";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 
@@ -8,6 +8,7 @@ interface Comment {
   id: string;
   body: string;
   createdAt: string | Date;
+  parentId?: string | null;
   author: { id: string; displayName: string; avatarUrl?: string | null };
   reactions?: Array<{ userId: string; reaction: ReactionName }>;
   replies?: Comment[];
@@ -26,6 +27,7 @@ interface Props {
 export function CommentSection(props: Props) {
   const { communityId, postId, initialComments, commentCount, canComment, currentUserId, isMod } = props;
   const inputRef = useRef<HTMLInputElement>(null);
+  const latestCommentAtRef = useRef<Date>(latestCommentDate(initialComments));
   const [comments, setComments] = useState(initialComments);
   const [body, setBody] = useState("");
   const [replyTo, setReplyTo] = useState<{ id: string; name: string } | null>(null);
@@ -37,6 +39,39 @@ export function CommentSection(props: Props) {
     setReplyTo(comment ? { id: comment.id, name: comment.author.displayName } : null);
     inputRef.current?.focus();
   }
+
+  useEffect(() => {
+    latestCommentAtRef.current = latestCommentDate(comments);
+  }, [comments]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function refreshComments() {
+      const after = latestCommentAtRef.current.toISOString();
+      const res = await fetch(
+        `/api/communities/${communityId}/posts/${postId}/comments?after=${encodeURIComponent(after)}`,
+        { cache: "no-store" },
+      );
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error ?? "Could not refresh comments");
+      if (!cancelled && Array.isArray(data.comments) && data.comments.length > 0) {
+        setComments((rows) => mergeIncomingComments(rows, data.comments));
+        setError(null);
+      }
+    }
+
+    const timer = window.setInterval(() => {
+      void refreshComments().catch(() => {
+        if (!cancelled) setError("Live comments paused. Retrying...");
+      });
+    }, 2500);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [communityId, postId]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -54,9 +89,9 @@ export function CommentSection(props: Props) {
       return;
     }
     if (replyTo) {
-      setComments((rows) => rows.map((row) => row.id === replyTo.id ? { ...row, replies: [...(row.replies ?? []), data] } : row));
+      setComments((rows) => mergeIncomingComments(rows, [{ ...data, parentId: replyTo.id }]));
     } else {
-      setComments((rows) => [...rows, data]);
+      setComments((rows) => mergeIncomingComments(rows, [data]));
     }
     setBody("");
     setReplyTo(null);
@@ -120,6 +155,45 @@ export function CommentSection(props: Props) {
       <ConfirmDialog open={Boolean(deleteId)} title="Delete this comment?" message="This comment and any replies beneath it will be permanently removed." confirmLabel="Delete" dangerous onConfirm={() => deleteId && deleteComment(deleteId)} onCancel={() => setDeleteId(null)} />
     </div>
   );
+}
+
+function mergeIncomingComments(current: Comment[], incoming: Comment[]) {
+  return incoming.reduce((rows, comment) => appendComment(rows, comment), current);
+}
+
+function appendComment(rows: Comment[], comment: Comment): Comment[] {
+  if (hasComment(rows, comment.id)) return rows;
+
+  if (comment.parentId) {
+    let inserted = false;
+    const next = rows.map((row) => {
+      if (row.id !== comment.parentId) return row;
+      inserted = true;
+      return {
+        ...row,
+        replies: [...(row.replies ?? []), { ...comment, replies: comment.replies ?? [] }],
+      };
+    });
+    return inserted ? next : rows;
+  }
+
+  return [...rows, { ...comment, replies: comment.replies ?? [] }];
+}
+
+function hasComment(rows: Comment[], commentId: string): boolean {
+  return rows.some((comment) => (
+    comment.id === commentId
+    || (comment.replies ?? []).some((reply) => reply.id === commentId)
+  ));
+}
+
+function latestCommentDate(rows: Comment[]) {
+  const timestamps = rows.flatMap((comment) => [
+    new Date(comment.createdAt).getTime(),
+    ...(comment.replies ?? []).map((reply) => new Date(reply.createdAt).getTime()),
+  ]);
+  const latest = Math.max(0, ...timestamps.filter((value) => Number.isFinite(value)));
+  return new Date(latest);
 }
 
 function CommentBubble({ comment, currentUserId, canDelete, canReact, onReply, onDelete, onReact }: {

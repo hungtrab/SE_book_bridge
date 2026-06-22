@@ -1,8 +1,16 @@
 import { NextRequest } from "next/server";
 
-import { requireUser } from "@/server/lib/auth-context";
+import { getCurrentUser, requireUser } from "@/server/lib/auth-context";
 import { withErrorHandling } from "@/server/lib/errors";
-import { CommunityPostCommentCreateSchema, createComment } from "@/server/communities/service";
+import { CommunityPostCommentCreateSchema, createComment, listPostComments } from "@/server/communities/service";
+
+export const GET = withErrorHandling(async (req: NextRequest, ctx: { params: Promise<{ id: string; postId: string }> }) => {
+  const user = await getCurrentUser();
+  const { id, postId } = await ctx.params;
+  const after = new URL(req.url).searchParams.get("after");
+  const comments = await listPostComments(id, postId, user, after ? new Date(after) : undefined);
+  return Response.json({ comments });
+});
 
 export const POST = withErrorHandling(async (req: NextRequest, ctx: { params: Promise<{ id: string; postId: string }> }) => {
   const user = await requireUser();

@@ -608,6 +608,68 @@ export async function createComment(
   });
 }
 
+export async function listPostComments(
+  communityId: string,
+  postId: string,
+  viewer?: User | null,
+  after?: Date,
+) {
+  const post = await prisma.communityPost.findUnique({
+    where: { id: postId },
+    select: {
+      id: true,
+      communityId: true,
+      community: { select: { ownerId: true, isPrivate: true } },
+    },
+  });
+  if (!post || post.communityId !== communityId) throw new NotFoundError("Post not found");
+
+  if (post.community.isPrivate) {
+    const canView = Boolean(
+      viewer
+      && (
+        viewer.role === "ADMIN"
+        || viewer.id === post.community.ownerId
+        || await prisma.communityMembership.findUnique({
+          where: { userId_communityId: { userId: viewer.id, communityId } },
+          select: { userId: true },
+        })
+      )
+    );
+    if (!canView) throw new ForbiddenError("Join the community to view comments");
+  }
+
+  if (after) {
+    return prisma.communityPostComment.findMany({
+      where: { postId, createdAt: { gt: after } },
+      include: {
+        author: { select: { id: true, displayName: true, avatarUrl: true } },
+        reactions: { select: { userId: true, reaction: true } },
+        replies: true,
+      },
+      orderBy: { createdAt: "asc" },
+      take: 100,
+    });
+  }
+
+  return prisma.communityPostComment.findMany({
+    where: { postId, parentId: null },
+    include: {
+      author: { select: { id: true, displayName: true, avatarUrl: true } },
+      reactions: { select: { userId: true, reaction: true } },
+      replies: {
+        orderBy: { createdAt: "asc" },
+        include: {
+          author: { select: { id: true, displayName: true, avatarUrl: true } },
+          reactions: { select: { userId: true, reaction: true } },
+        },
+      },
+    },
+    orderBy: { createdAt: "asc" },
+    take: 100,
+  });
+}
+
 export async function reactToComment(
   actor: User,
   communityId: string,

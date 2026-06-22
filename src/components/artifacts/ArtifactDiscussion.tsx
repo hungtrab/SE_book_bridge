@@ -16,7 +16,7 @@ type Comment = {
     avatarUrl: string | null;
     reputationTier: string;
   };
-  likes: Array<{ userId: string }>;
+  likes?: Array<{ userId: string }>;
 };
 
 export function ArtifactDiscussion({
@@ -63,7 +63,7 @@ export function ArtifactDiscussion({
 
   async function toggleLike(comment: Comment) {
     if (!currentUserId) return;
-    const liked = comment.likes.length > 0;
+    const liked = (comment.likes ?? []).length > 0;
     const res = await fetch(`/api/artifacts/comments/${comment.id}/like`, {
       method: liked ? "DELETE" : "POST",
     });
@@ -118,7 +118,7 @@ export function ArtifactDiscussion({
 
         <div className="mt-5 divide-y divide-slate-100">
           {items.map((comment) => {
-            const liked = comment.likes.length > 0;
+            const liked = (comment.likes ?? []).length > 0;
             return (
               <article key={comment.id} className="flex gap-3 py-4">
                 <span className="grid size-10 flex-none place-items-center overflow-hidden rounded-full bg-blue-600 text-xs font-black text-white">

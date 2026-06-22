@@ -63,6 +63,10 @@ export function NotificationList({ initial }: { initial: NotificationRow[] }) {
       cancelled = true;
       source.close();
     };
+    // Mount-only: the stream/long-poll seeds `after` from `initial` once and then
+    // tracks new notifications itself. Re-running on `initial` change would open
+    // duplicate streams.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function markRead(id: string) {

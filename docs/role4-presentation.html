@@ -1,0 +1,1015 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Role #4 — Transactions &amp; DevOps/CI — Tài liệu thuyết trình</title>
+<style>
+  :root {
+    --bg: #0f1115;
+    --panel: #161a22;
+    --text: #e6e6e6;
+    --muted: #9aa4b2;
+    --accent: #4dabf7;
+    --accent2: #51cf66;
+    --warn: #ffa94d;
+    --danger: #ff6b6b;
+    --border: #2a2f3a;
+    --code-bg: #0b0d12;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+  }
+  .layout { display: flex; min-height: 100vh; }
+  nav {
+    width: 260px;
+    flex-shrink: 0;
+    background: var(--panel);
+    border-right: 1px solid var(--border);
+    padding: 20px 14px;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+  }
+  nav h2 { font-size: 14px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin: 18px 0 6px; }
+  nav h2:first-child { margin-top: 0; }
+  nav a {
+    display: block;
+    color: var(--text);
+    text-decoration: none;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 13.5px;
+    margin: 1px 0;
+  }
+  nav a:hover { background: #21262f; color: var(--accent); }
+  main { flex: 1; padding: 32px 40px; max-width: 980px; }
+  h1 { font-size: 30px; margin-bottom: 4px; }
+  h1 .sub { display: block; font-size: 16px; color: var(--muted); font-weight: 400; margin-top: 6px; }
+  section { margin-bottom: 46px; padding-top: 8px; border-top: 1px solid var(--border); }
+  section:first-of-type { border-top: none; }
+  h2 { color: var(--accent); font-size: 22px; margin-top: 0; }
+  h3 { color: #fff; font-size: 17px; margin-top: 28px; border-left: 3px solid var(--accent); padding-left: 10px; }
+  .file-tag {
+    display: inline-block;
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    font-size: 12.5px;
+    background: #1d2330;
+    color: var(--accent2);
+    border: 1px solid var(--border);
+    padding: 2px 8px;
+    border-radius: 5px;
+    margin: 6px 0;
+  }
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    overflow-x: auto;
+    font-size: 13px;
+    line-height: 1.55;
+    margin: 8px 0 18px;
+  }
+  code { font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace; }
+  p code, li code, td code { background: #1d2330; padding: 1px 5px; border-radius: 4px; font-size: 13px; color: var(--accent2); }
+  .note {
+    background: #1a2230;
+    border-left: 4px solid var(--accent);
+    padding: 10px 14px;
+    border-radius: 6px;
+    margin: 14px 0;
+  }
+  .quote {
+    background: #1a2419;
+    border-left: 4px solid var(--accent2);
+    padding: 10px 14px;
+    border-radius: 6px;
+    margin: 14px 0;
+    font-style: italic;
+  }
+  .qa {
+    background: #20181a;
+    border-left: 4px solid var(--danger);
+    padding: 10px 14px;
+    border-radius: 6px;
+    margin: 14px 0;
+  }
+  .qa b { color: var(--danger); }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0 20px; font-size: 14px; }
+  th, td { border: 1px solid var(--border); padding: 7px 10px; text-align: left; vertical-align: top; }
+  th { background: #1d2330; color: var(--accent); }
+  tr:nth-child(even) td { background: #141821; }
+  .diagram {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 18px;
+    font-family: "SFMono-Regular", Consolas, monospace;
+    font-size: 13px;
+    line-height: 1.9;
+    white-space: pre;
+    overflow-x: auto;
+    color: #d6e2ff;
+  }
+  .state { color: var(--accent2); font-weight: bold; }
+  .action { color: var(--warn); }
+  .badge { display:inline-block; padding:2px 8px; border-radius:10px; font-size:11px; font-weight:600; margin-left:6px; }
+  .badge.owner { background:#2b4f8a; color:#cfe1ff; }
+  .badge.requester { background:#3a5c3a; color:#d4f7d4; }
+  .badge.mod { background:#5c3a5c; color:#f7d4f7; }
+  .badge.system { background:#5c4a2a; color:#ffe2b3; }
+  footer { color: var(--muted); font-size: 12.5px; margin-top: 60px; padding-top: 16px; border-top: 1px solid var(--border); }
+  .toplink { font-size: 12px; }
+  .toplink a { color: var(--muted); }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-thumb { background: #2a2f3a; border-radius: 5px; }
+</style>
+</head>
+<body>
+<div class="layout">
+
+<nav>
+  <h2>Tổng quan</h2>
+  <a href="#gioi-thieu">1. Role #4 là gì</a>
+  <a href="#model">2. Data model</a>
+  <h2>State machine</h2>
+  <a href="#diagram">3. Sơ đồ trạng thái</a>
+  <a href="#state-machine-code">4. Code state machine</a>
+  <a href="#actions-table">5. Bảng action / quyền</a>
+  <h2>Service layer</h2>
+  <a href="#atomic">6. Atomic — Prisma $transaction</a>
+  <a href="#side-effects">7. Side effects</a>
+  <a href="#waitlist">8. Waitlist nhiều người request</a>
+  <a href="#dispute">9. Dispute &amp; moderation</a>
+  <h2>Module phụ</h2>
+  <a href="#rating">10. Rating &amp; reputation</a>
+  <a href="#scheduler">11. Scheduler 14/21 ngày</a>
+  <h2>DevOps / CI (v3)</h2>
+  <a href="#events">12. Event bus contract</a>
+  <a href="#ci">13. CI — GitHub Actions</a>
+  <a href="#deploy">14b. Vercel deploy &amp; migration</a>
+  <h2>API &amp; Tests</h2>
+  <a href="#api">14. API routes</a>
+  <a href="#tests">15. Test — minh chứng</a>
+  <h2>Thuyết trình</h2>
+  <a href="#demo">16. Kịch bản demo</a>
+  <a href="#qa">17. Hỏi nhanh — đáp gọn</a>
+</nav>
+
+<main>
+  <h1>Role #4 — Transactions &amp; DevOps/CI
+    <span class="sub">Tài liệu kèm minh chứng code thật trong repo — dùng để đọc trước khi thuyết trình chương 6. Cập nhật theo phân chia <b>v3</b>.</span>
+  </h1>
+
+  <section id="gioi-thieu">
+    <h2>1. Role #4 là gì?</h2>
+    <p>Từ lúc B bấm "tôi muốn cuốn này" cho tới lúc 2 bên nhận sách, chat, đánh giá, hoặc tranh chấp — toàn bộ luồng đó thuộc Role #4. Gồm 2 mảng:</p>
+    <ul>
+      <li><b>Transactions</b>: quản lý trạng thái giao dịch bằng <b>state machine</b> + side effects + scheduler.</li>
+      <li><b>DevOps / CI</b>: bạn là <b>DevOps lead</b> — giữ contract event-bus <code>events.ts</code>, GitHub Actions CI, Vercel deploy, kỷ luật migration cho cả nhóm.</li>
+    </ul>
+    <div class="quote">"Role #4 vừa là trái tim nghiệp vụ (state machine giao dịch) vừa là trục hạ tầng (event bus + CI/CD) mà 5 role kia dựa vào."</div>
+    <div class="note">
+      <b>Thay đổi v3 so với bản cũ:</b> <b>Messaging</b> (Conversation/Message/SSE) đã chuyển sang <b>#6</b>; <b>Notifications</b> (dispatcher/email) đã chuyển sang <b>#1</b>. Đổi lại, #4 nhận <b>DevOps/CI</b> từ #5 và vẫn <b>giữ <code>events.ts</code></b> — contract mà dispatcher của #1 và mọi module emit phải tuân theo.
+    </div>
+
+    <h3>Sở hữu (theo docs/TASKS.md — v3)</h3>
+    <table>
+      <tr><th>Loại</th><th>Chi tiết</th></tr>
+      <tr><td>Models</td><td><code>Transaction</code>, <code>TransactionEvent</code>, <code>Rating</code>, enum <code>TransactionStatus</code>, <code>DeliveryMethod</code></td></tr>
+      <tr><td>Server</td><td><code>src/server/transactions/{service.ts, state-machine.ts, ratings.ts, scheduler.ts}</code>, <code>src/server/lib/events.ts</code> (contract)</td></tr>
+      <tr><td>DevOps</td><td><code>.github/workflows/ci.yml</code>, Vercel config + env, <code>docs/DEPLOYMENT.md</code>, kỷ luật migration</td></tr>
+      <tr><td>API routes</td><td>10 transaction route + <code>/api/cron/*</code> — xem mục 14</td></tr>
+      <tr><td>Pages</td><td><code>/transactions</code>, <code>/transactions/[id]</code> (nhúng chat của #6)</td></tr>
+    </table>
+  </section>
+
+  <section id="model">
+    <h2>2. Data model — minh chứng trong <code>prisma/schema.prisma</code></h2>
+    <p>Đây là cấu trúc dữ liệu thật trong schema — đọc để biết các field bạn sẽ thao tác trong service.</p>
+    <div class="file-tag">prisma/schema.prisma — model Transaction (dòng 266-300)</div>
+<pre><code>model Transaction {
+  id        String  @id @default(cuid())
+  listingId String
+  listing   Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  // The user requesting the book.
+  requesterId String
+  requester   User   @relation("RequesterTransactions", fields: [requesterId], references: [id], onDelete: Cascade)
+  // The listing owner. Denormalised for query convenience.
+  ownerId     String
+  owner       User   @relation("OwnerTransactions", fields: [ownerId], references: [id], onDelete: Cascade)
+
+  status         TransactionStatus @default(PENDING)
+  type           TransactionType // mirror of listing.transactionType at request time
+  agreedPriceVnd Int? // for SELL only
+  deliveryMethod DeliveryMethod?
+  trackingNumber String?
+
+  acceptedAt  DateTime?
+  shippedAt   DateTime?
+  completedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  events       TransactionEvent[]
+  ratings      Rating[]
+  conversation Conversation?
+  reports      Report[]
+
+  @@index([listingId])
+  @@index([requesterId])
+  @@index([ownerId])
+  @@index([status])
+}</code></pre>
+
+    <div class="file-tag">prisma/schema.prisma — TransactionEvent: audit log mỗi transition (dòng 302-315)</div>
+<pre><code>// Audit log of every status transition. The state machine in
+// `src/server/transactions/state-machine.ts` writes one row per move.
+model TransactionEvent {
+  id            String             @id @default(cuid())
+  transactionId String
+  transaction   Transaction        @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  fromStatus    TransactionStatus?
+  toStatus      TransactionStatus
+  byUserId      String // who triggered it
+  reason        String?
+  createdAt     DateTime           @default(now())
+
+  @@index([transactionId])
+}</code></pre>
+
+    <div class="note"><b>v3:</b> <code>Conversation</code> &amp; <code>Message</code> dưới đây nay do <b>#6 (Messaging)</b> sở hữu. Vẫn để ở đây vì <b>accept của #4 tạo ra <code>Conversation</code></b> (xem mục 6) — đây là điểm liên kết Transactions ↔ Messaging.</div>
+    <div class="file-tag">prisma/schema.prisma — Rating, Conversation, Message (dòng 317-368)</div>
+<pre><code>model Rating {
+  id            String      @id @default(cuid())
+  transactionId String
+  transaction   Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  fromUserId    String
+  fromUser      User        @relation("RatingsGiven", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUserId      String
+  toUser        User        @relation("RatingsReceived", fields: [toUserId], references: [id], onDelete: Cascade)
+  stars         Int // 1-5, validated server-side
+  comment       String?
+  createdAt     DateTime    @default(now())
+
+  @@unique([transactionId, fromUserId]) // one rating per direction per txn
+  @@index([toUserId])
+}
+
+// In-app messaging. A conversation is uniquely defined by the (userA,userB)
+// unordered pair, optionally tied to a transaction (for a transaction-scoped
+// thread). Sorting userA &lt; userB at write time keeps the unique constraint
+// cheap.
+model Conversation {
+  id            String       @id @default(cuid())
+  userAId       String
+  userA         User         @relation("ConversationUserA", fields: [userAId], references: [id], onDelete: Cascade)
+  userBId       String
+  userB         User         @relation("ConversationUserB", fields: [userBId], references: [id], onDelete: Cascade)
+  transactionId String?      @unique
+  transaction   Transaction? @relation(fields: [transactionId], references: [id], onDelete: SetNull)
+  lastMessageAt DateTime?
+  createdAt     DateTime     @default(now())
+
+  messages Message[]
+
+  @@unique([userAId, userBId, transactionId])
+  @@index([userAId])
+  @@index([userBId])
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId       String
+  sender         User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  body           String
+  readAt         DateTime?
+  createdAt      DateTime     @default(now())
+  reports        Report[]
+
+  @@index([conversationId, createdAt])
+}</code></pre>
+    <div class="note">Lưu ý cho phần "atomic": <code>Conversation.transactionId</code> dùng <code>onDelete: SetNull</code> (cross-module soft link), còn các FK chính dùng <code>Cascade</code>.</div>
+  </section>
+
+  <section id="diagram">
+    <h2>3. Sơ đồ trạng thái (vẽ lại từ <code>state-machine.ts</code>)</h2>
+    <div class="diagram" style="background:#fff; padding:10px;">
+      <img src="role4-state-diagram.svg" alt="Sơ đồ chuyển trạng thái Transaction" style="width:100%; height:auto;">
+    </div>
+    <div class="note">
+      Hình SVG ở trên: nét liền = hành động của user (owner/requester), nét đứt cam = chỉ moderator/admin, nét chấm xám = hệ thống tự động (scheduler 21 ngày). Nhánh WAITLISTED ở góc trái thể hiện trường hợp nhiều người cùng request 1 listing — người được accept đi theo nhánh chính, các request PENDING khác tự chuyển WAITLISTED; nếu request được accept bị cancel, người WAITLISTED cũ nhất được đẩy lại PENDING.
+    </div>
+  </section>
+
+  <section id="state-machine-code">
+    <h2>4. Code state machine — <code>src/server/transactions/state-machine.ts</code></h2>
+    <p>File này <b>không import Prisma</b> — đây chính là lý do test được mà không cần DB (alias <code>@prisma/client</code> → <code>tests/__mocks__/prisma-client.ts</code> trong <code>vitest.config.ts</code>).</p>
+
+    <div class="file-tag">state-machine.ts — dòng 1-30 (kiểu dữ liệu)</div>
+<pre><code>// state-machine.ts — pure state machine for a transaction.
+//
+// Intentionally separated from Prisma so it can be tested without a DB.
+// The owning module (`src/server/transactions/service.ts`) loads the row,
+// passes the current status + the requested action here, and persists the
+// result.
+
+import type { TransactionStatus, UserRole } from "@prisma/client";
+
+export type TxnAction =
+  | { kind: "accept";   actor: "owner" }
+  | { kind: "decline";  actor: "owner" }
+  | { kind: "cancel";   actor: "owner" | "requester" }
+  | { kind: "ship";     actor: "owner" }
+  | { kind: "complete"; actor: "requester" | "system" }
+  | { kind: "rate";     actor: "owner" | "requester" }
+  | { kind: "dispute";  actor: "owner" | "requester" }
+  | { kind: "moderate-resolve"; actor: "moderator" }
+  | { kind: "moderate-reject";  actor: "moderator" };
+
+// Outcome of asking "can this action transition this state?".
+export type TxnTransition =
+  | { ok: true;  next: TransactionStatus; sideEffects: SideEffect[] }
+  | { ok: false; reason: string };
+
+export type SideEffect =
+  | { kind: "notify"; userKey: "owner" | "requester"; event: string }
+  | { kind: "listing-status"; status: "RESERVED" | "ACTIVE" | "COMPLETED" }
+  | { kind: "reputation"; userKey: "owner" | "requester"; delta: number; reason: string }
+  | { kind: "schedule-reminder"; days: number };</code></pre>
+
+    <div class="file-tag">state-machine.ts — case "accept" và "cancel"</div>
+<pre><code>case "accept":
+  if (action.actor !== "owner")
+    return deny("Only the listing owner can accept a request");
+  if (current !== T.PENDING)
+    return deny(`Cannot accept a transaction in ${current}`);
+  return ok(T.ACCEPTED, [
+    { kind: "listing-status", status: "RESERVED" },
+    { kind: "notify",         userKey: "requester", event: "accepted" },
+  ]);
+
+case "cancel":
+  if (current !== T.PENDING &amp;&amp; current !== T.ACCEPTED)
+    return deny(`Cannot cancel in ${current}`);
+  return ok(T.CANCELLED, [
+    { kind: "listing-status", status: "ACTIVE" },
+    // small reputation penalty for the cancelling party
+    { kind: "reputation",
+      userKey: action.actor === "owner" ? "owner" : "requester",
+      delta: -3,
+      reason: "transaction_cancelled" },
+    { kind: "notify",
+      userKey: action.actor === "owner" ? "requester" : "owner",
+      event: "cancelled" },
+  ]);</code></pre>
+
+    <div class="file-tag">state-machine.ts — case "ship" / "complete" / "rate" / "dispute"</div>
+<pre><code>case "ship":
+  if (action.actor !== "owner")
+    return deny("Only the owner can mark as shipped");
+  if (current !== T.ACCEPTED)
+    return deny(`Cannot ship in ${current}`);
+  return ok(T.IN_DELIVERY, [
+    { kind: "schedule-reminder", days: 14 },
+    { kind: "notify", userKey: "requester", event: "shipped" },
+  ]);
+
+case "complete":
+  // Requester confirms receipt OR the 21-day system auto-complete fires.
+  if (current !== T.IN_DELIVERY)
+    return deny(`Cannot complete in ${current}`);
+  return ok(T.COMPLETED, [
+    { kind: "listing-status", status: "COMPLETED" },
+    { kind: "reputation", userKey: "owner",     delta: 10, reason: "transaction_completed" },
+    { kind: "reputation", userKey: "requester", delta: 10, reason: "transaction_completed" },
+    { kind: "notify", userKey: "owner",     event: "completed" },
+    { kind: "notify", userKey: "requester", event: "completed" },
+  ]);
+
+case "rate":
+  // Ratings are recorded after Completed; not a status change.
+  if (current !== T.COMPLETED)
+    return deny("Can only rate a completed transaction");
+  return ok(T.COMPLETED, []);   // status unchanged; rating handled separately
+
+case "dispute":
+  if (current !== T.IN_DELIVERY &amp;&amp; current !== T.COMPLETED)
+    return deny(`Cannot dispute in ${current}`);
+  return ok(T.DISPUTED, [
+    { kind: "notify", userKey: "owner",     event: "disputed" },
+    { kind: "notify", userKey: "requester", event: "disputed" },
+  ]);</code></pre>
+
+    <div class="file-tag">state-machine.ts — quyền theo role (cuối file)</div>
+<pre><code>/**
+ * Helper: which roles are allowed to perform a given action? Used by the
+ * route handlers to short-circuit unauthorized requests before hitting the
+ * state machine.
+ */
+export function actorRoleAllowed(action: TxnAction["kind"], role: UserRole): boolean {
+  if (action === "moderate-resolve" || action === "moderate-reject")
+    return role === "MODERATOR" || role === "ADMIN";
+  return role === "USER" || role === "MODERATOR" || role === "ADMIN";
+}</code></pre>
+  </section>
+
+  <section id="actions-table">
+    <h2>5. Bảng action — actor — transition — side effects</h2>
+    <table>
+      <tr><th>Action</th><th>Actor hợp lệ</th><th>Từ trạng thái</th><th>Sang trạng thái</th><th>Side effects</th></tr>
+      <tr><td><span class="action">accept</span></td><td><span class="badge owner">owner</span></td><td>PENDING</td><td>ACCEPTED</td><td>listing→RESERVED, notify requester, tạo Conversation, các PENDING khác → WAITLISTED</td></tr>
+      <tr><td><span class="action">decline</span></td><td><span class="badge owner">owner</span></td><td>PENDING</td><td>DECLINED</td><td>notify requester</td></tr>
+      <tr><td><span class="action">cancel</span></td><td><span class="badge owner">owner</span> / <span class="badge requester">requester</span></td><td>PENDING, ACCEPTED</td><td>CANCELLED</td><td>listing→ACTIVE, reputation −3 cho người huỷ, notify phía còn lại, nếu từ ACCEPTED → promote oldest WAITLISTED</td></tr>
+      <tr><td><span class="action">ship</span></td><td><span class="badge owner">owner</span></td><td>ACCEPTED</td><td>IN_DELIVERY</td><td>schedule-reminder 14 ngày, notify requester</td></tr>
+      <tr><td><span class="action">complete</span></td><td><span class="badge requester">requester</span> / <span class="badge system">system (21d)</span></td><td>IN_DELIVERY</td><td>COMPLETED</td><td>listing→COMPLETED, reputation +10 cả 2 bên, notify cả 2</td></tr>
+      <tr><td><span class="action">rate</span></td><td>owner / requester</td><td>COMPLETED</td><td>COMPLETED (không đổi)</td><td>xử lý riêng ở <code>ratings.ts</code></td></tr>
+      <tr><td><span class="action">dispute</span></td><td>owner / requester</td><td>IN_DELIVERY, COMPLETED</td><td>DISPUTED</td><td>notify cả 2</td></tr>
+      <tr><td><span class="action">moderate-resolve</span></td><td><span class="badge mod">moderator/admin</span></td><td>DISPUTED</td><td>COMPLETED</td><td>listing→COMPLETED, notify "dispute_resolved" cả 2</td></tr>
+      <tr><td><span class="action">moderate-reject</span></td><td><span class="badge mod">moderator/admin</span></td><td>DISPUTED</td><td>CANCELLED</td><td>listing→ACTIVE, notify "dispute_rejected" cả 2</td></tr>
+    </table>
+  </section>
+
+  <section id="atomic">
+    <h2>6. Atomic — Prisma <code>$transaction</code></h2>
+    <p>Mỗi transition phải đổi nhiều bảng cùng lúc (Transaction, TransactionEvent, Listing, Notification, ReputationEvent, Conversation). Nếu một bước lỗi giữa đường, toàn bộ phải rollback — tránh "transaction đã accepted nhưng listing vẫn ACTIVE".</p>
+
+    <div class="file-tag">src/server/transactions/service.ts — applyAction() (cốt lõi)</div>
+<pre><code>export async function applyAction(user: User, txnId: string, action: TxnAction, meta: ActionMeta = {}) {
+  return prisma.$transaction(async (tx) => {
+    const txn = await tx.transaction.findUnique({ where: { id: txnId } });
+    if (!txn) throw new NotFoundError("Transaction not found");
+    assertActor(user, txn, action);
+    const result = transition(txn.status, action);
+    if (!result.ok) throw new BadRequestError(result.reason);
+
+    // optimistic concurrency: only update if status hasn't changed under us
+    const updated = await tx.transaction.updateMany({
+      where: { id: txn.id, status: txn.status },
+      data: {
+        status: result.next,
+        ...(result.next === "ACCEPTED" ? { acceptedAt: new Date() } : {}),
+        ...(result.next === "IN_DELIVERY" ? { shippedAt: new Date(), deliveryMethod: meta.deliveryMethod, trackingNumber: meta.trackingNumber } : {}),
+        ...(result.next === "COMPLETED" ? { completedAt: new Date() } : {}),
+      },
+    });
+    if (updated.count !== 1) throw new ConflictError("Transaction changed while processing; retry the action");
+
+    await tx.transactionEvent.create({ data: { transactionId: txn.id, fromStatus: txn.status, toStatus: result.next, byUserId: user.id, reason: meta.reason } });
+
+    for (const effect of result.sideEffects) await applySideEffect(tx, txn, effect, user.id);
+
+    if (action.kind === "accept") {
+      await waitlistOtherRequests(tx, txn, user.id);
+      await ensureTransactionConversation(tx, txn);
+    }
+    if (action.kind === "cancel" &amp;&amp; txn.status === "ACCEPTED") await promoteOldestWaitlisted(tx, txn.listingId, user.id);
+
+    return { status: result.next };
+  }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+}</code></pre>
+    <div class="note">
+      <b>3 điểm đáng nói khi thuyết trình:</b>
+      <ol>
+        <li><code>transition()</code> là pure function — chỉ <i>quyết định</i>, không ghi DB.</li>
+        <li><code>updateMany({ where: { id, status: txn.status } })</code> — optimistic lock: nếu count ≠ 1 thì status đã đổi do request khác → <code>ConflictError</code> (409). Đây là lý do dùng <code>isolationLevel: Serializable</code>.</li>
+        <li>Mọi side effect, waitlist, conversation đều chạy <b>trong cùng</b> <code>tx</code> (Prisma transaction client) — 1 lỗi là rollback hết.</li>
+      </ol>
+    </div>
+
+    <div class="file-tag">service.ts — requestListing() cũng atomic + chống request trùng</div>
+<pre><code>export async function requestListing(user: User, input: z.infer&lt;typeof RequestSchema&gt;) {
+  const data = RequestSchema.parse(input);
+  return prisma.$transaction(async (tx) => {
+    const listing = await tx.listing.findUnique({ where: { id: data.listingId } });
+    if (!listing) throw new NotFoundError("Listing not found");
+    if (listing.status !== "ACTIVE") throw new BadRequestError(`Listing is ${listing.status}, not available`);
+    if (listing.ownerId === user.id) throw new BadRequestError("You cannot request your own listing");
+
+    const existing = await tx.transaction.findFirst({
+      where: { listingId: listing.id, requesterId: user.id, status: { in: OPEN_REQUEST_STATUSES } },
+      select: { id: true },
+    });
+    if (existing) throw new ConflictError("You already have an open request for this listing");
+
+    const transaction = await tx.transaction.create({
+      data: {
+        listingId: listing.id, ownerId: listing.ownerId, requesterId: user.id,
+        type: listing.transactionType, agreedPriceVnd: listing.askingPriceVnd, status: "PENDING",
+        events: { create: [{ toStatus: "PENDING", byUserId: user.id }] },
+      },
+      include: transactionInclude(),
+    });
+
+    await dispatchNotifications(tx, {
+      kind: "transaction.requested",
+      actorId: user.id,
+      transactionId: transaction.id,
+      listingId: listing.id,
+      title: listing.title,
+      ownerId: listing.ownerId,
+      requesterId: user.id,
+    });
+    return transaction;
+  });
+}</code></pre>
+    <p><code>OPEN_REQUEST_STATUSES = ["PENDING", "WAITLISTED", "ACCEPTED", "IN_DELIVERY", "DISPUTED"]</code> — 1 user không thể có 2 request "đang mở" cho cùng 1 listing.</p>
+  </section>
+
+  <section id="side-effects">
+    <h2>7. Side effects — <code>applySideEffect()</code></h2>
+    <p>Đây là nơi <code>SideEffect</code> được "thi hành" thật trên DB — cầu nối sang module Listing (#2), Reputation (#5), Notification (#6).</p>
+    <div class="file-tag">service.ts — applySideEffect()</div>
+<pre><code>async function applySideEffect(tx: Prisma.TransactionClient, txn: {...}, effect: SideEffect, actorId: string) {
+  switch (effect.kind) {
+    case "listing-status":
+      await tx.listing.update({ where: { id: txn.listingId }, data: { status: effect.status } }); break;
+
+    case "reputation": {
+      const userId = effect.userKey === "owner" ? txn.ownerId : txn.requesterId;
+      await addReputationEvent(tx, {
+        userId,
+        kind: effect.delta > 0 ? "TRANSACTION_COMPLETED" : "CANCELLATION",
+        delta: effect.delta,
+        context: { transactionId: txn.id, reason: effect.reason },
+        actorId,
+      });
+      break;
+    }
+
+    case "notify": {
+      const userId = effect.userKey === "owner" ? txn.ownerId : txn.requesterId;
+      await dispatchNotifications(tx, {
+        kind: "transaction.status_changed",
+        actorId,
+        transactionId: txn.id,
+        recipientIds: [userId],
+        status: effect.event,
+      });
+      break;
+    }
+
+    case "schedule-reminder":
+      await tx.notification.create({ data: { userId: txn.requesterId, kind: "TRANSACTION_STATUS_CHANGED",
+        payload: { transactionId: txn.id, event: "delivery_reminder_scheduled",
+                   dueAt: new Date(Date.now() + effect.days * 86400000).toISOString() } } });
+      break;
+  }
+}</code></pre>
+    <div class="note">
+      <b>Domain events — interface dùng chung (src/server/lib/events.ts)</b>: bạn chỉ gọi <code>addReputationEvent()</code> (module #5) và <code>dispatchNotifications()</code> (module #6), <b>không</b> import <code>service.ts</code> của họ. Đây là quy tắc layering trong <code>docs/ARCHITECTURE.md</code>.
+    </div>
+    <div class="file-tag">src/server/notifications/dispatcher.ts — map event → recipients</div>
+<pre><code>case "transaction.requested":
+  return event.ownerId === event.actorId
+    ? []
+    : [{ userId: event.ownerId, kind: "TRANSACTION_STATUS_CHANGED", payload: event }];
+
+case "transaction.status_changed":
+  return uniqueTargets(event.recipientIds.map((userId) => ({
+    userId,
+    kind: "TRANSACTION_STATUS_CHANGED" as const,
+    payload: event,
+  })), event.actorId);
+
+case "message.created":
+  return event.recipientId === event.actorId
+    ? []
+    : [{ userId: event.recipientId, kind: "NEW_MESSAGE", payload: event }];</code></pre>
+  </section>
+
+  <section id="waitlist">
+    <h2>8. Waitlist nhiều người request 1 listing</h2>
+    <div class="file-tag">service.ts — waitlistOtherRequests() — chạy khi accept</div>
+<pre><code>async function waitlistOtherRequests(tx: Prisma.TransactionClient, txn: { id: string; listingId: string }, byUserId: string) {
+  const others = await tx.transaction.findMany({
+    where: { listingId: txn.listingId, id: { not: txn.id }, status: "PENDING" },
+    select: { id: true },
+  });
+  if (others.length === 0) return;
+  await tx.transaction.updateMany({
+    where: { id: { in: others.map((row) => row.id) }, status: "PENDING" },
+    data: { status: "WAITLISTED" },
+  });
+  await tx.transactionEvent.createMany({
+    data: others.map((row) => ({ transactionId: row.id, fromStatus: "PENDING" as const, toStatus: "WAITLISTED" as const, byUserId, reason: "another_request_accepted" })),
+  });
+}</code></pre>
+    <div class="file-tag">service.ts — promoteOldestWaitlisted() — chạy khi 1 ACCEPTED bị cancel</div>
+<pre><code>async function promoteOldestWaitlisted(tx: Prisma.TransactionClient, listingId: string, byUserId: string) {
+  const next = await tx.transaction.findFirst({ where: { listingId, status: "WAITLISTED" }, orderBy: { createdAt: "asc" } });
+  if (!next) return;
+  await tx.transaction.update({ where: { id: next.id }, data: { status: "PENDING" } });
+  await tx.transactionEvent.create({ data: { transactionId: next.id, fromStatus: "WAITLISTED", toStatus: "PENDING", byUserId, reason: "accepted_request_cancelled" } });
+  await tx.notification.create({ data: { userId: next.requesterId, kind: "TRANSACTION_STATUS_CHANGED", payload: { transactionId: next.id, event: "promoted_from_waitlist" } } });
+}</code></pre>
+    <div class="note">FIFO theo <code>createdAt: "asc"</code> — người request sớm nhất trong WAITLISTED được ưu tiên quay lại PENDING.</div>
+  </section>
+
+  <section id="dispute">
+    <h2>9. Dispute &amp; Moderation</h2>
+    <p>Khi <code>dispute</code> được gọi, transaction → <code>DISPUTED</code>. Sau đó <b>chỉ MODERATOR/ADMIN</b> mới chạy được <code>moderate-resolve</code> / <code>moderate-reject</code> (kiểm tra ở <code>actorRoleAllowed()</code> mục 4 và <code>assertActor()</code> dưới đây).</p>
+    <div class="file-tag">service.ts — assertActor() (kiểm tra quyền actor trước khi transition)</div>
+<pre><code>function assertActor(user: User, txn: { ownerId: string; requesterId: string }, action: TxnAction) {
+  if (action.actor === "owner" &amp;&amp; txn.ownerId !== user.id) throw new ForbiddenError();
+  if (action.actor === "requester" &amp;&amp; txn.requesterId !== user.id) throw new ForbiddenError();
+  if (action.actor === "moderator" &amp;&amp; user.role !== "MODERATOR" &amp;&amp; user.role !== "ADMIN") throw new ForbiddenError();
+  if (action.actor === "system") throw new ForbiddenError();
+}</code></pre>
+    <div class="note">"system" actor (auto-complete sau 21 ngày) <b>không</b> thể gọi qua API — chỉ <code>autoCompleteTransaction()</code> từ scheduler gọi trực tiếp, không qua <code>applyAction</code>/<code>assertActor</code>.</div>
+    <div class="file-tag">state-machine.ts — moderate-resolve / moderate-reject</div>
+<pre><code>case "moderate-resolve":
+  if (current !== T.DISPUTED)
+    return deny("Can only resolve a dispute from DISPUTED");
+  return ok(T.COMPLETED, [
+    { kind: "listing-status", status: "COMPLETED" },
+    { kind: "notify", userKey: "owner",     event: "dispute_resolved" },
+    { kind: "notify", userKey: "requester", event: "dispute_resolved" },
+  ]);
+
+case "moderate-reject":
+  if (current !== T.DISPUTED)
+    return deny("Can only reject a dispute from DISPUTED");
+  return ok(T.CANCELLED, [
+    { kind: "listing-status", status: "ACTIVE" },
+    { kind: "notify", userKey: "owner",     event: "dispute_rejected" },
+    { kind: "notify", userKey: "requester", event: "dispute_rejected" },
+  ]);</code></pre>
+  </section>
+
+  <section id="rating">
+    <h2>10. Rating &amp; Reputation — <code>src/server/transactions/ratings.ts</code></h2>
+    <div class="file-tag">ratings.ts — rateTransaction()</div>
+<pre><code>export const RatingSchema = z.object({ stars: z.number().int().min(1).max(5), comment: z.string().trim().max(1000).optional() });
+
+export async function rateTransaction(user: User, transactionId: string, input: z.infer&lt;typeof RatingSchema&gt;) {
+  const data = RatingSchema.parse(input);
+  const txn = await prisma.transaction.findUnique({ where: { id: transactionId } });
+  if (!txn) throw new NotFoundError("Transaction not found");
+  if (txn.status !== "COMPLETED") throw new BadRequestError("Can only rate a completed transaction");
+  if (user.id !== txn.ownerId &amp;&amp; user.id !== txn.requesterId) throw new ForbiddenError();
+
+  const toUserId = user.id === txn.ownerId ? txn.requesterId : txn.ownerId;
+  const existing = await prisma.rating.findUnique({ where: { transactionId_fromUserId: { transactionId, fromUserId: user.id } } });
+  if (existing) throw new ConflictError("You already rated this transaction");
+
+  const delta = ratingDelta(data.stars);
+  return prisma.$transaction(async (tx) => {
+    const rating = await tx.rating.create({ data: { transactionId, fromUserId: user.id, toUserId, stars: data.stars, comment: data.comment } });
+    await addReputationEvent(tx, {
+      userId: toUserId,
+      kind: "RATING_RECEIVED",
+      delta,
+      context: { transactionId, ratingId: rating.id, stars: data.stars },
+      actorId: user.id,
+    });
+    return rating;
+  });
+}
+
+export function ratingDelta(stars: number): number {
+  return stars >= 1 &amp;&amp; stars &lt;= 5 ? deltaForRating(stars as 1 | 2 | 3 | 4 | 5) : 0;
+}</code></pre>
+    <div class="file-tag">src/server/reputation/scoring.ts — bảng điểm thật (module #5, bạn cần biết để giải thích)</div>
+<pre><code>export const ReputationWeights = {
+  TRANSACTION_COMPLETED:     10,
+  RATING_FIVE_STAR:           5,
+  RATING_FOUR_STAR:           3,
+  RATING_THREE_STAR:          0,
+  RATING_TWO_STAR:           -3,
+  RATING_ONE_STAR:           -5,
+  REPORT_UPHELD:            -15,
+  CANCELLATION:              -3,
+  COMMUNITY_CONTRIBUTION:    +5,
+  TIME_DECAY_PER_30_DAYS:    -1,    // applied by a daily job
+} as const;</code></pre>
+    <table>
+      <tr><th>Số sao</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th></tr>
+      <tr><td>Reputation delta</td><td>-5</td><td>-3</td><td>0</td><td>+3</td><td>+5</td></tr>
+    </table>
+  </section>
+
+  <section id="scheduler">
+    <h2>11. Scheduler — reminder 14 ngày / auto-complete 21 ngày</h2>
+    <div class="file-tag">src/server/transactions/scheduler.ts</div>
+<pre><code>const DAY_MS = 86400000;
+export type ScheduleDecision = "none" | "remind" | "auto-complete";
+
+export function scheduleDecision(shippedAt: Date, now = new Date()): ScheduleDecision {
+  const ageDays = (now.getTime() - shippedAt.getTime()) / DAY_MS;
+  if (ageDays >= 21) return "auto-complete";
+  if (ageDays >= 14) return "remind";
+  return "none";
+}
+
+export async function runTransactionScheduler(now = new Date()) {
+  const rows = await prisma.transaction.findMany({
+    where: { status: "IN_DELIVERY", shippedAt: { not: null } },
+    select: { id: true, requesterId: true, shippedAt: true },
+  });
+  let reminded = 0; let completed = 0;
+  for (const txn of rows) {
+    if (!txn.shippedAt) continue;
+    const decision = scheduleDecision(txn.shippedAt, now);
+    if (decision === "auto-complete") {
+      const out = await autoCompleteTransaction(txn.id);
+      if (!out.skipped) completed += 1;
+    } else if (decision === "remind") {
+      // chống gửi reminder trùng: check đã có notification "delivery_confirmation_reminder" chưa
+      const existing = await prisma.notification.findFirst({ where: { userId: txn.requesterId, kind: "TRANSACTION_STATUS_CHANGED",
+        AND: [{ payload: { path: ["transactionId"], equals: txn.id } }, { payload: { path: ["event"], equals: "delivery_confirmation_reminder" } }] } });
+      if (!existing) {
+        await prisma.notification.create({ data: { userId: txn.requesterId, kind: "TRANSACTION_STATUS_CHANGED",
+          payload: { transactionId: txn.id, event: "delivery_confirmation_reminder" } } });
+        reminded += 1;
+      }
+    }
+  }
+  return { scanned: rows.length, reminded, completed };
+}</code></pre>
+    <div class="file-tag">src/server/transactions/service.ts — autoCompleteTransaction()</div>
+<pre><code>export async function autoCompleteTransaction(txnId: string) {
+  return prisma.$transaction(async (tx) => {
+    const txn = await tx.transaction.findUnique({ where: { id: txnId } });
+    if (!txn) throw new NotFoundError("Transaction not found");
+    const result = transition(txn.status, { kind: "complete", actor: "system" });
+    if (!result.ok) return { status: txn.status, skipped: true };
+    const updated = await tx.transaction.updateMany({ where: { id: txn.id, status: "IN_DELIVERY" }, data: { status: "COMPLETED", completedAt: new Date() } });
+    if (updated.count !== 1) return { status: txn.status, skipped: true };
+    await tx.transactionEvent.create({ data: { transactionId: txn.id, fromStatus: txn.status, toStatus: "COMPLETED", byUserId: txn.requesterId, reason: "system_auto_complete_after_21_days" } });
+    for (const effect of result.sideEffects) await applySideEffect(tx, txn, effect, "system");
+    return { status: "COMPLETED" as const, skipped: false };
+  });
+}</code></pre>
+    <p>Chạy qua cron: <code>/api/cron/transactions</code> (xác thực bằng <code>CRON_SECRET</code> trong <code>.env</code>).</p>
+  </section>
+
+  <section id="events">
+    <h2>12. Event bus contract — <code>src/server/lib/events.ts</code></h2>
+    <p>Sau v3, <b>#4 sở hữu file contract này</b> — định nghĩa kiểu TypeScript cho <b>mọi</b> domain event trong hệ thống. Mọi module <code>emit</code> theo union này; <b>dispatcher của #1</b> đọc trường <code>kind</code> để route event → danh sách người nhận notification.</p>
+    <div class="file-tag">events.ts — DomainEvent union (rút gọn)</div>
+<pre><code>export type DomainEvent =
+  | { kind: "listing.created";            actorId; listingId; title; followerIds; communityMemberIds }
+  | { kind: "transaction.requested";      actorId; transactionId; listingId; ownerId; requesterId }
+  | { kind: "transaction.status_changed"; actorId; transactionId; recipientIds; status }
+  | { kind: "message.created";            actorId; conversationId; messageId; recipientId }
+  | { kind: "community.announcement";     actorId; communityId; recipientIds; title }
+  | { kind: "reputation.tier_changed";    actorId; userId; tier }
+  | { kind: "moderation.action";          actorId; userId; reportId; action }
+  | { kind: "community.post_created";     actorId; communityId; postId; postTitle; recipientIds };</code></pre>
+    <div class="note">
+      <b>Vì sao #4 giữ contract:</b> state machine của bạn là nguồn phát event lớn nhất (<code>transaction.*</code>). Khoá signature từ tuần 2 → 5 role kia code song song mà không sợ lệch type. CI (<code>tsc --noEmit</code>) sẽ fail ngay nếu ai emit sai kiểu — đó là "hàng rào" tự động của bạn.
+    </div>
+  </section>
+
+  <section id="ci">
+    <h2>13. CI — GitHub Actions <code>.github/workflows/ci.yml</code></h2>
+    <p>Là <b>DevOps lead</b>, bạn giữ pipeline chạy trên <b>mỗi PR + mỗi push lên <code>main</code></b>. 5 bước, fail bước nào chặn merge bước đó:</p>
+    <div class="file-tag">.github/workflows/ci.yml — toàn bộ</div>
+<pre><code>name: ci
+on:
+  push: { branches: [main] }
+  pull_request:
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    env:
+      SESSION_SECRET: ci-only-do-not-use-in-prod-aaaaaaaaaaaa
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4   # node 20, cache: npm
+      - run: npm ci
+      - run: npm run db:generate      # prisma generate
+      - run: npm run lint             # tsc --noEmit  (type-check toàn repo)
+      - run: npm test                 # vitest run
+      - run: npm run build            # next build</code></pre>
+    <div class="note">
+      <code>lint = tsc --noEmit</code> nên <b>chỉ cần 1 chỗ lệch type là CI đỏ</b>. Đây là lý do contract <code>events.ts</code> + schema Prisma phải chuẩn. <code>SESSION_SECRET</code> giả chỉ để build qua; secret thật nằm ở Vercel env, không commit.
+    </div>
+  </section>
+
+  <section id="deploy">
+    <h2>14b. Vercel deploy &amp; kỷ luật migration</h2>
+    <p>Deploy production qua Vercel. Script build (trong <code>package.json</code>):</p>
+<pre><code>"vercel-build": "prisma migrate deploy && prisma generate && next build"</code></pre>
+    <p>5 cron khai báo trong <code>vercel.json</code> (đều gọi <code>/api/cron/*</code>, bảo vệ bằng <code>CRON_SECRET</code>):</p>
+    <table>
+      <tr><th>Cron</th><th>Lịch</th><th>Việc</th></tr>
+      <tr><td><code>/api/cron/transactions</code></td><td>01:00</td><td>reminder 14 ngày / auto-complete 21 ngày</td></tr>
+      <tr><td><code>/api/cron/notification-digest</code></td><td>00:00</td><td>email digest hằng ngày (gọi service của #1)</td></tr>
+      <tr><td><code>/api/cron/notification-immediate</code></td><td>03:00</td><td>gửi notification tức thời còn tồn</td></tr>
+      <tr><td><code>/api/cron/reputation</code></td><td>02:00</td><td>time-decay điểm uy tín (#5)</td></tr>
+      <tr><td><code>/api/cron/book-bulletins</code></td><td>00:15</td><td>nhập bản tin sách (#2)</td></tr>
+    </table>
+    <div class="note">
+      <b>Lỗi điển hình khi deploy:</b> <code>P1012 — Environment variable not found: DATABASE_URL</code> nghĩa là Vercel chưa set env var (build chạy <code>prisma migrate deploy</code> cần DB). Là DevOps lead, bạn: (1) set env trên Vercel (<code>DATABASE_URL</code>, <code>SESSION_SECRET</code>≥32, <code>NEXT_PUBLIC_APP_URL</code>, <code>CRON_SECRET</code>); (2) chạy migration lên DB production; (3) <b>cấm <code>prisma db push</code></b> lên branch shared — mọi đổi schema phải qua migration để review được.
+    </div>
+  </section>
+
+  <section id="api">
+    <h2>14. API routes — minh chứng route thật</h2>
+    <div class="file-tag">src/app/api/transactions/route.ts — GET (list) + POST (request)</div>
+<pre><code>const StatusSchema = z.enum(["PENDING", "ACCEPTED", "DECLINED", "WAITLISTED", "IN_DELIVERY", "COMPLETED", "CANCELLED", "DISPUTED"]);
+
+export const GET = withErrorHandling(async (req: NextRequest) => {
+  const user = await requireUser();
+  const raw = new URL(req.url).searchParams.get("status");
+  const parsed = raw ? StatusSchema.safeParse(raw) : null;
+  if (parsed &amp;&amp; !parsed.success) return Response.json({ error: "Invalid status" }, { status: 400 });
+  return Response.json({ items: await listMyTransactions(user.id, parsed?.data) });
+});
+
+export const POST = withErrorHandling(async (req: NextRequest) => {
+  const user = await requireUser();
+  const body = await req.json().catch(() => ({}));
+  const parsed = RequestSchema.safeParse(body);
+  if (!parsed.success) return Response.json({ error: "Validation failed", details: parsed.error.format() }, { status: 400 });
+  return Response.json(await requestListing(user, parsed.data), { status: 201 });
+});</code></pre>
+    <div class="file-tag">src/app/api/transactions/[id]/accept/route.ts — route hành động, rất mỏng</div>
+<pre><code>import { requireUser } from "@/server/lib/auth-context";
+import { withErrorHandling } from "@/server/lib/errors";
+import { applyAction } from "@/server/transactions/service";
+
+export const POST = withErrorHandling(
+  async (_req: Request, ctx: { params: Promise&lt;{ id: string }&gt; }) => {
+    const user = await requireUser();
+    const { id } = await ctx.params;
+    const out = await applyAction(user, id, { kind: "accept", actor: "owner" });
+    return Response.json(out);
+  },
+);</code></pre>
+    <div class="note">Mọi route <code>accept/decline/cancel/ship/complete/dispute/rate</code> đều theo khuôn này: <code>requireUser()</code> → <code>applyAction(user, id, {kind, actor})</code> → trả JSON. Route <b>không chứa business logic</b> — đúng layering rule trong <code>docs/ARCHITECTURE.md</code> ("pages/API chỉ parse/validate, gọi server module").</div>
+    <table>
+      <tr><th>Route</th><th>Method</th><th>Việc làm</th></tr>
+      <tr><td><code>/api/transactions</code></td><td>GET / POST</td><td>list giao dịch của tôi / tạo request mới</td></tr>
+      <tr><td><code>/api/transactions/[id]</code></td><td>GET</td><td>chi tiết 1 transaction</td></tr>
+      <tr><td><code>/api/transactions/[id]/accept</code></td><td>POST</td><td>owner accept</td></tr>
+      <tr><td><code>/api/transactions/[id]/decline</code></td><td>POST</td><td>owner decline</td></tr>
+      <tr><td><code>/api/transactions/[id]/cancel</code></td><td>POST</td><td>owner/requester cancel</td></tr>
+      <tr><td><code>/api/transactions/[id]/ship</code></td><td>POST</td><td>owner mark shipped (cần <code>ShipSchema</code>: deliveryMethod, trackingNumber)</td></tr>
+      <tr><td><code>/api/transactions/[id]/complete</code></td><td>POST</td><td>requester confirm received</td></tr>
+      <tr><td><code>/api/transactions/[id]/dispute</code></td><td>POST</td><td>mở tranh chấp</td></tr>
+      <tr><td><code>/api/transactions/[id]/rate</code></td><td>POST</td><td>đánh giá sau khi COMPLETED</td></tr>
+      <tr><td><code>/api/cron/*</code></td><td>POST</td><td><b>(v3 — DevOps)</b> 5 cron job, bảo vệ bằng <code>CRON_SECRET</code> — xem mục 14b</td></tr>
+    </table>
+    <div class="note">
+      <b>v3:</b> các route <code>/api/conversations/*</code> (list / messages / stream SSE) đã <b>chuyển sang #6 (Messaging)</b>; <code>/api/notifications/*</code> chuyển sang <b>#1</b>. Trang <code>/transactions/[id]</code> của bạn chỉ <i>nhúng</i> component chat của #6.
+    </div>
+  </section>
+
+  <section id="tests">
+    <h2>15. Test — minh chứng có thể chạy live khi demo</h2>
+    <p>Chạy: <code>npx vitest run tests/transactions</code></p>
+
+    <div class="file-tag">tests/transactions/state-machine.test.ts — happy paths</div>
+<pre><code>it("PENDING -> ACCEPTED on owner accept", () => {
+  const r = transition("PENDING", { kind: "accept", actor: "owner" });
+  expect(r.ok).toBe(true);
+  if (!r.ok) return;
+  expect(r.next).toBe("ACCEPTED");
+  expect(r.sideEffects).toContainEqual({ kind: "listing-status", status: "RESERVED" });
+});
+
+it("IN_DELIVERY -> COMPLETED on requester confirm", () => {
+  const r = transition("IN_DELIVERY", { kind: "complete", actor: "requester" });
+  expect(r.ok).toBe(true);
+  if (!r.ok) return;
+  expect(r.next).toBe("COMPLETED");
+  // both parties get +10 reputation
+  const repEffects = r.sideEffects.filter(e => e.kind === "reputation");
+  expect(repEffects).toHaveLength(2);
+  for (const e of repEffects) {
+    if (e.kind === "reputation") expect(e.delta).toBe(10);
+  }
+});
+
+it("either party can cancel from PENDING or ACCEPTED", () => {
+  for (const s of ["PENDING", "ACCEPTED"] as TransactionStatus[]) {
+    for (const a of ["owner", "requester"] as const) {
+      const r = transition(s, { kind: "cancel", actor: a });
+      expect(r.ok).toBe(true);
+      if (!r.ok) continue;
+      expect(r.next).toBe("CANCELLED");
+      const rep = r.sideEffects.find(e => e.kind === "reputation");
+      expect(rep).toBeDefined();
+    }
+  }
+});</code></pre>
+
+    <div class="file-tag">tests/transactions/state-machine.test.ts — illegal transitions bị từ chối</div>
+<pre><code>it("rejects accept by requester", () => {
+  const r = transition("PENDING", { kind: "accept", actor: "requester" as never });
+  expect(r.ok).toBe(false);
+});
+
+it("rejects ship from PENDING", () => {
+  const r = transition("PENDING", { kind: "ship", actor: "owner" });
+  expect(r.ok).toBe(false);
+});
+
+it("rejects complete from ACCEPTED", () => {
+  const r = transition("ACCEPTED", { kind: "complete", actor: "requester" });
+  expect(r.ok).toBe(false);
+});
+
+it("rejects cancel from terminal states", () => {
+  for (const s of ["COMPLETED", "DECLINED", "CANCELLED"] as TransactionStatus[]) {
+    const r = transition(s, { kind: "cancel", actor: "owner" });
+    expect(r.ok).toBe(false);
+  }
+});</code></pre>
+
+    <div class="file-tag">tests/transactions/state-machine.test.ts — moderator</div>
+<pre><code>it("moderator can resolve a DISPUTED txn to COMPLETED", () => {
+  const r = transition("DISPUTED", { kind: "moderate-resolve", actor: "moderator" });
+  expect(r.ok).toBe(true);
+  if (!r.ok) return;
+  expect(r.next).toBe("COMPLETED");
+  expect(r.sideEffects).toContainEqual({ kind: "listing-status", status: "COMPLETED" });
+  expect(r.sideEffects).toContainEqual({ kind: "notify", userKey: "owner", event: "dispute_resolved" });
+  expect(r.sideEffects).toContainEqual({ kind: "notify", userKey: "requester", event: "dispute_resolved" });
+});</code></pre>
+
+    <div class="file-tag">tests/transactions/scheduler.test.ts — toàn bộ file</div>
+<pre><code>describe("transaction scheduler", () => {
+  const now = new Date("2026-06-04T00:00:00Z");
+  it("does nothing before 14 days", () => expect(scheduleDecision(new Date("2026-05-22T00:00:01Z"), now)).toBe("none"));
+  it("reminds from day 14", () => expect(scheduleDecision(new Date("2026-05-21T00:00:00Z"), now)).toBe("remind"));
+  it("auto-completes from day 21", () => expect(scheduleDecision(new Date("2026-05-14T00:00:00Z"), now)).toBe("auto-complete"));
+});
+
+describe("rating reputation delta", () => {
+  it("maps stars to bounded reputation changes", () => {
+    expect([1, 2, 3, 4, 5].map(ratingDelta)).toEqual([-5, -3, 0, 3, 5]);
+  });
+});</code></pre>
+  </section>
+
+  <section id="demo">
+    <h2>16. Kịch bản demo (2 trình duyệt)</h2>
+    <p>Tài khoản demo (password <code>Password1</code>): <code>bob@bookbridge.local</code> (requester), <code>alice@bookbridge.local</code> (owner), <code>mod@bookbridge.local</code> (moderator).</p>
+    <table>
+      <tr><th>#</th><th>Ai làm</th><th>Hành động</th><th>Giải thích khi demo</th></tr>
+      <tr><td>1</td><td>Bob</td><td>Mở listing của Alice → <b>Request this book</b></td><td>Tạo <code>Transaction</code> mới, status <code>PENDING</code> (xem <code>requestListing</code>)</td></tr>
+      <tr><td>2</td><td>Alice</td><td>Vào <code>/transactions</code> → <b>Accept</b></td><td>State machine: <code>PENDING → ACCEPTED</code>. Side effects: listing → RESERVED, Bob nhận notification, conversation được tạo, các request khác (nếu có) → WAITLISTED</td></tr>
+      <tr><td>3</td><td>Alice/Bob</td><td>Vào <code>/messages</code> → gửi tin</td><td><code>sendMessage()</code> POST + SSE đẩy realtime sang phía còn lại</td></tr>
+      <tr><td>4</td><td>Alice</td><td><b>Mark shipped</b></td><td><code>ACCEPTED → IN_DELIVERY</code>, lên lịch reminder 14 ngày</td></tr>
+      <tr><td>5</td><td>Bob</td><td><b>Confirm received</b></td><td><code>IN_DELIVERY → COMPLETED</code>, listing → COMPLETED, +10 reputation cho cả 2</td></tr>
+      <tr><td>6</td><td>Cả 2</td><td><b>Rate</b></td><td>chỉ cho phép khi COMPLETED, 1 lần/chiều, ảnh hưởng reputation theo bảng sao</td></tr>
+    </table>
+
+    <h3>Demo phụ — Dispute</h3>
+    <table>
+      <tr><th>#</th><th>Ai làm</th><th>Hành động</th><th>Giải thích</th></tr>
+      <tr><td>1</td><td>Bob/Alice</td><td>Ở trạng thái IN_DELIVERY → <b>Dispute</b></td><td><code>IN_DELIVERY → DISPUTED</code></td></tr>
+      <tr><td>2</td><td>Moderator</td><td>Login <code>mod@bookbridge.local</code> → <code>/moderation</code></td><td>Vào queue xử lý dispute</td></tr>
+      <tr><td>3</td><td>Moderator</td><td>Chọn <b>RESOLVE</b> hoặc <b>REJECT</b></td><td>resolve → <code>DISPUTED → COMPLETED</code>; reject → <code>DISPUTED → CANCELLED</code></td></tr>
+    </table>
+  </section>
+
+  <section id="qa">
+    <h2>17. Hỏi nhanh — đáp gọn</h2>
+
+    <div class="qa"><b>Q: Tại sao Role #4 khó nhất?</b><br>
+    Vì nó là trung tâm luồng nghiệp vụ — không chỉ CRUD, mà quản lý nhiều trạng thái, nhiều quyền actor khác nhau, và side-effect lan sang 3 module khác (listing, reputation, notification) + messaging.</div>
+
+    <div class="qa"><b>Q: State machine khác gì if/else thường?</b><br>
+    Vẫn là logic điều kiện, nhưng toàn bộ luật chuyển trạng thái được gom vào 1 hàm pure <code>transition()</code> trong 1 file — dễ test exhaustive (mọi cặp trạng thái/action), thay vì rải rác ở 9 API route.</div>
+
+    <div class="qa"><b>Q: Prisma <code>$transaction</code> dùng để làm gì?</b><br>
+    Đảm bảo nhiều thay đổi (transaction status, listing status, notification, waitlist, conversation, reputation) xảy ra như 1 khối — lỗi 1 bước là rollback hết, tránh dữ liệu nửa vời. Dùng thêm <code>updateMany</code> với điều kiện status cũ + <code>Serializable</code> isolation để chống race condition khi 2 request cùng accept.</div>
+
+    <div class="qa"><b>Q: Tại sao SSE chứ không WebSocket?</b><br>
+    Use case chỉ cần server đẩy 1 chiều (tin nhắn/notification mới); client gửi bằng POST thường. SSE chạy trên HTTP, tự reconnect (<code>retry: 3000</code>), đủ đơn giản cho nhu cầu này — xem <code>src/server/messaging/sse.ts</code>.</div>
+
+    <div class="qa"><b>Q: Nhiều người cùng request 1 sách thì sao?</b><br>
+    Tất cả ban đầu <code>PENDING</code>. Owner accept 1 người → người đó <code>ACCEPTED</code>, các <code>PENDING</code> khác tự chuyển <code>WAITLISTED</code> (<code>waitlistOtherRequests</code>). Nếu <code>ACCEPTED</code> bị cancel, người <code>WAITLISTED</code> cũ nhất được promote lại <code>PENDING</code> (<code>promoteOldestWaitlisted</code>, FIFO theo <code>createdAt</code>).</div>
+
+    <div class="qa"><b>Q: Giao dịch bị "treo" (quên xác nhận) thì sao?</b><br>
+    Scheduler (<code>runTransactionScheduler</code>) quét mọi <code>IN_DELIVERY</code>: ≥14 ngày → gửi reminder (chống gửi trùng), ≥21 ngày → tự <code>autoCompleteTransaction</code> (actor "system", bỏ qua <code>assertActor</code> vì gọi trực tiếp không qua <code>applyAction</code>).</div>
+
+    <div class="qa"><b>Q: Conversation được tạo khi nào, ai tạo?</b><br>
+    Tự động trong <code>ensureTransactionConversation()</code>, ngay trong Prisma transaction của <code>accept</code> — không có API tạo conversation thủ công. <code>userAId/userBId</code> được sort để khớp unique constraint.</div>
+  </section>
+
+  <footer>
+    Tài liệu này tổng hợp từ <code>docs/TASKS.md</code>, <code>docs/ARCHITECTURE.md</code>, <code>prisma/schema.prisma</code>, <code>src/server/transactions/*</code>, <code>src/server/messaging/*</code>, <code>src/app/api/transactions/*</code>, <code>src/app/api/conversations/*</code>, và <code>tests/transactions/*</code>. Mọi snippet là code thật trong repo tại thời điểm 2026-06-15 — kiểm tra lại bằng <code>git log</code> nếu code đã thay đổi.
+    <div class="toplink"><a href="#gioi-thieu">↑ về đầu trang</a></div>
+  </footer>
+
+</main>
+</div>
+</body>
+</html>

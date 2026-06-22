@@ -231,6 +231,7 @@ function assertActionCompatible(action: ModerationActionKind, report: {
     throw new BadRequestError("This ticket does not identify a user");
   }
   if (action === "RESTORE" && !report.targetListingId && !report.targetUserId) throw new BadRequestError("Nothing can be restored for this ticket");
+  if (action === "SUSPEND_USER" && report.targetTransactionId && !report.targetUserId) throw new BadRequestError("Use a USER ticket to suspend an account");
   if ((action === "RESOLVE_DISPUTE" || action === "REJECT_DISPUTE") && !report.targetTransactionId) {
     throw new BadRequestError("This ticket does not target a transaction dispute");
   }

@@ -61,8 +61,8 @@ Mọi người **học trong tuần 1** trước khi viết code. Liên kết th
 
 | Hạng | Vai | Độ căng | Lý do |
 |---|---|---|---|
-| 🥇 1 | **#4 Transactions & Notifications** | 🔥🔥🔥🔥🔥 | State machine 8 trạng thái + 12 transitions, scheduler cron 14d/21d, side-effects vào 3 module khác. Kèm **notification dispatcher** subscribe events từ TẤT CẢ module + email digest. Sai 1 transition → cả flow giao dịch hỏng. |
-| 🥈 2 | **#5 Trust, Safety, Admin & Community discussion** | 🔥🔥🔥🔥 | Reputation algorithm (đọc paper academic), anti-gaming math (graph algorithm), moderation queue. Kèm **thảo luận cộng đồng** (comment/reaction) + **kiểm duyệt nhóm** + **admin dashboard + DevOps/CI** cho cả nhóm. Là "điểm nhấn báo cáo". |
+| 🥇 1 | **#4 Transactions & Notifications** | 🔥🔥🔥🔥🔥 | State machine 8 trạng thái + 12 transitions, scheduler cron 14d/21d, side-effects vào 3 module khác. Kèm **notification dispatcher** subscribe events từ TẤT CẢ module + email digest + DevOps/CI. Sai 1 transition → cả flow giao dịch hỏng. |
+| 🥈 2 | **#5 Trust, Safety, Admin & Community discussion** | 🔥🔥🔥🔥 | Reputation algorithm (đọc paper academic), anti-gaming math (graph algorithm), moderation queue. Kèm **thảo luận cộng đồng** (comment/reaction) + **kiểm duyệt nhóm** + **admin dashboard** cho cả nhóm. Là "điểm nhấn báo cáo". |
 | 🥉 3 | **#3 Discovery + Community groups** | 🔥🔥🔥🔥 | PostgreSQL full-text search + GIN index + fan-out strategy (write vs read). Kèm **lõi nhóm cộng đồng** (group + membership + fan-out bài/bulletin vào feed). 4 model, nhiều route. |
 | 4 | **#6 Artifacts + Messaging** | 🔥🔥🔥 | **Artifacts**: game state engine + đồng bộ narration↔audio + UI nhập vai (canvas/panorama/particle) — heavy frontend. **Messaging**: chat realtime qua SSE. Khép kín, ít phụ thuộc DB module khác → debug độc lập. |
 | 5 | **#2 Book Catalog + Community posts** | 🔥🔥🔥 | CRUD + ISBN external API + image upload. Kèm **bài đăng cộng đồng** (post + like + bulletin) dùng lại pipeline ảnh. Phần khó: phối hợp listing-status với #4 + fan-out post cho #3. |

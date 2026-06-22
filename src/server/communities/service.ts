@@ -1,4 +1,4 @@
-import type { User } from "@prisma/client";
+import type { Prisma, User } from "@prisma/client";
 import { z } from "zod";
 import { randomBytes } from "crypto";
 
@@ -52,6 +52,19 @@ function generateInviteCode(): string {
 
 export function canJoinCommunity(currentCount: number): boolean {
   return currentCount < MAX_COMMUNITIES_PER_USER;
+}
+
+async function revertCommunityPoints(
+  tx: Prisma.TransactionClient,
+  communityId: string,
+  entries: Array<{ userId: string; amount: number }>,
+) {
+  for (const { userId, amount } of entries) {
+    await tx.communityMembership.updateMany({
+      where: { userId, communityId, communityPoints: { gte: amount } },
+      data: { communityPoints: { decrement: amount } },
+    });
+  }
 }
 
 function assertCommunityMod(actor: User, community: { ownerId: string; id: string }, membership: { role: string } | null | undefined) {
@@ -448,7 +461,17 @@ export async function deleteCommunityPost(actor: User, communityId: string, post
     const isAuthor = post.authorId === actor.id;
     const isMod = membership?.role === "MODERATOR" || community.ownerId === actor.id || actor.role === "ADMIN";
     if (!isAuthor && !isMod) throw new ForbiddenError("Cannot delete this post");
+
+    const [comments, likes] = await Promise.all([
+      tx.communityPostComment.findMany({ where: { postId }, select: { authorId: true } }),
+      tx.communityPostLike.findMany({ where: { postId }, select: { userId: true } }),
+    ]);
     await tx.communityPost.delete({ where: { id: postId } });
+    await revertCommunityPoints(tx, communityId, [
+      { userId: post.authorId, amount: 5 },
+      ...comments.map((c) => ({ userId: c.authorId, amount: 3 })),
+      ...likes.map((l) => ({ userId: l.userId, amount: 2 })),
+    ]);
     return { deleted: true };
   });
 }
@@ -720,8 +743,22 @@ export async function deleteComment(actor: User, communityId: string, postId: st
     const isAuthor = comment.authorId === actor.id;
     const isMod = membership?.role === "MODERATOR" || community.ownerId === actor.id || actor.role === "ADMIN";
     if (!isAuthor && !isMod) throw new ForbiddenError("Cannot delete this comment");
+
+    // Deleting a top-level comment cascades its replies (see schema: parent onDelete: Cascade) —
+    // commentCount and community points must account for all rows actually removed, not just this one.
+    const replies = await tx.communityPostComment.findMany({
+      where: { parentId: commentId },
+      select: { authorId: true },
+    });
     await tx.communityPostComment.delete({ where: { id: commentId } });
-    await tx.communityPost.update({ where: { id: postId }, data: { commentCount: { decrement: 1 } } });
+    await tx.communityPost.update({
+      where: { id: postId },
+      data: { commentCount: { decrement: 1 + replies.length } },
+    });
+    await revertCommunityPoints(tx, communityId, [
+      { userId: comment.authorId, amount: 3 },
+      ...replies.map((r) => ({ userId: r.authorId, amount: 3 })),
+    ]);
     return { deleted: true };
   });
 }

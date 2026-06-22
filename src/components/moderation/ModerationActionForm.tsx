@@ -38,13 +38,13 @@ export function ModerationActionForm({ reportId, targetType, transactionStatus }
     <form onSubmit={submit} className="mt-3 flex flex-wrap gap-2">
       <select value={action} onChange={(event) => setAction(event.target.value)} className="rounded border px-2 py-1">
         <option value="WARN">Warn user</option>
-        <option value="REMOVE_LISTING">Remove listing</option>
-        <option value="SUSPEND_USER">Suspend user</option>
-        <option value="RESTORE">Restore target</option>
+        {targetType === "LISTING" && <option value="REMOVE_LISTING">Remove listing</option>}
+        {targetType !== "TRANSACTION" && <option value="SUSPEND_USER">Suspend user</option>}
+        {(targetType === "LISTING" || targetType === "USER") && <option value="RESTORE">Restore target</option>}
         {canResolveDispute && (
           <>
-            <option value="RESOLVE_DISPUTE">Resolve dispute</option>
-            <option value="REJECT_DISPUTE">Reject dispute</option>
+            <option value="RESOLVE_DISPUTE">Resolve dispute in favour of requester</option>
+            <option value="REJECT_DISPUTE">Reject dispute, favour owner</option>
           </>
         )}
         <option value="REJECT_REPORT">Close ticket without action</option>

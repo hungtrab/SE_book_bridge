@@ -9,7 +9,7 @@ interface Comment {
   body: string;
   createdAt: string | Date;
   author: { id: string; displayName: string; avatarUrl?: string | null };
-  reactions: Array<{ userId: string; reaction: ReactionName }>;
+  reactions?: Array<{ userId: string; reaction: ReactionName }>;
   replies?: Comment[];
 }
 
@@ -73,10 +73,10 @@ export function CommentSection(props: Props) {
     const before = comments;
     const update = (comment: Comment): Comment => {
       if (comment.id !== commentId) return { ...comment, replies: comment.replies?.map(update) };
-      const existing = comment.reactions.find((row) => row.userId === currentUserId);
+      const existing = (comment.reactions ?? []).find((row) => row.userId === currentUserId);
       const reactions = existing?.reaction === reaction
-        ? comment.reactions.filter((row) => row.userId !== currentUserId)
-        : [...comment.reactions.filter((row) => row.userId !== currentUserId), { userId: currentUserId, reaction }];
+        ? (comment.reactions ?? []).filter((row) => row.userId !== currentUserId)
+        : [...(comment.reactions ?? []).filter((row) => row.userId !== currentUserId), { userId: currentUserId, reaction }];
       return { ...comment, reactions };
     };
     setComments((rows) => rows.map(update));
@@ -131,7 +131,7 @@ function CommentBubble({ comment, currentUserId, canDelete, canReact, onReply, o
   onDelete: (id: string) => void;
   onReact: (id: string, reaction: ReactionName) => void;
 }) {
-  const mine = comment.reactions.find((reaction) => reaction.userId === currentUserId)?.reaction;
+  const mine = (comment.reactions ?? []).find((reaction) => reaction.userId === currentUserId)?.reaction;
   return (
     <div className="my-2 flex items-start gap-2">
       <span className="community-avatar community-avatar-sm">{comment.author.displayName.charAt(0).toUpperCase()}</span>
@@ -139,7 +139,7 @@ function CommentBubble({ comment, currentUserId, canDelete, canReact, onReply, o
         <div className="relative rounded-2xl bg-gray-100 px-3 py-2">
           <p className="text-sm font-bold">{comment.author.displayName}</p>
           <p className="whitespace-pre-wrap text-sm">{comment.body}</p>
-          {comment.reactions.length > 0 && <span className="absolute -bottom-3 right-2 rounded-full bg-white px-1.5 py-0.5 text-xs shadow">{comment.reactions.slice(0, 3).map((reaction) => REACTIONS.find((item) => item.type === reaction.reaction)?.emoji).join("")} {comment.reactions.length}</span>}
+          {(comment.reactions ?? []).length > 0 && <span className="absolute -bottom-3 right-2 rounded-full bg-white px-1.5 py-0.5 text-xs shadow">{(comment.reactions ?? []).slice(0, 3).map((reaction) => REACTIONS.find((item) => item.type === reaction.reaction)?.emoji).join("")} {(comment.reactions ?? []).length}</span>}
         </div>
         <div className="relative mt-1 flex gap-3 px-2 text-xs font-semibold text-gray-500">
           <span className="reaction-hover-zone inline-block">

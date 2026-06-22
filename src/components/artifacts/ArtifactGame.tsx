@@ -43,11 +43,13 @@ export function ArtifactGame({
   initialNodeId,
   accentColor = "#c9a84c",
   audio,
+  listingSearchTitle,
 }: {
   storyNodes: Record<string, StoryNode>;
   initialNodeId: string;
   accentColor?: string;
   audio?: ArtifactAudio;
+  listingSearchTitle?: string;
 }) {
   const initialState: GameState = {
     currentNodeId: initialNodeId,
@@ -202,6 +204,7 @@ export function ArtifactGame({
                 maxHealth={MAX_HEALTH}
                 onRestart={handleRestart}
                 victoryEffect={node.victoryEffect}
+                listingSearchTitle={listingSearchTitle}
               />
             </div>
           </motion.div>

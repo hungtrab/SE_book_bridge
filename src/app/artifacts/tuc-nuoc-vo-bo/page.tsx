@@ -12,7 +12,13 @@ export default async function TucNuocVoBoPage() {
   const { STORY_NODES, INITIAL_NODE_ID } = require("@/lib/artifacts/tat-den-story");
   const { TAT_DEN_AUDIO } = require("@/lib/artifacts/tat-den-audio");
   return <div>
-    <ArtifactGame storyNodes={STORY_NODES} initialNodeId={INITIAL_NODE_ID} accentColor="#8B4513" audio={TAT_DEN_AUDIO} />
+    <ArtifactGame
+      storyNodes={STORY_NODES}
+      initialNodeId={INITIAL_NODE_ID}
+      accentColor="#8B4513"
+      audio={TAT_DEN_AUDIO}
+      listingSearchTitle="Tắt Đèn"
+    />
     <ArtifactDiscussion slug="tuc-nuoc-vo-bo" currentUserId={user?.id} canModerate={user?.role === "ADMIN" || user?.role === "MODERATOR"} />
   </div>;
 }

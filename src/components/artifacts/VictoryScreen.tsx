@@ -10,13 +10,19 @@ export function VictoryScreen({
   maxHealth,
   onRestart,
   victoryEffect,
+  listingSearchTitle,
 }: {
   narration: string;
   health: number;
   maxHealth: number;
   onRestart: () => void;
   victoryEffect?: VictoryEffect;
+  listingSearchTitle?: string;
 }) {
+  const listingHref = listingSearchTitle
+    ? `/listings?${new URLSearchParams({ q: listingSearchTitle }).toString()}`
+    : null;
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -89,6 +95,15 @@ export function VictoryScreen({
         >
           📚 More Artifacts
         </Link>
+        {listingHref && (
+          <Link
+            href={listingHref}
+            className="rounded-xl border px-6 py-3 font-mono text-sm font-bold tracking-wider uppercase transition-colors"
+            style={{ borderColor: "rgba(201,168,76,0.4)", color: "var(--game-accent)" }}
+          >
+            See this book on listing
+          </Link>
+        )}
       </motion.div>
     </motion.div>
   );

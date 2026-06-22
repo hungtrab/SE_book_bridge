@@ -12,7 +12,13 @@ export default async function TheAlchemistPage() {
   const { STORY_NODES, INITIAL_NODE_ID } = require("@/lib/artifacts/alchemist-story");
   const { ALCHEMIST_AUDIO } = require("@/lib/artifacts/alchemist-audio");
   return <div>
-    <ArtifactGame storyNodes={STORY_NODES} initialNodeId={INITIAL_NODE_ID} accentColor="#c9a84c" audio={ALCHEMIST_AUDIO} />
+    <ArtifactGame
+      storyNodes={STORY_NODES}
+      initialNodeId={INITIAL_NODE_ID}
+      accentColor="#c9a84c"
+      audio={ALCHEMIST_AUDIO}
+      listingSearchTitle="The Alchemist"
+    />
     <ArtifactDiscussion slug="the-alchemist" currentUserId={user?.id} canModerate={user?.role === "ADMIN" || user?.role === "MODERATOR"} />
   </div>;
 }

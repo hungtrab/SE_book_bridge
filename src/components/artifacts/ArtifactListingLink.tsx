@@ -15,6 +15,10 @@ export async function ArtifactListingLink({
 }) {
   const matches = await findListingsForBook(title);
   const searchHref = `/listings?${new URLSearchParams({ q: title }).toString()}`;
+  // The button goes straight to the best-matching listing when one exists
+  // (plain /search uses exact matching and would miss near-typos like
+  // "The AIchemist"); otherwise it falls back to a marketplace search.
+  const primaryHref = matches.length > 0 ? `/listings/${matches[0].id}` : searchHref;
 
   return (
     <section
@@ -32,7 +36,7 @@ export async function ArtifactListingLink({
           </p>
         </div>
         <Link
-          href={searchHref}
+          href={primaryHref}
           className="rounded-xl px-5 py-3 text-sm font-bold text-white shadow-sm transition-transform hover:-translate-y-0.5"
           style={{ background: accentColor }}
         >

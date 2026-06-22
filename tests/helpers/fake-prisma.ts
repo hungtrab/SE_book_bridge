@@ -186,6 +186,7 @@ export interface FakePrismaSeed {
   communityPostLikes?: Row[];
   communityCommentReactions?: Row[];
   reputationEvents?: Row[];
+  notifications?: Row[];
 }
 
 export function createFakePrisma(seed: FakePrismaSeed = {}) {
@@ -202,6 +203,7 @@ export function createFakePrisma(seed: FakePrismaSeed = {}) {
   const communityPostLike = makeTable("communityPostLike", seed.communityPostLikes ?? []);
   const communityCommentReaction = makeTable("communityCommentReaction", seed.communityCommentReactions ?? []);
   const reputationEvent = makeTable("reputationEvent", seed.reputationEvents ?? []);
+  const notification = makeTable("notification", seed.notifications ?? []);
   const conversations: Row[] = seed.conversations ?? [];
 
   // Schema has `parent` (CommunityPostComment self-relation) as `onDelete: Cascade` —
@@ -258,10 +260,26 @@ export function createFakePrisma(seed: FakePrismaSeed = {}) {
     return originalReportFindFirst(args);
   };
 
+  // `report.findMany` with a `targetListing: { communityId: { in: [...] } }` filter is how
+  // queue.ts's `listModerationQueue` scopes a community moderator's queue — same join, list form.
+  const originalReportFindMany = report.findMany.bind(report);
+  (report as any).findMany = async (args: { where?: Row; orderBy?: Row; take?: number } = {}) => {
+    const { where } = args;
+    if (where?.targetListing?.communityId?.in) {
+      const allowedCommunityIds: string[] = where.targetListing.communityId.in;
+      const allowedListingIds = new Set(listing.rows.filter((l) => allowedCommunityIds.includes(l.communityId)).map((l) => l.id));
+      const { targetListing, ...rest } = where;
+      void targetListing;
+      return originalReportFindMany({ ...args, where: rest }).then((rows: Row[]) =>
+        rows.filter((r) => allowedListingIds.has(r.targetListingId)));
+    }
+    return originalReportFindMany(args);
+  };
+
   const client: Row = {
     user, report, moderationAction, listing, transaction, message, community,
     communityMembership, communityPost, communityPostComment, communityPostLike,
-    communityCommentReaction, reputationEvent, conversations,
+    communityCommentReaction, reputationEvent, notification, conversations,
     async $transaction(arg: any) {
       if (typeof arg === "function") return arg(client);
       return Promise.all(arg);

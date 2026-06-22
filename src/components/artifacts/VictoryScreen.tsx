@@ -80,6 +80,17 @@ export function VictoryScreen({
         animate={{ opacity: 1 }}
         transition={{ delay: 2.2 }}
       >
+        {listingSearchHref && (
+          <Link
+            href={listingSearchHref}
+            aria-label={`See ${listingSearchTitle} on listing`}
+            title={`Search listings for ${listingSearchTitle}`}
+            className="rounded-xl px-6 py-3 font-mono text-sm font-bold tracking-wider text-black uppercase shadow-lg transition-transform hover:-translate-y-0.5"
+            style={{ background: "var(--game-accent)" }}
+          >
+            See this book on listing
+          </Link>
+        )}
         <button
           type="button"
           onClick={onRestart}
@@ -95,17 +106,6 @@ export function VictoryScreen({
         >
           📚 More Artifacts
         </Link>
-        {listingSearchHref && (
-          <Link
-            href={listingSearchHref}
-            aria-label={`See ${listingSearchTitle} on listing`}
-            title={`Search listings for ${listingSearchTitle}`}
-            className="rounded-xl border px-6 py-3 font-mono text-sm font-bold tracking-wider uppercase transition-colors"
-            style={{ borderColor: "rgba(201,168,76,0.4)", color: "var(--game-accent)" }}
-          >
-            See this book on listing
-          </Link>
-        )}
       </motion.div>
     </motion.div>
   );

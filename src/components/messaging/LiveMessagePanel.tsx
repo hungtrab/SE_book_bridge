@@ -9,8 +9,9 @@ type Conversation = {
   userBId: string;
   userA: { id: string; displayName: string; avatarUrl: string | null };
   userB: { id: string; displayName: string; avatarUrl: string | null };
+  lastMessageAt: string | null;
   transaction: { listing: { title: string } } | null;
-  messages: Array<{ body: string }>;
+  messages: Array<{ body: string; createdAt?: string }>;
   _count?: { messages: number };
 };
 
@@ -27,6 +28,19 @@ type LiveMessagePanelProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 };
+
+function moveConversationToTop(conversations: Conversation[], conversationId: string, message: Message) {
+  const index = conversations.findIndex((conversation) => conversation.id === conversationId);
+  if (index === -1) return conversations;
+
+  const conversation = conversations[index];
+  const updated: Conversation = {
+    ...conversation,
+    lastMessageAt: message.createdAt,
+    messages: [{ body: message.body, createdAt: message.createdAt }],
+  };
+  return [updated, ...conversations.slice(0, index), ...conversations.slice(index + 1)];
+}
 
 export function LiveMessagePanel({ currentUserId, initialUnread, open, onOpenChange }: LiveMessagePanelProps) {
   const [items, setItems] = useState<Conversation[]>([]);
@@ -59,7 +73,7 @@ export function LiveMessagePanel({ currentUserId, initialUnread, open, onOpenCha
   useEffect(() => {
     const timer = window.setInterval(() => {
       void refreshConversations(false);
-    }, 15000);
+    }, 3000);
     return () => window.clearInterval(timer);
   }, [refreshConversations]);
 
@@ -78,6 +92,8 @@ export function LiveMessagePanel({ currentUserId, initialUnread, open, onOpenCha
     source.addEventListener("message", (event) => {
       const message = JSON.parse((event as MessageEvent).data) as Message;
       setMessages((current) => current.some((item) => item.id === message.id) ? current : [...current, message]);
+      setItems((current) => moveConversationToTop(current, active.id, message));
+      setActive((current) => current ? moveConversationToTop([current], current.id, message)[0] : current);
     });
     source.addEventListener("error", () => setError("Live message updates are temporarily unavailable."));
     return () => source.close();
@@ -94,6 +110,8 @@ export function LiveMessagePanel({ currentUserId, initialUnread, open, onOpenCha
     const out = await res.json().catch(() => ({}));
     if (res.ok) {
       setMessages((current) => current.some((item) => item.id === out.id) ? current : [...current, out]);
+      setItems((current) => moveConversationToTop(current, active.id, out));
+      setActive((current) => current ? moveConversationToTop([current], current.id, out)[0] : current);
       setBody("");
       setError("");
     } else {

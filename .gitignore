@@ -12,3 +12,5 @@ dist/
 .idea/
 coverage/
 tsconfig.tsbuildinfo
+Parallel_project/
+parallel_project/

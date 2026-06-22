@@ -22,7 +22,7 @@ export async function listConversations(userId: string) {
         },
       },
     },
-    orderBy: [{ lastMessageAt: "desc" }, { createdAt: "desc" }],
+    orderBy: [{ lastMessageAt: { sort: "desc", nulls: "last" } }, { createdAt: "desc" }],
   });
 }
 

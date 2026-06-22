@@ -16,10 +16,10 @@
 
 | # | Người | Cụm module | Prisma owns | API routes | Pages | Cặp review chéo |
 |---|---|---|---|---|---|---|
-| **1** | TBD | **Identity & Profile** (+ community access) | `User`, `Session` | `/api/auth/*`, `/api/users/*`, `/api/communities/[id]/invite-code`, `/api/communities/join-by-code` | `/(auth)/*`, `/profile/*` | review code của #6 |
+| **1** | TBD | **Identity & Profile** (+ community access, + notifications) | `User`, `Session`, `Notification` | `/api/auth/*`, `/api/users/*`, `/api/notifications/*`, `/api/communities/[id]/invite-code`, `/api/communities/join-by-code` | `/(auth)/*`, `/profile/*`, `/notifications` | review code của #6 |
 | **2** | TBD | **Book Catalog + Community posts** | `Listing`, `ListingPhoto`, `CommunityPost`, `CommunityPostLike` | `/api/listings/*`, `/api/isbn/lookup`, `/api/communities/[id]/posts/*`, `/api/communities/posts/images` | `/listings/*` | review code của #1 |
 | **3** | TBD | **Discovery + Community groups** | `Follow`, `FeedItem`, `Community`, `CommunityMembership` | `/api/search`, `/api/feed`, `/api/follow`, `/api/communities` (list/create/[id]/join/leave) | `/`, `/search`, `/explore`, `/communities/*` | review code của #2 |
-| **4** | TBD | **Transactions & Notifications** | `Transaction`, `TransactionEvent`, `Rating`, `Notification` | `/api/transactions/*`, `/api/notifications/*` | `/transactions/*`, `/notifications` | review code của #3 |
+| **4** | TBD | **Transactions & DevOps/CI** | `Transaction`, `TransactionEvent`, `Rating` | `/api/transactions/*`, `/api/cron/*` | `/transactions/*` | review code của #3 |
 | **5** | TBD | **Trust, Safety, Admin + Community discussion** | `ReputationEvent`, `Report`, `ModerationAction`, `CommunityPostComment`, `CommunityCommentReaction` | `/api/reputation/*`, `/api/reports/*`, `/api/moderation/*`, `/api/communities/[id]/posts/[postId]/comments/*`, `/api/communities/[id]/{moderators,members}`, `/api/admin/*` | `/profile/[id]` (rep widget), `/moderation`, `/admin` | review code của #4 |
 | **6** | TBD | **Artifacts & Messaging** | `ArtifactComment`, `ArtifactCommentLike`, `Conversation`, `Message` | `/api/artifacts/*`, `/api/conversations/*`, `/api/messages/*` | `/artifacts/*`, `/messages/*` | review code của #5 |
 
@@ -30,9 +30,15 @@
 > - **Posts & likes & bulletins** (`CommunityPost`, `CommunityPostLike`) → **#2** (dùng lại pipeline ảnh + `Post.listingId → Listing`).
 > - **Discussion** (`CommunityPostComment`, `CommunityCommentReaction`) → **#5** (đây là nội dung bị kiểm duyệt nhiều nhất, cạnh moderation).
 > - **Access** (invite-code, nhóm riêng tư, join-by-code) → **#1** (gating, cạnh auth — phần việc, không phải model riêng).
-> - **Community moderation + admin + ops** → **#5**;  **notifications** → **#4**.
+> - **Community moderation + admin** → **#5**.
 >
-> #6 đổi sang sở hữu **Artifacts** (văn học tương tác) **+ Messaging** (chat, chuyển từ #4) để cân khối lượng. Model/người sau khi chia: **#1=2, #2=4, #3=4, #4=4, #5=5, #6=4** (#1 ít model nhưng gánh phần nền tảng auth + access; community không có model nào hợp ngữ nghĩa với Identity).
+> #6 đổi sang sở hữu **Artifacts** (văn học tương tác) **+ Messaging** (chat, chuyển từ #4) để cân khối lượng.
+
+> **Lưu ý tái phân bổ (v3):** hai điều chỉnh tiếp:
+> - **Notifications** (`Notification`, dispatcher, email, SSE, cron digest) chuyển **#4 → #1**. Lý do: thông báo gửi *đến user*, gắn chặt với identity + email preference; #1 trước đó nhẹ model nhất nên cân bằng. `events.ts` (event-bus contract) vẫn do **#4** giữ — dispatcher của #1 implement theo contract đó.
+> - **DevOps / CI / deploy / migration discipline** chuyển **#5 → #4**. Lý do: #4 là trục tích hợp (sở hữu `events.ts` + side-effects xuyên module) → hợp làm infra/DevOps lead; #5 dồn sức vào trust + admin.
+>
+> Model/người sau v3: **#1=3, #2=4, #3=4, #4=3, #5=5, #6=4**. DevOps lead = **#4**; notifications = **#1**.
 
 ---
 
@@ -43,8 +49,8 @@
 **Mục tiêu**: Quản lý đăng ký / đăng nhập / profile. Mọi module khác phụ thuộc vào `getCurrentUser()` của bạn.
 
 **Sở hữu**:
-- Models: `User`, `Session`, enum `UserRole`, `AccountStatus`.
-- Server: `src/server/auth/`, `src/server/users/`, `src/server/lib/auth-context.ts`.
+- Models: `User`, `Session`, `Notification`, enums `UserRole`, `AccountStatus`, `NotificationKind`, `NotificationEmailPreference`.
+- Server: `src/server/auth/`, `src/server/users/`, `src/server/notifications/{service.ts, dispatcher.ts, email.ts, sse.ts}`, `src/server/lib/auth-context.ts`.
 - API routes:
   - `POST /api/auth/register`
   - `POST /api/auth/login`
@@ -63,6 +69,13 @@
 - `inviteCode` / `isPrivate` của `Community`: sinh & xoay mã mời, kiểm soát quyền vào nhóm riêng tư.
 - API: `POST /api/communities/[id]/invite-code` (regenerate), `POST /api/communities/join-by-code`.
 - Cung cấp helper `assertCanAccessCommunity(user, community)` cho #3 dùng khi render nhóm private. Tái dùng chính `requireUser()` của bạn.
+
+**Thêm (v3 — từ #4) — notifications**:
+- `notifications/dispatcher.ts` subscribe events từ **TẤT CẢ** module (theo contract `events.ts` do #4 giữ) và map `event.kind → recipients[]`. Đây là chỗ duy nhất đọc (READ-only) DB của các role khác.
+- API: `GET /api/notifications`, `POST /api/notifications/[id]/read`, `GET /api/notifications/preferences`, `GET /api/notifications/stream` (SSE). Page `/notifications`.
+- Email digest (immediate/daily) chạy qua cron của #4 (`/api/cron/notification-*`) gọi service của bạn.
+- Lý do giao cho #1: thông báo gắn chặt với *user* + email preference (identity); SSE helper dùng chung lấy từ `src/server/lib/`.
+- Tests: dispatcher fan-out (`event.kind → recipients[]`).
 
 **Cung cấp interface (cho người khác dùng)**:
 ```ts
@@ -130,15 +143,15 @@ export async function requireRole(role: UserRole): Promise<User>
 
 ---
 
-### 👤 Người 4 — Transactions & Notifications
+### 👤 Người 4 — Transactions & DevOps/CI
 
-**Mục tiêu**: Logic phức tạp nhất của hệ thống. Đây là điểm khác biệt với "marketplace bình thường" — nên đầu tư test kỹ. Kèm hệ thống **thông báo realtime** (nhận từ #6 cũ) — phần lớn notification phát sinh từ chính các transition giao dịch của bạn.
+**Mục tiêu**: Logic phức tạp nhất của hệ thống. Đây là điểm khác biệt với "marketplace bình thường" — nên đầu tư test kỹ. Kèm vai **DevOps lead** (CI/CD, deploy, kỷ luật migration) cho cả nhóm + giữ contract event-bus `events.ts`.
 
 **Sở hữu**:
-- Models: `Transaction`, `TransactionEvent`, `Rating`, `Notification`, enums `TransactionStatus`, `DeliveryMethod`, `NotificationKind`, `NotificationEmailPreference`.
+- Models: `Transaction`, `TransactionEvent`, `Rating`, enums `TransactionStatus`, `DeliveryMethod`.
 - Server:
   - `src/server/transactions/{service.ts, state-machine.ts, ratings.ts, scheduler.ts}`
-  - `src/server/notifications/{service.ts, dispatcher.ts, email.ts, sse.ts}`
+  - `src/server/lib/events.ts` — ⭐ contract event-bus (types); bạn lock signature tuần 2
 - API routes:
   - `POST   /api/transactions`                       — request a book
   - `GET    /api/transactions`                       — my transactions
@@ -150,29 +163,28 @@ export async function requireRole(role: UserRole): Promise<User>
   - `POST   /api/transactions/[id]/complete`
   - `POST   /api/transactions/[id]/dispute`
   - `POST   /api/transactions/[id]/rate`
-  - `GET    /api/notifications`                     — my notifications
-  - `POST   /api/notifications/[id]/read`
-  - `GET    /api/notifications/preferences` · `GET /api/notifications/stream` (SSE)
-  - `POST   /api/cron/notification-immediate` · `notification-digest`
-- Pages: `/transactions` (dashboard by status), `/transactions/[id]` (detail + nhúng chat của #6), `/notifications`.
-- Tests: state machine — exhaustive (every transition + every illegal transition rejected), 14-day reminder + 21-day auto-complete scheduler, multiple-requester waitlist, **dispatcher fan-out** (event.kind → recipients[]).
+  - `POST   /api/cron/*`                            — cron endpoints (transactions, reputation, notification-*, bulletins) — bảo vệ bằng `CRON_SECRET`
+- Pages: `/transactions` (dashboard by status), `/transactions/[id]` (detail + nhúng chat của #6).
+- Tests: state machine — exhaustive (every transition + every illegal transition rejected), 14-day reminder + 21-day auto-complete scheduler, multiple-requester waitlist, CI workflow xanh.
 
 **Phần khó**: state machine `transactions/state-machine.ts` (xem template `tests/transactions/state-machine.test.ts` đã có sẵn). Phải kích sự kiện cho:
 - Rep engine của #5 khi `COMPLETED` / `CANCELLED`
 - Listing status của #2 khi `ACCEPTED` / `CANCELLED` / `COMPLETED`
-- Notification dispatcher (của chính bạn) khi mọi transition
+- Notification dispatcher của **#1** khi mọi transition
 
-Dùng pattern **domain events** (`emit("txn.completed", { ... })`); các module khác subscribe — không gọi Prisma của họ trực tiếp.
+Dùng pattern **domain events** (`emit("txn.completed", { ... })`); các module khác subscribe — không gọi Prisma của họ trực tiếp. Bạn **sở hữu `events.ts`** nên định nghĩa & khoá kiểu cho mọi event.
 
-**Thêm (từ Community cũ) — notification dispatcher**:
-- `notifications/dispatcher.ts` subscribe events từ **TẤT CẢ** module và map `event.kind → recipients[]`. Đây là chỗ duy nhất đọc (READ-only) database của các role khác.
-- Lý do giao cho #4: nguồn phát thông báo lớn nhất chính là các transition giao dịch của bạn (`txn.*`) → dispatcher ở cạnh nơi sinh event. Hạ tầng SSE dùng chung tách ra `src/server/lib/` để cả notification (#4) và chat (#6) cùng xài.
+**Thêm (v3 — từ #5) — DevOps / CI / Ops**:
+- `.github/workflows/ci.yml`: lint + test + build trên mỗi PR; Vercel project config + production deploy; `vercel-build` + biến môi trường.
+- Kỷ luật migration: ai sửa schema phải tạo migration; cấm `prisma db push` lên branch shared; bạn review mọi migration.
+- Giữ `src/server/lib/events.ts` (contract) + hạ tầng SSE dùng chung trong `src/server/lib/` cho notification (#1) và chat (#6).
+- Lý do giao cho #4: bạn là trục tích hợp (events + side-effects xuyên module) → hợp làm infra/DevOps lead.
 
 ---
 
 ### 👤 Người 5 — Trust, Safety, Admin & Community discussion
 
-**Mục tiêu**: Reputation engine + reporting + moderation. Đây là phần đặc thù phi-thương-mại của BookBridge — điểm nhấn của báo cáo. Kèm **thảo luận cộng đồng (comment + reaction) + kiểm duyệt cộng đồng + admin/ops** (nhận từ #6 cũ) vì tái dùng đúng RBAC & moderation patterns — comment là nội dung bị kiểm duyệt nhiều nhất.
+**Mục tiêu**: Reputation engine + reporting + moderation. Đây là phần đặc thù phi-thương-mại của BookBridge — điểm nhấn của báo cáo. Kèm **thảo luận cộng đồng (comment + reaction) + kiểm duyệt cộng đồng + admin dashboard** (nhận từ #6 cũ) vì tái dùng đúng RBAC & moderation patterns — comment là nội dung bị kiểm duyệt nhiều nhất. *(DevOps/CI đã chuyển sang #4 ở v3.)*
 
 **Sở hữu**:
 - Models: `ReputationEvent`, `Report`, `ModerationAction`, `CommunityPostComment`, `CommunityCommentReaction`, enums `ReputationKind`, `ReportTargetType`, `ReportStatus`, `ModerationActionKind` (enum `ReactionType` dùng chung, do #2 khai báo).
@@ -190,12 +202,12 @@ Dùng pattern **domain events** (`emit("txn.completed", { ... })`); các module 
 
 **Subscribe** vào `txn.completed` / `txn.cancelled` / `rating.created` từ #4 để cộng điểm.
 
-**Thêm (từ Community cũ) — thảo luận + kiểm duyệt nhóm + admin/ops**:
+**Thêm (từ Community cũ) — thảo luận + kiểm duyệt nhóm + admin**:
 - Thảo luận: `CommunityPostComment` (comment lồng nhau qua `parentId`) + `CommunityCommentReaction` (7 emoji). API `GET/POST /api/communities/[id]/posts/[postId]/comments`, `.../[commentId]` (xoá), `.../[commentId]/reactions`. Comment đính vào `CommunityPost` của #2 (chỉ đọc `postId`, soft link).
 - Kiểm duyệt cộng đồng: cấp/thu quyền moderator nhóm, gỡ thành viên, pin/xoá bài, xoá nhóm — tái dùng `ModerationAction` + `requireRole()`. API `/api/communities/[id]/{moderators,members}` (ghi qua service của #3 hoặc qua event).
 - Admin: `GET /api/admin/stats` (admin-only), `GET /api/admin/grant-report` (CSV cho nhà tài trợ).
-- **Ops/DevOps**: `.github/workflows/ci.yml` + Vercel deploy; kỷ luật migration (ai sửa schema phải tạo migration; cấm `prisma db push` lên branch shared).
 - Lý do giao cho #5: kiểm duyệt nhóm = đúng nghiệp vụ moderation; admin/stats chỉ đọc số liệu tổng hợp, gần với dashboard `/moderation` sẵn có.
+- *(DevOps/CI: đã chuyển sang #4 ở v3.)*
 
 ---
 
@@ -238,7 +250,7 @@ Dùng pattern **domain events** (`emit("txn.completed", { ... })`); các module 
 | 1 | Setup repo, schema agreed, env vars, CI green | — |
 | 2 | Mỗi người scaffold module + 1 test pass + 1 API route trả 200 | #2,3,4,5,6 cần `getCurrentUser()` từ #1 trước |
 | 3 | MVP per module: tối thiểu CRUD chạy | #4 cần `Listing` của #2 |
-| 4 | Tích hợp transition giữa các module qua event bus | #5 (rep) và #4 (notifications) cần events từ txn; #3 (community feed) cần fan-out |
+| 4 | Tích hợp transition giữa các module qua event bus | #5 (rep) và #1 (notifications) cần events từ txn (#4 giữ contract `events.ts`); #3 (community feed) cần fan-out |
 | 5 | UI flows: register → list → request → chat → rate | tất cả hợp nhất |
 | 6 | Test E2E (Playwright) cho 3 flow chính + bug fixing | — |
 | 7 | Polishing: a11y, i18n VI/EN, performance | — |
@@ -264,12 +276,12 @@ Dùng pattern **domain events** (`emit("txn.completed", { ... })`); các module 
 | 1. Introduction & motivation | 2 | cả nhóm | — |
 | 2. SRS summary + use-cases | 3 | #1 | #3 |
 | 3. Architecture & data model | 4 | #3 | #1 |
-| 4. Identity & access control | 2 | #1 | #5 |
+| 4. Identity, access control & notifications | 3 | #1 | #4 |
 | 5. Book catalog, discovery & community | 4 | #2 + #3 | — |
-| 6. Transactions & notifications (deep dive on state machine) | 4 | #4 | — |
+| 6. Transactions & DevOps (deep dive on state machine) | 3 | #4 | — |
 | 7. Trust system (rep + moderation + anti-gaming) + admin | 4 | #5 | — |
 | 8. Artifacts (interactive literature) + messaging | 3 | #6 | #4 |
-| 9. Testing & DevOps | 2 | #5 | #4 |
+| 9. Testing & DevOps | 2 | #4 | #5 |
 | 10. Conclusion & limitations | 2 | cả nhóm | — |
 | **Tổng** | **30** | | |
 

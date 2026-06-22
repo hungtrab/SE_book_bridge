@@ -51,7 +51,7 @@ Mọi người **học trong tuần 1** trước khi viết code. Liên kết th
 - **PR**: 1 PR / 1 chức năng nhỏ. Đính kèm screenshot UI nếu chạm UI.
 - **Review**: 1 approval từ người review trong vòng (xem `TASKS.md`) + 1 approval bất kỳ.
 - **Test**: PR phải `npm test` xanh + có ≥ 1 test cho code mới.
-- **Conflict**: nếu PR của bạn cần đổi schema Prisma → bắt buộc tag #6 (DevOps lead).
+- **Conflict**: nếu PR của bạn cần đổi schema Prisma → bắt buộc tag #5 (DevOps lead).
 
 ---
 
@@ -61,25 +61,25 @@ Mọi người **học trong tuần 1** trước khi viết code. Liên kết th
 
 | Hạng | Vai | Độ căng | Lý do |
 |---|---|---|---|
-| 🥇 1 | **#4 Transactions & Messaging** | 🔥🔥🔥🔥🔥 | State machine 8 trạng thái + 12 transitions, 5 model Prisma, 14 API route, SSE real-time, scheduler cron 14d/21d, side-effects vào 3 module khác. Sai 1 transition → cả flow giao dịch hỏng. |
-| 🥈 2 | **#5 Trust & Safety** | 🔥🔥🔥🔥 | Reputation algorithm (cần đọc paper academic), anti-gaming math (graph algorithm), moderation queue UX, 4 model Prisma, subscribe events từ #4. Là "điểm nhấn báo cáo" — phải sâu hơn người khác. |
-| 🥉 3 | **#6 Community + Notifications + DevOps** | 🔥🔥🔥🔥 | Cross-cutting — chạm tới mọi module qua dispatcher. Vác CI/CD + production deploy + migration discipline cho cả nhóm. Broad scope (3 model + 9 route + admin UI + cron + email + SSE) hơn là deep complexity. |
-| 4 | **#3 Discovery** | 🔥🔥🔥 | PostgreSQL full-text search + GIN index + fan-out strategy. 2 model Prisma, 5 route. Có 1 quyết định kiến trúc khó (write vs read fan-out). Phần còn lại là CRUD + UI. |
-| 5 | **#2 Book Catalog** | 🔥🔥 | CRUD pattern chuẩn + ISBN external API + image upload. 2 model, 7 route. Phần khó duy nhất là phối hợp listing-status với #4. |
-| 6 | **#1 Identity & Profile** | 🔥🔥 | Auth là pattern well-known: Argon2id + iron-session + email verify token. 2 model, 8 route. Thấp về novelty nhưng **CRITICAL** vì 5 người khác phụ thuộc — không được delay. |
+| 🥇 1 | **#4 Transactions & Notifications** | 🔥🔥🔥🔥🔥 | State machine 8 trạng thái + 12 transitions, scheduler cron 14d/21d, side-effects vào 3 module khác. Kèm **notification dispatcher** subscribe events từ TẤT CẢ module + email digest. Sai 1 transition → cả flow giao dịch hỏng. |
+| 🥈 2 | **#5 Trust, Safety, Admin & Community discussion** | 🔥🔥🔥🔥 | Reputation algorithm (đọc paper academic), anti-gaming math (graph algorithm), moderation queue. Kèm **thảo luận cộng đồng** (comment/reaction) + **kiểm duyệt nhóm** + **admin dashboard + DevOps/CI** cho cả nhóm. Là "điểm nhấn báo cáo". |
+| 🥉 3 | **#3 Discovery + Community groups** | 🔥🔥🔥🔥 | PostgreSQL full-text search + GIN index + fan-out strategy (write vs read). Kèm **lõi nhóm cộng đồng** (group + membership + fan-out bài/bulletin vào feed). 4 model, nhiều route. |
+| 4 | **#6 Artifacts + Messaging** | 🔥🔥🔥 | **Artifacts**: game state engine + đồng bộ narration↔audio + UI nhập vai (canvas/panorama/particle) — heavy frontend. **Messaging**: chat realtime qua SSE. Khép kín, ít phụ thuộc DB module khác → debug độc lập. |
+| 5 | **#2 Book Catalog + Community posts** | 🔥🔥🔥 | CRUD + ISBN external API + image upload. Kèm **bài đăng cộng đồng** (post + like + bulletin) dùng lại pipeline ảnh. Phần khó: phối hợp listing-status với #4 + fan-out post cho #3. |
+| 6 | **#1 Identity & Profile** | 🔥🔥 | Auth là pattern well-known: Argon2id + iron-session + email verify token. 2 model. Kèm slice **community access** (invite/private/join-by-code). Thấp novelty nhưng **CRITICAL** vì 5 người khác phụ thuộc — không được delay. |
 
 ### Cân bằng thực tế
 
-* Hạng 1–3 (#4, #5, #6) là **khó hơn rõ rệt** — nên giao cho người làm web nhiều / muốn học đào sâu / có khả năng tự đọc paper.
-* Hạng 4–6 (#1, #2, #3) là **dễ hơn nhưng quan trọng** — phù hợp với người mới, hoặc người dùng kỳ này để học framework.
+* Hạng 1–3 (#4, #5, #3) là **khó hơn rõ rệt** — nên giao cho người làm web nhiều / muốn học đào sâu / có khả năng tự đọc paper.
+* Hạng 4–6 (#6, #2, #1) là **dễ hơn nhưng quan trọng** — phù hợp với người mới, hoặc người dùng kỳ này để học framework. (#6 heavy về frontend game nhưng độc lập, hợp người thích UI/animation.)
 * **Cảnh báo**: đừng để người yếu nhất nhận #4. Sai state machine → demo fail trên sân khấu.
 
 ### Khi nhóm thiếu người mạnh
 
 Nếu chỉ có 1–2 người dày dạn web dev, ưu tiên xếp họ vào:
 1. **#4** (must-have): nếu ai đó từng làm app có flow phức tạp (booking / e-commerce checkout) → #4
-2. **#6** (DevOps cần kinh nghiệm): nếu ai từng deploy production / setup CI → #6
-3. **#5** sau cùng — có thể research-driven, người mới đọc tốt cũng làm được nếu có thời gian
+2. **#5** (DevOps + research): ai từng deploy production / setup CI → #5 (vai này nay gánh DevOps cho cả nhóm)
+3. **#3** sau cùng — full-text search + fan-out cần tư duy kiến trúc; người đọc tốt làm được nếu có thời gian
 
 ---
 
@@ -101,25 +101,32 @@ Nếu chỉ có 1–2 người dày dạn web dev, ưu tiên xếp họ vào:
 - `REQ-UM-004` User edit display name, avatar, bio, preferred genres, location
 - `REQ-UM-005` User delete account (anonymise transaction history)
 - `REQ-UM-006` Session timeout 30 phút inactive + multi-device support
+- `REQ-COM-ACCESS` (từ Community cũ) Mã mời + nhóm riêng tư: regenerate invite code, join-by-code, gate quyền vào nhóm `isPrivate`
 
 ### Code bạn sở hữu
 
 ```
 src/server/auth/                  # service.ts (đăng ký, login, password change), token.ts (verification + reset tokens), session.ts (cookie handling)
 src/server/users/                 # service.ts (CRUD profile)
+src/server/communities/access.ts  # (từ Community cũ) invite code + private gating; export assertCanAccessCommunity()
 src/server/lib/auth-context.ts    # ⚠️ INTERFACE PUBLIC — 5 người khác đều dùng
 
 src/app/api/auth/{register,login,logout,verify-email,reset-password}/route.ts
 src/app/api/users/me/route.ts
 src/app/api/users/[id]/route.ts
+src/app/api/communities/[id]/invite-code/route.ts     # (từ Community cũ) regenerate
+src/app/api/communities/join-by-code/route.ts         # (từ Community cũ) join bằng mã
 
 src/app/(auth)/{login,register,verify-email,reset-password}/page.tsx
 src/app/profile/{[id],edit}/page.tsx
 
 prisma/schema.prisma  → models User, Session; enums UserRole, AccountStatus
+                        (invite-code/private là FIELD trên Community của #3 — bạn chỉ đọc/ghi 2 cột này)
 tests/auth.test.ts (chưa có — bạn viết)
 tests/users.test.ts (chưa có — bạn viết)
 ```
+
+> **Lưu ý (tái phân bổ v2)**: community không có model nào hợp với Identity, nên bạn chỉ nhận phần *access-control* (field-level + 2 route), không sở hữu entity community. Đây là phần việc nhỏ thêm vào, cân với việc bạn ít model nhất.
 
 ### Đọc / nghiên cứu
 
@@ -189,7 +196,7 @@ Mọi người khác sẽ gọi 3 hàm này. **Không được đổi signature*
 
 ---
 
-## 👤 Người 2 — Book Catalog (Listings)
+## 👤 Người 2 — Book Catalog (Listings) + Community posts
 
 ### Khách hàng cần gì (SRS mapping)
 
@@ -198,6 +205,7 @@ Mọi người khác sẽ gọi 3 hàm này. **Không được đổi signature*
 | **§ 4.2 Book Listing Management** | tạo / sửa / xoá listing với title, author, ISBN, condition, photos, type (gift/exchange/sell) | High — module bắt buộc của MVP |
 | § 5.5 Business Rules | giá bán capped 50,000 VND (chống thương-mại-hoá) | High |
 | § 3.3 Software Interfaces — ISBN Lookup | Open Library / Google Books API auto-fill metadata | Medium |
+| **§ 4.7 Community (posts)** *(từ Community cũ)* | bài đăng trong nhóm + like/reaction + đính kèm listing; nhập bản tin (bulletin) | Medium |
 | § 4.10 Admin Dashboard (1 phần) | listing analytics — bạn cung cấp data | Low |
 
 **Yêu cầu chi tiết bạn chịu trách nhiệm** (REQ-IDs):
@@ -208,26 +216,33 @@ Mọi người khác sẽ gọi 3 hàm này. **Không được đổi signature*
 - `REQ-BK-004` Edit listing — block khi có transaction Accepted/In-Delivery
 - `REQ-BK-005` Mark Unavailable hoặc delete — cancel pending requests
 - `REQ-BK-006` Hiển thị timestamp + reputation tier của owner
+- `REQ-COM-POST` *(từ Community cũ)* Bài đăng cộng đồng: create/pin/xoá, like 7-emoji, đính kèm listing (`Post.listingId`), nhập bulletin từ nguồn ngoài; dùng lại pipeline ảnh của listing
 
 ### Code bạn sở hữu
 
 ```
 src/server/listings/service.ts          # CRUD + price-cap guard + edit-block guard
 src/server/listings/isbn.ts             # Open Library proxy
-src/server/listings/photos.ts           # upload to local/S3
+src/server/listings/photos.ts           # upload to local/S3 — export uploadImage() dùng chung cho post của bạn
 src/server/listings/validation.ts       # Zod schemas
+src/server/communities/posts.ts         # (từ Community cũ) post CRUD + like + bulletin import
 
 src/app/api/listings/route.ts                    # GET list, POST create
 src/app/api/listings/[id]/route.ts               # GET, PATCH, DELETE
 src/app/api/isbn/lookup/route.ts                 # ISBN proxy
+src/app/api/communities/[id]/posts/**/route.ts   # (từ Community cũ) posts + [postId] + likes
+src/app/api/communities/posts/images/route.ts    # (từ Community cũ) upload ảnh bài
+src/app/api/communities/bulletins/import/route.ts # (từ Community cũ) nhập bản tin (cron của #5 gọi)
 
 src/app/listings/page.tsx                        # browse (server component)
 src/app/listings/new/page.tsx                    # create form (client component)
 src/app/listings/[id]/page.tsx                   # detail
 src/app/listings/[id]/edit/page.tsx              # edit form
+(component PostForm/BulletinFeed — nhúng vào trang /communities/[id] của #3)
 
-prisma/schema.prisma  → models Listing, ListingPhoto; enums BookCondition, TransactionType, ListingStatus
-tests/listings.test.ts
+prisma/schema.prisma  → models Listing, ListingPhoto, CommunityPost, CommunityPostLike
+                        enums BookCondition, TransactionType, ListingStatus, CommunityPostKind, ReactionType
+tests/listings.test.ts, tests/community-posts.test.ts
 ```
 
 ### Đọc / nghiên cứu
@@ -272,8 +287,9 @@ tests/listings.test.ts
 ### Bạn cần đồng bộ với
 
 - **#4 (Transactions)**: cung cấp method `markReserved(listingId)` / `markActive(listingId)` để #4 gọi khi accept/cancel.
-- **#3 (Discovery)**: schema `Listing` của bạn có index `genre, status, transactionType` mà #3 cần để search hiệu quả.
-- **#6 (Notifications)**: emit event `listing.created` để #6 fanout cho followers.
+- **#3 (Discovery + Community groups)**: schema `Listing` có index `genre, status, transactionType` mà #3 cần để search. Khi đăng `CommunityPost`/bulletin → emit `community.post_created` để #3 fan-out vào feed thành viên.
+- **#4 (Notifications)**: emit `listing.created` và `community.post_created` để #4 dispatch notification cho followers/thành viên.
+- **#5 (Community discussion)**: #5 sở hữu comment/reaction *trên bài của bạn* — thống nhất `postId` là khoá; bạn không xoá comment, chỉ xoá post (cascade).
 
 ### Đọc thêm — đào sâu / case studies
 
@@ -292,7 +308,7 @@ tests/listings.test.ts
 
 ---
 
-## 👤 Người 3 — Discovery (Search + Feed + Social graph)
+## 👤 Người 3 — Discovery (Search + Feed + Social) + Community groups
 
 ### Khách hàng cần gì (SRS mapping)
 
@@ -300,6 +316,7 @@ tests/listings.test.ts
 |---|---|---|
 | **§ 4.3 Search and Discovery** | full-text search + filters (genre, condition, type, price, distance, community) | High |
 | **§ 4.6 Social Connectivity** | follow / unfollow user + personalised feed | High |
+| **§ 4.7 Community (groups)** *(từ Community cũ)* | tạo/join/leave nhóm (university/location/genre), max 20/user, community points | Medium |
 | § 5.1 Performance | search response < 2 s ở 95% queries | High |
 
 **Yêu cầu chi tiết bạn chịu trách nhiệm** (REQ-IDs):
@@ -311,6 +328,9 @@ tests/listings.test.ts
 - `REQ-SD-005` Related listings trên trang detail (same author / genre / community)
 - `REQ-SC-001` Follow / unfollow user (one-directional)
 - `REQ-SC-002` New listing từ user follow tự động xuất hiện trong feed real-time
+- `REQ-COM-001` *(từ Community cũ)* Tạo community với scope (UNIVERSITY/LOCATION/GENRE)
+- `REQ-COM-002` *(từ Community cũ)* Join / leave; max 20 communities / user; community points
+- `REQ-COM-FEED` *(từ Community cũ)* Fan-out `CommunityPost`/bulletin (của #2) vào feed thành viên
 
 ### Code bạn sở hữu
 
@@ -319,20 +339,25 @@ src/server/search/service.ts            # full-text + filter SQL
 src/server/search/query-parser.ts       # parse "genre:fiction author:harari"
 src/server/social/follow.ts             # follow/unfollow + count maintenance
 src/server/feed/service.ts              # paginated feed query
-src/server/feed/fanout.ts               # write FeedItem khi listing publish
+src/server/feed/fanout.ts               # write FeedItem khi listing/post/bulletin publish
+src/server/communities/groups.ts        # (từ Community cũ) community + membership CRUD, max-20, points
 
 src/app/api/search/route.ts
 src/app/api/feed/route.ts
 src/app/api/follow/route.ts                      # POST follow
 src/app/api/follow/[userId]/route.ts             # DELETE unfollow
 src/app/api/users/[id]/listings/route.ts         # public listings của 1 user
+src/app/api/communities/route.ts                 # (từ Community cũ) GET list, POST create (max-20)
+src/app/api/communities/[id]/{route,join,leave}/route.ts  # (từ Community cũ) detail, join, leave
 
 src/app/page.tsx                                 # home feed
 src/app/search/page.tsx                          # search results
 src/app/explore/page.tsx                         # browse by community / genre
+src/app/communities/page.tsx                     # (từ Community cũ) danh sách nhóm
+src/app/communities/[id]/page.tsx                # (từ Community cũ) trang nhóm — lắp post của #2 + thảo luận của #5
 
-prisma/schema.prisma → models Follow, FeedItem
-tests/search.test.ts, tests/feed.test.ts
+prisma/schema.prisma → models Follow, FeedItem, Community, CommunityMembership; enums CommunityScope, CommunityRole
+tests/search.test.ts, tests/feed.test.ts, tests/communities.test.ts  # max-20, join/leave
 ```
 
 ### Đọc / nghiên cứu
@@ -376,9 +401,10 @@ tests/search.test.ts, tests/feed.test.ts
 
 ### Bạn cần đồng bộ với
 
-- **#2 (Listings)**: schema `Listing` của #2 cần index `(status, genre, transactionType)` cho query của bạn. Bạn cũng emit event `listing.created` cho #6.
-- **#1 (Auth)**: dùng `requireUser()` cho `/api/feed` (cần đăng nhập).
-- **#6 (Notifications)**: phối hợp — khi user A follow B và B publish listing, đẩy 1 Notification cho A bên cạnh việc viết FeedItem.
+- **#2 (Listings + Community posts)**: index `(status, genre, transactionType)` cho query của bạn; subscribe `listing.created` + `community.post_created` của #2 để fan-out FeedItem.
+- **#1 (Auth + access)**: dùng `requireUser()` cho `/api/feed`; gọi `assertCanAccessCommunity()` của #1 khi mở nhóm riêng tư.
+- **#5 (Community discussion)**: trang `/communities/[id]` của bạn nhúng component thảo luận (comment/reaction) do #5 sở hữu.
+- **#4 (Notifications)**: khi user A follow B và B publish listing/post, đẩy event để #4 tạo Notification cho A bên cạnh việc bạn viết FeedItem.
 
 ### Đọc thêm — đào sâu / case studies
 
@@ -398,17 +424,18 @@ tests/search.test.ts, tests/feed.test.ts
 
 ---
 
-## 👤 Người 4 — Transactions & Messaging
+## 👤 Người 4 — Transactions & Notifications
 
-> ⚠️ Đây là role **phức tạp nhất** trong hệ thống — state machine của transaction là điểm nhấn báo cáo. Bạn cần đầu tư test kỹ hơn các vai khác.
+> ⚠️ Đây là role **phức tạp nhất** trong hệ thống — state machine của transaction là điểm nhấn báo cáo. Bạn cần đầu tư test kỹ hơn các vai khác. Kèm **notification dispatcher** (nhận từ #6 cũ) vì phần lớn thông báo phát sinh từ chính transition giao dịch của bạn.
 
 ### Khách hàng cần gì (SRS mapping)
 
 | SRS section | Yêu cầu chính | Cường độ |
 |---|---|---|
 | **§ 4.4 Transaction Workflow** | state machine 8 trạng thái (Pending → ... → Completed/Cancelled/Disputed) | High — core value của BookBridge |
-| **§ 4.8 In-app Messaging** | 1-1 chat giữa requester và owner để coordinate | Medium |
+| **§ 4.6 Notifications** *(từ #6 cũ)* | new listing, txn update, message, community announcement, tier change | High |
 | § 4.5 Reputation (1 phần) | bạn emit event `txn.completed` cho #5 cộng điểm | High |
+| § 5.1 Performance — notification < 30 s | dispatcher latency target | Medium |
 
 **Yêu cầu chi tiết bạn chịu trách nhiệm** (REQ-IDs):
 
@@ -420,7 +447,9 @@ tests/search.test.ts, tests/feed.test.ts
 - `REQ-TX-006` Reminder 14 ngày sau In-Delivery; auto-complete sau 21 ngày nếu không confirm
 - `REQ-TX-007` Rating 1-5 stars + optional comment, sau Completed
 - `REQ-TX-008` Dispute → Moderator review (#5)
-- `REQ-MSG-001` In-app message giữa 2 user, optional tied to transaction
+- `REQ-NOT-001` *(từ #6 cũ)* 5 loại notification (new listing from followed, txn status, message, community announcement, tier change)
+- `REQ-NOT-002` *(từ #6 cũ)* Real-time push qua SSE; fallback long-polling `GET /api/notifications?wait=1&after=...`
+- `REQ-NOT-003` *(từ #6 cũ)* Email digest (immediate / daily / off — user configurable)
 
 ### Code bạn sở hữu
 
@@ -430,26 +459,32 @@ src/server/transactions/service.ts          # wire state-machine với Prisma + 
 src/server/transactions/scheduler.ts        # 14d reminder + 21d auto-complete cron
 src/server/transactions/ratings.ts          # rating CRUD
 
-src/server/messaging/service.ts             # conversation + message
-src/server/messaging/sse.ts                 # Server-Sent Events cho real-time
+src/server/notifications/service.ts         # (từ #6 cũ) Notification CRUD
+src/server/notifications/dispatcher.ts      # ⭐ (từ #6 cũ) central event router — subscribe TẤT CẢ events #1-#6
+src/server/notifications/email.ts           # (từ #6 cũ) email render + SMTP, digest
+src/server/notifications/sse.ts             # (từ #6 cũ) SSE push
+src/server/lib/events.ts                    # ⭐ (từ #6 cũ) event bus contract (types) — bạn define & lock tuần 2
 
 src/app/api/transactions/route.ts                       # POST request, GET my txns
 src/app/api/transactions/[id]/route.ts                  # detail
 src/app/api/transactions/[id]/{accept,decline,cancel,ship,complete,dispute,rate}/route.ts
-src/app/api/conversations/route.ts                      # list
-src/app/api/conversations/[id]/messages/route.ts        # GET + POST
-src/app/api/conversations/[id]/stream/route.ts          # SSE
+src/app/api/notifications/route.ts                      # (từ #6 cũ) GET mine
+src/app/api/notifications/[id]/read/route.ts            # (từ #6 cũ)
+src/app/api/notifications/preferences/route.ts          # (từ #6 cũ)
+src/app/api/notifications/stream/route.ts               # (từ #6 cũ) SSE
+src/app/api/cron/{notification-immediate,notification-digest}/route.ts  # (từ #6 cũ)
 
 src/app/transactions/page.tsx              # dashboard tabbed by status
-src/app/transactions/[id]/page.tsx         # detail + chat embed
-src/app/messages/page.tsx                  # inbox
-src/app/messages/[conversationId]/page.tsx # chat thread
+src/app/transactions/[id]/page.tsx         # detail + nhúng chat (component của #6)
+src/app/notifications/page.tsx             # (từ #6 cũ) danh sách thông báo
 
-prisma/schema.prisma → Transaction, TransactionEvent, Rating, Conversation, Message
+prisma/schema.prisma → Transaction, TransactionEvent, Rating, Notification; enums TransactionStatus, DeliveryMethod, NotificationKind, NotificationEmailPreference
 tests/transactions/state-machine.test.ts  # ✓ đã có, 13 tests pass
 tests/transactions/scheduler.test.ts       # bạn viết
-tests/messaging.test.ts                    # bạn viết
+tests/notifications.test.ts                # bạn viết — dispatcher fan-out (event.kind → recipients[])
 ```
+
+> **Messaging đã chuyển sang #6** để cân khối lượng. Bạn vẫn nhúng component chat của #6 vào `/transactions/[id]`; #6 emit `message.created` để dispatcher của bạn bắn notification.
 
 ### Đọc / nghiên cứu
 
@@ -470,10 +505,10 @@ tests/messaging.test.ts                    # bạn viết
 | 2 | Hiểu `state-machine.ts` (đã có 13 tests pass). Mở file ra, đọc từng case của `transition()`. Implement `service.ts` apply transition + write side-effects. |
 | 3 | API routes cho all 7 actions (accept, decline, cancel, ship, complete, dispute, rate). |
 | 4 | UI dashboard `/transactions` tabbed theo status. UI detail `/transactions/[id]` show events timeline. |
-| 5 | Implement messaging — conversation + message CRUD. Trang `/messages`. |
-| 6 | SSE cho real-time message + transaction status update. Test 2 tab cùng lúc. |
-| 7 | Scheduler: 14d reminder + 21d auto-complete (cron job hoặc Inngest). Phối hợp #5: emit reputation events. Phối hợp #6: emit notification events. |
-| 8 | Báo cáo + slide phần Transactions (5 slide — bạn nhiều slide nhất vì module phức tạp nhất). |
+| 5 | Define event bus contract `src/server/lib/events.ts` (lock signature, communicate #2/#3/#5/#6). Implement `notifications/dispatcher.ts` — subscribe events, write Notification rows. |
+| 6 | SSE `/api/notifications/stream` cho real-time notification + transaction status. Test 2 tab. Email digest (immediate/daily) qua cron. |
+| 7 | Scheduler: 14d reminder + 21d auto-complete (cron job hoặc Inngest). Phối hợp #5: emit reputation events. Dispatcher nhận `message.created` từ #6 (chat). |
+| 8 | Báo cáo + slide phần Transactions + Notifications (5 slide — bạn nhiều slide nhất vì module phức tạp nhất). |
 
 ### Câu hỏi nghiên cứu
 
@@ -496,8 +531,9 @@ tests/messaging.test.ts                    # bạn viết
 
 - **#2 (Listings)**: gọi `markReserved/markActive/markCompleted` trong side-effects.
 - **#5 (Reputation)**: emit event `txn.completed` (+10 cả hai), `txn.cancelled` (-3 cancelling party), `rating.created` (+/- by stars).
-- **#6 (Notifications)**: emit event mỗi transition để #6 dispatch notifications.
-- **#1 (Auth)**: dùng `requireUser()` everywhere.
+- **TẤT CẢ module**: bạn sở hữu `events.ts` + dispatcher → mọi người emit event theo contract bạn định nghĩa; bạn quyết định ai nhận notification.
+- **#6 (Messaging)**: nhận `message.created` để notify; nhúng component chat của #6 vào trang transaction detail.
+- **#1 (Auth)**: dùng `requireUser()` everywhere; `requireRole('ADMIN')` không cần ở đây.
 
 ### Đọc thêm — đào sâu / case studies
 
@@ -522,9 +558,9 @@ tests/messaging.test.ts                    # bạn viết
 
 ---
 
-## 👤 Người 5 — Trust & Safety (Reputation + Moderation)
+## 👤 Người 5 — Trust, Safety, Admin & Community discussion
 
-> Module này là **điểm nhấn phi-thương-mại** của BookBridge — phân biệt với Facebook Marketplace. Báo cáo nhấn mạnh phần này.
+> Module này là **điểm nhấn phi-thương-mại** của BookBridge — phân biệt với Facebook Marketplace. Báo cáo nhấn mạnh phần này. Bạn cũng là **DevOps lead** (CI/CD + deploy + migration discipline) và sở hữu **thảo luận cộng đồng** (comment/reaction — nội dung bị kiểm duyệt nhiều nhất) + **admin dashboard**.
 
 ### Khách hàng cần gì (SRS mapping)
 
@@ -532,6 +568,9 @@ tests/messaging.test.ts                    # bạn viết
 |---|---|---|
 | **§ 4.5 Reputation and Trust System** | score 0-100, 4 tier, anti-gaming detection | High |
 | **§ 4.9 Content Moderation and Reporting** | report user/listing/transaction/message; moderator queue + actions | Medium |
+| **§ 4.7 Community (discussion + moderation)** *(từ #6 cũ)* | comment lồng nhau + reaction; cấp/thu mod, gỡ thành viên, pin/xoá bài, xoá nhóm | Medium |
+| **§ 4.10 Administrative Dashboard** *(từ #6 cũ)* | platform stats, grant reporting CSV | Medium |
+| **§ 6 Deployment + Ops** *(từ #6 cũ)* | CI/CD, deploy cloud, migration discipline | High |
 | § 5.5 Business Rules | reputation ảnh hưởng đến quyền truy cập (cao = trust badge) | Medium |
 
 **Yêu cầu chi tiết bạn chịu trách nhiệm** (REQ-IDs):
@@ -544,6 +583,12 @@ tests/messaging.test.ts                    # bạn viết
 - `REQ-MOD-002` Moderator queue chỉ có moderator scope-relevant nhìn được
 - `REQ-MOD-003` Moderator actions: warn user, remove listing, suspend user, restore
 - `REQ-MOD-004` Audit log mọi moderation action (cho compliance / appeal)
+- `REQ-COM-DISC` *(từ #6 cũ)* Comment lồng nhau (`parentId`) + reaction 7-emoji trên `CommunityPost` (của #2)
+- `REQ-COM-MOD` *(từ #6 cũ)* Cấp/thu community moderator, gỡ thành viên, pin/xoá bài, xoá nhóm (dùng `ModerationAction` + RBAC)
+- `REQ-ADM-001` *(từ #6 cũ)* Admin dashboard: active users, transactions completed, books circulated
+- `REQ-ADM-002` *(từ #6 cũ)* Grant report CSV export
+- `REQ-OPS-001` *(từ #6 cũ)* GitHub Actions CI: lint + test on every PR
+- `REQ-OPS-002` *(từ #6 cũ)* Production deploy guide (Vercel + Supabase / Neon)
 
 ### Code bạn sở hữu
 
@@ -555,21 +600,36 @@ src/server/reputation/decay.ts          # cron job time decay
 
 src/server/moderation/service.ts        # report CRUD + moderator actions
 src/server/moderation/queue.ts          # filter reports by scope (community moderator)
+src/server/communities/comments.ts      # (từ #6 cũ) comment lồng nhau + reaction trên post của #2
+src/server/admin/stats.ts               # (từ #6 cũ) aggregations
+src/server/admin/exports.ts             # (từ #6 cũ) CSV grant report
 
 src/app/api/reputation/[userId]/route.ts          # GET breakdown
 src/app/api/reports/route.ts                       # POST file report
 src/app/api/reports/mine/route.ts                  # GET reports tôi đã file
 src/app/api/moderation/queue/route.ts              # GET queue (mod-only)
 src/app/api/moderation/[reportId]/act/route.ts     # POST moderate action
+src/app/api/communities/[id]/posts/[postId]/comments/**/route.ts  # (từ #6 cũ) comment + reaction
+src/app/api/communities/[id]/{moderators,members}/route.ts        # (từ #6 cũ) community mod actions
+src/app/api/admin/stats/route.ts                   # (từ #6 cũ)
+src/app/api/admin/grant-report.csv/route.ts        # (từ #6 cũ)
 
 src/app/profile/[id]/page.tsx       # reputation widget (component)
 src/app/moderation/page.tsx         # moderator-only queue UI
+src/app/admin/page.tsx              # (từ #6 cũ) admin-only dashboard
 src/components/ReputationBadge.tsx
 src/components/TierProgressBar.tsx
+src/components/communities/CommentSection.tsx   # (từ #6 cũ) nhúng vào trang nhóm của #3
 
-prisma/schema.prisma → ReputationEvent, Report, ModerationAction, enums kể trên
+# DevOps (từ #6 cũ — bạn là DevOps lead)
+.github/workflows/ci.yml
+Vercel project configuration + hosted PostgreSQL
+docs/DEPLOYMENT.md, prisma/seed.ts
+
+prisma/schema.prisma → ReputationEvent, Report, ModerationAction, CommunityPostComment, CommunityCommentReaction
+                        (enum ReactionType dùng chung — do #2 khai báo)
 tests/reputation.test.ts            # ✓ đã có, 16 tests pass
-tests/moderation.test.ts            # bạn viết
+tests/moderation.test.ts, tests/community-comments.test.ts  # bạn viết
 ```
 
 ### Đọc / nghiên cứu
@@ -614,10 +674,11 @@ tests/moderation.test.ts            # bạn viết
 
 ### Bạn cần đồng bộ với
 
-- **#4 (Transactions)**: subscribe events `txn.completed`, `txn.cancelled`, `rating.created`. Định nghĩa contract event payload sớm.
+- **#4 (Transactions + events.ts)**: subscribe events `txn.completed`, `txn.cancelled`, `rating.created` theo contract `events.ts` của #4; emit notification event khi moderation áp dụng để #4 dispatch.
 - **#1 (Auth)**: khi suspend user → set `User.status = SUSPENDED` trong transaction. #1 đảm bảo login bị reject.
-- **#2 (Listings)**: khi remove listing → `Listing.status = REMOVED` (#2 đã có method này).
-- **#6 (Notifications)**: emit notification tới user khi action moderation áp dụng.
+- **#2 (Listings + Community posts)**: khi remove listing → `Listing.status = REMOVED` (#2 đã có method); comment của bạn đính vào `CommunityPost` của #2 (đọc `postId`).
+- **#3 (Community groups)**: component thảo luận của bạn được #3 nhúng vào trang `/communities/[id]`; community-mod actions ghi qua service nhóm của #3.
+- **TẤT CẢ (DevOps)**: bạn duyệt mọi migration (`schema.prisma`); giữ CI xanh; cấm `prisma db push` lên branch shared.
 
 ### Đọc thêm — đào sâu / case studies
 
@@ -643,143 +704,132 @@ tests/moderation.test.ts            # bạn viết
 
 ---
 
-## 👤 Người 6 — Community + Notifications + Admin + DevOps
+## 👤 Người 6 — Artifacts (văn học tương tác) + Messaging
 
-> Vai này có 2 đặc điểm: (1) **cross-cutting** — tay bạn chạm tới mọi module khác qua notification dispatcher; (2) **DevOps** — bạn lo CI/CD, deploy, migration discipline cho cả nhóm.
+> Vai này có 2 đặc điểm: (1) **khép kín** — Artifacts là tính năng đặc trưng, gần như không phụ thuộc DB module khác → bạn debug độc lập; (2) **heavy frontend** — game engine + UI nhập vai (canvas, panorama 360°, particle, audio). Kèm **Messaging** (chat realtime) chuyển từ #4 sang để cân khối lượng.
 
 ### Khách hàng cần gì (SRS mapping)
 
 | SRS section | Yêu cầu chính | Cường độ |
 |---|---|---|
-| **§ 4.7 Community and Sub-community Management** | university / location / genre community; max 20 / user | Medium |
-| **§ 4.6 Social — Notifications** | new listing, txn update, message, community announcement, tier change | High |
-| **§ 4.10 Administrative Dashboard** | platform stats, user mgmt, grant reporting | Medium |
-| § 5.1 Performance — notification < 30 s | dispatcher latency target | Medium |
-| § 6 Other Requirements — Deployment | grant-funded model, deploy on standard cloud | High |
+| **Artifacts — value-add** *(ngoài SRS gốc — đánh dấu Assumption)* | biến tác phẩm (*Tắt đèn / Tức nước vỡ bờ*, *The Alchemist*) thành trải nghiệm chơi tương tác + lớp thảo luận | High (điểm nhấn sáng tạo) |
+| **§ 4.8 In-app Messaging** *(từ #4 cũ)* | 1-1 chat giữa requester và owner, optional tied to transaction; realtime | Medium |
+| § 4.6 Social (1 phần) | emit `message.created` để dispatcher của #4 bắn notification | Medium |
+
+> ⚠️ **Assumption**: "Artifacts" không có trong SRS gốc của khách hàng — đây là tính năng nhóm thêm vào để tăng engagement. Khi báo cáo, trình bày rõ là *extension*, không phải requirement khách hàng.
 
 **Yêu cầu chi tiết bạn chịu trách nhiệm** (REQ-IDs):
 
-- `REQ-COM-001` Tạo community với scope (UNIVERSITY/LOCATION/GENRE)
-- `REQ-COM-002` Join / leave; max 20 communities / user
-- `REQ-COM-003` Listing có thể tied to 1 community (filter trong search của #3)
-- `REQ-NOT-001` 5 loại notification (new listing from followed, txn status, message, community announcement, tier change)
-- `REQ-NOT-002` Real-time push qua SSE; fallback long-polling qua `GET /api/notifications?wait=1&after=...`
-- `REQ-NOT-003` Email digest (immediate / daily / off — user configurable)
-- `REQ-ADM-001` Admin dashboard: active users, transactions completed, books circulated
-- `REQ-ADM-002` Grant report CSV export
-- `REQ-OPS-001` GitHub Actions CI: lint + test on every PR
-- `REQ-OPS-002` Production deploy guide (Vercel + Supabase / Neon)
+- `REQ-ART-001` Trang danh sách artifact + registry resolve theo `slug`
+- `REQ-ART-002` Game engine: trạng thái health / thắng / thua, narration theo bước, đồng bộ audio
+- `REQ-ART-003` UI nhập vai: panorama viewer, particle, audio player, victory/gameover screen
+- `REQ-ART-004` Thảo luận artifact: comment + like (`ArtifactComment`, `ArtifactCommentLike`)
+- `REQ-ART-005` Thêm artifact mới = khai báo `*-story.ts` + `*-audio.ts` + đăng ký `registry.ts` (không sửa engine)
+- `REQ-MSG-001` *(từ #4 cũ)* In-app message giữa 2 user, optional tied to transaction
+- `REQ-MSG-002` *(từ #4 cũ)* Realtime push qua SSE; chỉ 2 bên trong hội thoại đọc được
+- `REQ-MSG-003` *(từ #4 cũ)* Emit `message.created` cho dispatcher của #4
 
 ### Code bạn sở hữu
 
 ```
-src/server/communities/service.ts       # CRUD + max-20 enforcement
-src/server/notifications/service.ts     # CRUD
-src/server/notifications/dispatcher.ts  # ⭐ central event router — subscribe to TẤT CẢ events từ #1-5
-src/server/notifications/email.ts       # email rendering + SMTP send
-src/server/admin/stats.ts               # aggregations
-src/server/admin/exports.ts             # CSV grant report
-src/server/lib/events.ts                # ⭐ event bus contract (TypeScript types) — bạn define
+# Artifacts (văn học tương tác)
+src/lib/artifacts/registry.ts           # ⭐ đăng ký artifact theo slug
+src/lib/artifacts/game-types.ts         # ⭐ engine types (health/step/outcome) — tách khỏi dữ liệu
+src/lib/artifacts/alchemist-story.ts    # dữ liệu cốt truyện The Alchemist
+src/lib/artifacts/alchemist-audio.ts
+src/lib/artifacts/tat-den-story.ts      # dữ liệu Tắt đèn / Tức nước vỡ bờ
+src/lib/artifacts/tat-den-audio.ts
+src/server/artifacts/comments.ts        # comment + like CRUD
 
-src/app/api/communities/route.ts                       # GET, POST
-src/app/api/communities/[id]/{route,join,leave}/route.ts
-src/app/api/notifications/route.ts                     # GET mine
-src/app/api/notifications/stream/route.ts              # SSE
-src/app/api/notifications/[id]/read/route.ts
-src/app/api/admin/stats/route.ts
-src/app/api/admin/grant-report.csv/route.ts
+src/app/api/artifacts/[slug]/comments/route.ts           # GET/POST thảo luận
+src/app/api/artifacts/comments/[commentId]/route.ts      # DELETE
+src/app/api/artifacts/comments/[commentId]/like/route.ts # POST/DELETE like
 
-src/app/communities/page.tsx
-src/app/communities/[id]/page.tsx
-src/app/notifications/page.tsx
-src/app/admin/page.tsx              # admin-only
+src/app/artifacts/page.tsx                               # danh sách artifact
+src/app/artifacts/the-alchemist/page.tsx
+src/app/artifacts/tuc-nuoc-vo-bo/page.tsx
+src/components/artifacts/{ArtifactGame,GameNarration,HealthBar,GameOverScreen,VictoryScreen,PanoramaViewer,DesertParticles,AudioPlayer,ArtifactDiscussion}.tsx
 
-prisma/schema.prisma → Community, CommunityMembership, Notification
+# Messaging (từ #4 cũ)
+src/server/messaging/service.ts         # conversation + message
+src/server/messaging/sse.ts             # SSE realtime (helper chung lấy từ src/server/lib/)
+src/app/api/conversations/route.ts                      # list
+src/app/api/conversations/[id]/messages/route.ts        # GET + POST
+src/app/api/conversations/[id]/stream/route.ts          # SSE
+src/app/messages/page.tsx                               # inbox
+src/app/messages/[conversationId]/page.tsx              # chat thread
+(component chat được #4 nhúng vào /transactions/[id])
 
-# DevOps
-.github/workflows/ci.yml
-Vercel project configuration
-Hosted PostgreSQL integration
-docs/DEPLOYMENT.md
-prisma/seed.ts
+prisma/schema.prisma → ArtifactComment, ArtifactCommentLike, Conversation, Message
+tests/artifacts.test.ts (game state, registry), tests/messaging.test.ts (gửi/nhận, phân quyền 2 bên)
 ```
+
+> **Phụ thuộc tối thiểu**: chỉ cần `getCurrentUser()`/`requireUser()` của #1. `Conversation.transactionId` là soft link (SetNull) tới Transaction của #4 — chỉ đọc id. Bạn KHÔNG còn giữ DevOps/CI (đã chuyển #5) và notifications (đã chuyển #4).
 
 ### Đọc / nghiên cứu
 
 | Topic | Tài liệu | Thời gian |
 |---|---|---|
-| Event-driven architecture (đọc lại Fowler — chung với #4) | https://martinfowler.com/eaaDev/DomainEvent.html | 1 h |
-| Node.js EventEmitter vs message queue | https://nodejs.org/api/events.html | 30 phút |
-| Server-Sent Events (chung với #4) | https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events | 1 h |
-| Vercel Cron Jobs | https://vercel.com/docs/cron-jobs | 30 phút |
-| GitHub Actions cho Next.js | https://docs.github.com/en/actions | 1 h |
-| Prisma migration discipline | https://www.prisma.io/docs/orm/prisma-migrate/getting-started + best practices | 1 h |
-| Email template design (MJML hoặc plain HTML) | https://mjml.io/getting-started | 30 phút |
-| OWASP CSV injection (cho grant export) | https://owasp.org/www-community/attacks/CSV_Injection | 30 phút |
+| Game loop & state management trong React | https://react.dev/learn/managing-state | 2 h |
+| Canvas API / requestAnimationFrame (particle, animation) | https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API | 2 h |
+| Panorama 360° viewer | https://pannellum.org/documentation/overview/ | 1 h |
+| Web Audio / HTMLAudioElement (đồng bộ narration ↔ audio) | https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API | 1 h |
+| Branching narrative / interactive fiction design | https://twinery.org (concept) | 1 h |
+| Server-Sent Events (cho messaging) | https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events | 1 h |
 
 ### Việc theo tuần
 
 | Tuần | Việc |
 |---|---|
-| 1 | Đọc Common ground + Event-driven. Set up CI workflow (đã có sẵn) — confirm `npm test` green trên Actions. |
-| 2 | Define event bus contract trong `src/server/lib/events.ts` — TypeScript types cho các event. Communicate với #4 và #5. |
-| 3 | Implement `notifications/dispatcher.ts` — subscribe events, write Notification rows. |
-| 4 | Implement Community CRUD + UI `/communities/[id]`. Phối hợp #2: listing có dropdown chọn community. |
-| 5 | Implement SSE stream `/api/notifications/stream`. Test real-time push 2 tab. |
-| 6 | Email digest: immediate vs daily. Cron job daily-digest gom notifications của 24h trước. |
-| 7 | Admin dashboard: aggregate metrics (active_users, txn_completed, books_circulated). Grant report CSV với date range. Vercel production deploy guide. |
-| 8 | Báo cáo + slide phần Community/Notifications/Ops (3 slide). |
+| 1 | Đọc Common ground + game-loop/Canvas. Chạy thử 2 artifact hiện có, đọc `registry.ts` + `game-types.ts`. |
+| 2 | Tách rõ engine (`game-types.ts`) khỏi dữ liệu (`*-story.ts`). Viết 1 artifact "hello" tối giản để hiểu pipeline. |
+| 3 | Game state engine: health / step / outcome (thắng/thua) + narration theo bước. Test `tests/artifacts.test.ts`. |
+| 4 | UI nhập vai: HealthBar, GameNarration, Victory/GameOver, AudioPlayer — đồng bộ audio với bước truyện. |
+| 5 | PanoramaViewer + DesertParticles (immersive). Trang `/artifacts/[slug]` hoàn chỉnh 1 artifact end-to-end. |
+| 6 | Messaging: conversation + message CRUD + trang `/messages`. Phân quyền chỉ 2 bên đọc hội thoại. |
+| 7 | SSE realtime cho chat (test 2 tab). Emit `message.created` cho dispatcher của #4. Thảo luận artifact (comment + like). |
+| 8 | Báo cáo + slide phần Artifacts + Messaging (3 slide). |
 
 ### Câu hỏi nghiên cứu
 
-1. **EventEmitter trong-process vs message queue (RabbitMQ/Redis)?** → BookBridge là single-instance Next.js → in-process đủ. Khi scale ra > 1 instance → upgrade sang Redis pub/sub. Code dispatcher của bạn nên dùng abstraction (interface `EventBus`) để swap dễ.
-2. **Tại sao notification có cột `payload Json` thay vì FK rõ?** → 5 loại notification, mỗi loại payload khác (transaction id vs message id vs tier name). JSON cho phép flexible mà không cần Prisma migration.
-3. **SSE trong Vercel serverless có giới hạn không?** → Vercel function timeout 60 s ở free tier; SSE giữ kết nối → cần `maxDuration = 300` (Pro) hoặc reconnect mỗi 60s. Document trong DEPLOYMENT.md.
-4. **Email digest fan-out — viết Notification trước hay gửi email trước?** → Notification trước (atomic with event), email là 1 cron job đọc Notification rows + gửi. Nếu email fail → retry mà không double-create Notification.
-5. **Max 20 community / user — enforce ở đâu?** → Server-side trong `POST /api/communities` và `POST /api/communities/[id]/join`. Frontend cũng disable button nhưng đó chỉ UX.
-6. **Admin stats — query có lock table không?** → `COUNT(*)` trên triệu rows có thể chậm. Solution: materialised view refresh hourly, hoặc denormalise vào bảng `PlatformStat` cập nhật bằng trigger.
+1. **Tại sao tách engine (`game-types.ts`) khỏi dữ liệu (`*-story.ts`)?** → Thêm artifact mới chỉ cần khai báo dữ liệu + đăng ký `registry.ts`, không động vào engine → mở rộng an toàn, test engine độc lập.
+2. **Game state quản lý ở client hay server?** → Trải nghiệm chơi chạy client-side (state trong React, không cần round-trip); chỉ comment/like mới gọi API. Không lưu tiến trình chơi vào DB (Assumption — ngoài scope SRS).
+3. **Đồng bộ narration ↔ audio thế nào?** → Mỗi bước truyện gắn 1 audio cue; dùng event `ended`/`timeupdate` của HTMLAudioElement để chuyển bước, tránh lệch.
+4. **SSE trong Vercel serverless có giới hạn không?** → Vercel function timeout 60 s free tier; SSE giữ kết nối → cần `maxDuration` (Pro) hoặc client reconnect mỗi 60 s. (Helper SSE dùng chung với notification của #4.)
+5. **Messaging — chỉ 2 bên đọc được, enforce ở đâu?** → Server-side: mỗi query kiểm `userId ∈ {conversation.userA, userB}`; 403 nếu không. Không tin client.
+6. **Artifacts có trong SRS không?** → Không — là extension nhóm thêm để tăng engagement (đánh dấu Assumption). Trình bày rõ trong báo cáo là *value-add*, không phải requirement khách hàng.
 
 ### Demo prep
 
-1. Show event bus diagram: 5 modules emit, dispatcher route to Notification + email.
-2. Live: User A trong community "HUST" → publish listing → user B follow A + member của HUST → B nhận 2 notifications (new_listing_from_followed + community_announcement) — show both in `/notifications`.
-3. SSE live: open `/notifications` 2 tab → user khác send action → both tabs update real-time.
-4. Admin dashboard: show stats updating real-time với seed data.
-5. Grant report: download CSV → open in Excel → show metric breakdown.
-6. CI: show green check trên 1 PR thật.
+1. Live: mở `/artifacts` → chọn *Tức nước vỡ bờ* → chơi qua vài bước (narration + audio + health) → tới Victory/GameOver screen.
+2. Show panorama 360° + particle để minh hoạ phần immersive UI.
+3. Show "thêm artifact mới" chỉ bằng khai báo `*-story.ts` + `registry.ts` (không sửa engine).
+4. Thảo luận: comment + like dưới 1 artifact.
+5. Messaging live: User A ↔ User B chat trong conversation tied to transaction → SSE realtime 2 tab.
+6. Show test pass: `npm test tests/artifacts.test.ts tests/messaging.test.ts`.
 
 ### Bạn cần đồng bộ với
 
-- **TẤT CẢ**: bạn là người subscribe events từ mọi module. Định nghĩa event contract trong tuần 2 và lock signature.
-- **#1 (Auth)**: dùng `requireRole('ADMIN')` cho admin routes.
-- **#2 (Listings)**: listing.communityId dropdown trong form create.
-- **#5 (Moderation)**: emit notification khi action áp dụng.
+- **#1 (Auth)**: dùng `getCurrentUser()` / `requireUser()` cho comment/like + gửi message.
+- **#4 (Transactions + events.ts)**: emit `message.created` theo contract `events.ts` để dispatcher của #4 notify; nhúng component chat vào `/transactions/[id]`. `Conversation.transactionId` soft-link tới Transaction (chỉ đọc).
+- **#5 (DevOps)**: tag #5 khi cần migration cho `ArtifactComment`/`Conversation`/`Message`.
 
 ### Đọc thêm — đào sâu / case studies
 
-> Vai bạn vừa cross-cutting vừa DevOps — đọc nhiều mảng. Nhưng mỗi mảng chỉ cần overview, không cần deep.
+> Vai bạn heavy về frontend tương tác — đọc về game design + animation + realtime. (Phần đọc DevOps/CI/12-Factor đã chuyển sang **#5** cùng trách nhiệm Ops.)
 
 | Topic | Tài liệu | Tại sao đáng đọc |
 |---|---|---|
-| **Site Reliability Engineering** (Google, free online) | https://sre.google/sre-book/ — chương 1, 5 (Eliminating Toil), 11 (On-Call) | Background cho ops mindset. Đọc chương 1 + 5 đủ. |
-| **The Twelve-Factor App** | https://12factor.net | Best practices for cloud-native apps. 1 trang mỗi factor — đọc trong 1 giờ. **Cite vào báo cáo.** |
-| **Designing Data-Intensive Applications** (Kleppmann) — Chapter 11 | sách | "Stream Processing" — background cho event bus. Đọc khi rảnh. |
-| **Substack notification architecture** | https://substack.com/notes — search "engineering" | Case study email-first notification system (gần với BookBridge digest model) |
-| **Discord community moderation toolset** | https://discord.com/safety/360044094472-Tools-and-resources | Reference UI design cho moderator dashboard (phối hợp với #5) |
-| **Postmark email deliverability guide** | https://postmarkapp.com/guides | Tránh spam folder: SPF, DKIM, DMARC. Cần khi production deploy. |
-| **GitHub Actions best practices** | https://docs.github.com/en/actions/learn-github-actions/security-hardening-for-github-actions | Hardening secrets + cache strategy |
-| **Database migrations zero-downtime** | https://gocardless.com/blog/zero-downtime-postgres-migrations-the-hard-parts/ | Khi codebase deploy production và migration trên data thật |
-| **Vercel Cron Jobs** | https://vercel.com/docs/cron-jobs | 1 trang. Setup 5 phút. |
-| **Inngest vs Vercel Cron** | https://www.inngest.com/blog/inngest-vs-vercel-cron | Khi nào upgrade từ Vercel Cron sang dedicated job runner |
-| **Prometheus + Grafana intro** | https://prometheus.io/docs/introduction/overview/ + https://grafana.com/oss/grafana/ | Future work: monitoring. Mention trong slide ops. |
-| **OpenTelemetry cho Next.js** | https://nextjs.org/docs/app/building-your-application/optimizing/open-telemetry | Distributed tracing — overkill nhưng wow nếu implement |
-| **Stripe webhooks design** | https://stripe.com/docs/webhooks | Reference for "webhooks for partners" feature trong tương lai (NGO grant API?) |
-| **Heroku Migrations Anti-Patterns** | https://devcenter.heroku.com/articles/postgres-rails-migrate | "Don't run migrations from web dynos" — kiểu best practice nhỏ rất quan trọng |
-| **Lighthouse / Web Vitals** | https://web.dev/articles/vitals | SRS § 5.1 yêu cầu < 3s LCP — đo bằng Lighthouse |
-| **WCAG 2.1 quick reference** | https://www.w3.org/WAI/WCAG21/quickref/ | SRS yêu cầu Level AA. Audit checklist trước demo. |
-| **OWASP Top 10 (2021)** | https://owasp.org/Top10/ | Đọc 10 mục, mỗi cái 1 trang. Mention specifically trong Security slide. |
+| **Game Programming Patterns** (Nystrom, free online) | https://gameprogrammingpatterns.com — chương "State", "Game Loop", "Update Method" | Nền tảng cho game state engine của artifact. **Cite vào báo cáo.** |
+| **The Art of Interactive Fiction / branching narrative** | https://emshort.blog (Emily Short) | Thiết kế nhánh truyện, nhịp kể — áp dụng cho `*-story.ts` |
+| **Canvas & requestAnimationFrame deep dive** | https://developer.mozilla.org/en-US/docs/Web/API/Window/requestAnimationFrame | Particle/animation mượt, tránh jank |
+| **Web Audio API — scheduling** | https://web.dev/articles/audio-scheduling | Đồng bộ audio narration chính xác theo bước |
+| **WebGL / panorama 360°** | https://threejs.org/docs (hoặc Pannellum) | Immersive viewer — chọn thư viện nhẹ phù hợp |
+| **SSE vs WebSocket** | https://ably.com/blog/websockets-vs-sse | Lý giải vì sao chọn SSE cho chat realtime |
+| **Signal Protocol (overkill nhưng wow)** | https://signal.org/docs/specifications/x3dh/ | Cite cho "Future work — E2E encrypted messaging" |
+| **Accessibility cho game/animation** | https://www.w3.org/WAI/WCAG21/quickref/ | Prefers-reduced-motion, alt cho narration — tránh loại trừ người dùng |
 
-**Khi nào nên đọc**: 12-Factor App (tuần 1, không thể bỏ qua), SRE chapter 1+5 (tuần 2 trước khi setup CI), zero-downtime migration (tuần 7 trước demo prep), WCAG (tuần 7).
+**Khi nào nên đọc**: Game Programming Patterns (tuần 1–2 trước khi viết engine), Web Audio scheduling (tuần 4), SSE (tuần 6 trước messaging realtime).
 
 ---
 
@@ -787,19 +837,21 @@ prisma/seed.ts
 
 ### Ma trận phụ thuộc
 
+> Cột = "vai này cần gì từ vai kia". Ownership v2: #1 Identity(+access) · #2 Catalog(+community posts) · #3 Discovery(+community groups) · #4 Transactions(+notifications, events.ts) · #5 Trust/Admin(+community discussion, DevOps) · #6 Artifacts(+messaging).
+
 |  | needs from #1 | from #2 | from #3 | from #4 | from #5 | from #6 |
 |---|---|---|---|---|---|---|
-| **#1** | — | — | — | suspend logic | suspend trigger | — |
-| **#2** | requireUser | — | listing search filters | activeTxn check | report → remove | community list |
-| **#3** | requireUser | listing schema + index | — | — | — | event for fanout |
-| **#4** | requireUser | listing status update | — | — | rep events | notification events |
-| **#5** | suspend user API | listing remove API | — | txn events | — | notification events |
-| **#6** | requireRole | listing community ID | follower fanout | txn events | mod events | — |
+| **#1** | — | — | — | — | suspend trigger | — |
+| **#2** | requireUser | — | post fan-out vào feed | activeTxn check + events.ts | report → remove | — |
+| **#3** | requireUser + access gate | listing index + `community.post_created` | — | notify followers | discussion UI (comment/reaction) | — |
+| **#4** | requireUser | listing status update + events | feed/community events | — | rep events | `message.created` |
+| **#5** | suspend user API | post `postId` link | community-mod qua service nhóm | txn events + events.ts contract | — | — |
+| **#6** | requireUser | — | — | events.ts + chat embed point | migration review (DevOps) | — |
 
 ### Quy ước giải quyết xung đột
 
-* **Schema Prisma**: thay đổi nào cần consensus của 2+ owner. Ai sửa → tag #6 review (DevOps lead) cho migration.
-* **Event signatures**: do #6 lock trong `src/server/lib/events.ts` tuần 2; bất kỳ thay đổi sau tuần 3 cần meeting cả nhóm.
+* **Schema Prisma**: thay đổi nào cần consensus của 2+ owner. Ai sửa → tag #5 review (DevOps lead) cho migration.
+* **Event signatures**: do #4 lock trong `src/server/lib/events.ts` tuần 2 (vì #4 sở hữu dispatcher); bất kỳ thay đổi sau tuần 3 cần meeting cả nhóm.
 * **`getCurrentUser()` signature**: do #1 lock; thay đổi sau tuần 2 cần meeting.
 * **Conflict trong PR**: ai merge sau rebase. Nếu conflict file shared (`schema.prisma`, `events.ts`, `lib/`): ai làm tới phần đó cuối cùng → ping owner trước khi push.
 
@@ -821,26 +873,27 @@ prisma/seed.ts
 | Phút | Việc | Người dẫn |
 |---|---|---|
 | 0–2 | Bối cảnh + SRS scope (slide 1–2 của presentation) | mọi người (1 người mở đầu) |
-| 2–4 | Architecture overview (sơ đồ ARCHITECTURE.md) | #6 |
+| 2–4 | Architecture overview (sơ đồ ARCHITECTURE.md) | #5 |
 | 4–6 | User flow: register → verify → login | #1 |
 | 6–8 | Tạo listing với ISBN auto-fill | #2 |
-| 8–10 | Search + filter; follow user; see in feed | #3 |
-| 10–14 | Transaction lifecycle (request → accept → ship → complete → rate) + chat embed | #4 |
-| 14–17 | Reputation update + anti-gaming + report → moderator action | #5 |
-| 17–19 | Notifications real-time + admin dashboard + grant CSV | #6 |
+| 8–10 | Search + filter; follow user; community group + feed | #3 |
+| 10–14 | Transaction lifecycle (request → accept → ship → complete → rate) + chat embed | #4 (chat component của #6) |
+| 14–17 | Reputation + anti-gaming + report → moderator action + admin dashboard/grant CSV | #5 |
+| 17–19 | Notifications realtime (#4) + Artifacts văn học tương tác demo (#6) | #4 + #6 |
 | 19–20 | Closing + Q&A | mọi người |
 
 ### Q&A — chia trách nhiệm trả lời
 
 | Câu hỏi giảng viên có thể hỏi | Người trả lời |
 |---|---|
-| Tại sao chọn Next.js + Prisma + Postgres? | #6 |
+| Tại sao chọn Next.js + Prisma + Postgres? | #5 (architecture/DevOps) |
 | Bảo mật password? Session? | #1 |
 | ISBN API rate limit? Fallback? | #2 |
 | Search relevance ranking algorithm? | #3 |
 | State machine — tại sao tách pure logic? | #4 |
 | Anti-gaming — false positive? | #5 |
-| Scaling notifications khi 10k users? | #6 |
+| Scaling notifications khi 10k users? | #4 |
+| Artifacts có trong SRS không? Vì sao thêm? | #6 |
 
 Quy tắc: ai bị hỏi câu của người khác, **chuyển micro lịch sự**: "Câu này thuộc về bạn X, mời X trả lời".
 

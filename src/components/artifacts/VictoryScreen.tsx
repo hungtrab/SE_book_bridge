@@ -19,7 +19,7 @@ export function VictoryScreen({
   victoryEffect?: VictoryEffect;
   listingSearchTitle?: string;
 }) {
-  const listingHref = listingSearchTitle
+  const listingSearchHref = listingSearchTitle
     ? `/listings?${new URLSearchParams({ q: listingSearchTitle }).toString()}`
     : null;
 
@@ -95,9 +95,11 @@ export function VictoryScreen({
         >
           📚 More Artifacts
         </Link>
-        {listingHref && (
+        {listingSearchHref && (
           <Link
-            href={listingHref}
+            href={listingSearchHref}
+            aria-label={`See ${listingSearchTitle} on listing`}
+            title={`Search listings for ${listingSearchTitle}`}
             className="rounded-xl border px-6 py-3 font-mono text-sm font-bold tracking-wider uppercase transition-colors"
             style={{ borderColor: "rgba(201,168,76,0.4)", color: "var(--game-accent)" }}
           >

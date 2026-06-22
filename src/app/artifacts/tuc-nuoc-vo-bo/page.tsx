@@ -1,5 +1,6 @@
 import dynamic from "next/dynamic";
 import { ArtifactDiscussion } from "@/components/artifacts/ArtifactDiscussion";
+import { ArtifactListingLink } from "@/components/artifacts/ArtifactListingLink";
 import { getCurrentUser } from "@/server/lib/auth-context";
 
 const ArtifactGame = dynamic(
@@ -19,6 +20,7 @@ export default async function TucNuocVoBoPage() {
       audio={TAT_DEN_AUDIO}
       listingSearchTitle="Tắt Đèn"
     />
+    <ArtifactListingLink title="Tắt Đèn" accentColor="#8B4513" />
     <ArtifactDiscussion slug="tuc-nuoc-vo-bo" currentUserId={user?.id} canModerate={user?.role === "ADMIN" || user?.role === "MODERATOR"} />
   </div>;
 }
